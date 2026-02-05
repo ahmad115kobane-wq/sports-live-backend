@@ -2,6 +2,14 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import api from './api';
+import { 
+  requestNotificationPermission, 
+  getFCMToken, 
+  registerFCMToken,
+  setupForegroundNotificationHandler,
+  setupNotificationOpenHandler,
+  setupTokenRefreshHandler
+} from './firebase';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -14,58 +22,35 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Register for push notifications
+// Register for push notifications using Firebase
 export async function registerForPushNotifications(): Promise<string | null> {
   try {
     // Check if running on physical device
     if (!Device.isDevice) {
-      console.log('Push notifications only work on physical devices');
+      console.log('⚠️ Push notifications only work on physical devices');
       return null;
     }
 
-    // Get existing permission status
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    // Request permission if not granted
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      console.log('Permission to receive notifications was denied');
+    // Request Firebase notification permission
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) {
+      console.log('❌ Permission to receive notifications was denied');
       return null;
     }
 
-    // Get Expo push token
-    let tokenData;
-    try {
-      // Try with project ID from app.json
-      tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'your-project-id', // Will be replaced with actual project ID
-      });
-    } catch (error) {
-      // Fallback: try without project ID (for development)
-      console.log('Trying to get push token without project ID...');
-      tokenData = await Notifications.getExpoPushTokenAsync();
+    // Get FCM token
+    const token = await getFCMToken();
+    if (!token) {
+      console.log('❌ Failed to get FCM token');
+      return null;
     }
 
-    const token = tokenData.data;
-    console.log('📱 Push token obtained:', token);
-
-    // Register token with backend
-    try {
-      await api.post('/users/push-token', { pushToken: token });
-      console.log('✅ Push token registered with backend');
-    } catch (error) {
-      console.error('Failed to register push token with backend:', error);
-    }
+    console.log('✅ FCM token obtained');
 
     // Configure notification channel for Android
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('match-events', {
-        name: 'Match Events',
+      await Notifications.setNotificationChannelAsync('match-notifications', {
+        name: 'Match Notifications',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
@@ -77,7 +62,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
     return token;
   } catch (error) {
-    console.error('Error registering for push notifications:', error);
+    console.error('❌ Error registering for push notifications:', error);
     return null;
   }
 }

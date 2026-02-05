@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "585101145499",
+    "project_id": "apppp-3ce5b",
+    "storage_bucket": "apppp-3ce5b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585101145499:android:5d93c21010fba9fc335d3e",
+        "android_client_info": {
+          "package_name": "com.sportslive.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASc8RW8LZtxgwrYREBWt-VgHb9rD92teE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
