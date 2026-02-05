@@ -33,8 +33,7 @@
       "permissions": [
         "NOTIFICATIONS",
         "VIBRATE"
-      ],
-      "useNextNotificationsApi": true
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -48,9 +47,6 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff",
-          "sounds": [
-            "./assets/sounds/notification.wav"
-          ],
           "androidMode": "default",
           "androidCollapsedTitle": "{{unread_count}} إشعارات جديدة"
         }
