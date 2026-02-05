@@ -56,10 +56,12 @@
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
   },
+  "private": true,
   "expo": {
-    "install": {
-      "exclude": ["@expo/config-plugins"]
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": ["@expo/config-plugins"]
+      }
     }
-  },
-  "private": true
+  }
 }
