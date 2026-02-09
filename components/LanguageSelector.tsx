@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  useColorScheme,
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { LANGUAGES, LanguageCode } from '@/i18n';
@@ -24,7 +24,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onClose,
 }) => {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { language, changeLanguage, t, isRTL } = useRTL();
 
   const handleSelectLanguage = async (langCode: LanguageCode) => {

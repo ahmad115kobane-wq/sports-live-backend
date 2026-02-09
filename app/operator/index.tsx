@@ -3,17 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
-  useColorScheme,
   StatusBar,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { operatorApi } from '@/services/api';
@@ -22,13 +23,18 @@ import { MATCH_STATUS } from '@/constants/config';
 import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { useRTL } from '@/contexts/RTLContext';
+import EmptyState from '@/components/ui/EmptyState';
+
+type FilterTab = 'live' | 'scheduled' | 'finished' | 'all';
 
 export default function OperatorScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   const [matches, setMatches] = useState<Match[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -41,6 +47,8 @@ export default function OperatorScreen() {
       setMatches(response.data.data);
     } catch (error) {
       console.error('Error loading matches:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,235 +58,184 @@ export default function OperatorScreen() {
     setRefreshing(false);
   };
 
-  const liveMatches = matches.filter((m) => m.status === 'live' || m.status === 'halftime');
+  const liveMatches = matches.filter((m) => m.status === 'live' || m.status === 'halftime' || m.status === 'extra_time' || m.status === 'extra_time_halftime' || m.status === 'penalties');
   const scheduledMatches = matches.filter((m) => m.status === 'scheduled');
   const finishedMatches = matches.filter((m) => m.status === 'finished');
+
+  const filteredMatches = activeTab === 'all' ? [...liveMatches, ...scheduledMatches, ...finishedMatches]
+    : activeTab === 'live' ? liveMatches
+    : activeTab === 'scheduled' ? scheduledMatches
+    : finishedMatches;
+
+  const tabs: { key: FilterTab; label: string; count: number; color: string; icon: string }[] = [
+    { key: 'all', label: t('operator.allMatches'), count: matches.length, color: colors.accent, icon: 'grid' },
+    { key: 'live', label: t('match.live'), count: liveMatches.length, color: '#E63946', icon: 'radio' },
+    { key: 'scheduled', label: t('operator.upcoming'), count: scheduledMatches.length, color: colors.info, icon: 'time' },
+    { key: 'finished', label: t('operator.done'), count: finishedMatches.length, color: colors.success, icon: 'checkmark-circle' },
+  ];
+
+  const renderMatchCard = ({ item: match }: { item: Match }) => {
+    const isLive = match.status === 'live' || match.status === 'halftime' || match.status === 'extra_time' || match.status === 'extra_time_halftime' || match.status === 'penalties';
+    const isScheduled = match.status === 'scheduled';
+    const statusInfo = MATCH_STATUS[match.status] || { label: match.status, color: '#9E9E9E' };
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={[
+          styles.matchCard,
+          { backgroundColor: colors.surface },
+          isLive && { borderLeftWidth: 3, borderLeftColor: '#E63946' },
+        ]}
+        onPress={() => router.push(`/operator/match/${match.id}`)}
+      >
+        <View style={[styles.matchCardRow, { flexDirection }]}>
+          {/* Home Team */}
+          <View style={styles.matchTeam}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+              {match.homeTeam.shortName || match.homeTeam.name}
+            </Text>
+          </View>
+
+          {/* Score / VS */}
+          <View style={styles.matchCenter}>
+            {isScheduled ? (
+              <View style={[styles.matchTimeBadge, { backgroundColor: colors.info + '20' }]}>
+                <Text style={[styles.matchTimeText, { color: colors.info }]}>
+                  {format(new Date(match.startTime), 'HH:mm')}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.matchScoreBox}>
+                <Text style={[styles.matchScore, { color: colors.text }]}>
+                  {match.homeScore}
+                </Text>
+                <Text style={[styles.matchScoreSep, { color: colors.textTertiary }]}>:</Text>
+                <Text style={[styles.matchScore, { color: colors.text }]}>
+                  {match.awayScore}
+                </Text>
+              </View>
+            )}
+            <View style={[styles.matchStatusChip, { backgroundColor: statusInfo.color + '20' }]}>
+              {isLive && <View style={[styles.pulseDot, { backgroundColor: statusInfo.color }]} />}
+              <Text style={[styles.matchStatusText, { color: statusInfo.color }]}>
+                {isLive && match.currentMinute ? `${match.currentMinute}'` : statusInfo.label}
+              </Text>
+            </View>
+          </View>
+
+          {/* Away Team */}
+          <View style={[styles.matchTeam, { alignItems: 'flex-end' }]}>
+            <Text style={[styles.matchTeamName, { color: colors.text, textAlign: 'right' }]} numberOfLines={1}>
+              {match.awayTeam.shortName || match.awayTeam.name}
+            </Text>
+          </View>
+        </View>
+
+        {/* Quick Action */}
+        <View style={[styles.matchAction, { backgroundColor: isLive ? '#E63946' + '15' : colors.backgroundSecondary }]}>
+          <Ionicons
+            name={isLive ? 'radio' : isScheduled ? 'play-circle' : 'eye'}
+            size={14}
+            color={isLive ? '#E63946' : isScheduled ? colors.success : colors.textSecondary}
+          />
+          <Text style={[styles.matchActionText, { color: isLive ? '#E63946' : isScheduled ? colors.success : colors.textSecondary }]}>
+            {isLive ? t('operator.manage') : isScheduled ? t('operator.start') : t('operator.view')}
+          </Text>
+          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={14} color={colors.textTertiary} />
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
-      
-      {/* Header with Gradient */}
+
+      {/* Compact Header */}
       <LinearGradient
         colors={colors.gradients.premium}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        <View style={styles.headerDecor1} />
-        <View style={styles.headerDecor2} />
-        
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="#fff" />
-        </TouchableOpacity>
-        
-        <View style={styles.headerContent}>
-          <View style={styles.headerIconBg}>
-            <Ionicons name="radio" size={28} color="#fff" />
+        <View style={[styles.headerRow, { flexDirection }]}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={22} color="#fff" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>{t('operator.panel')}</Text>
+            <Text style={styles.headerSubtitle}>{user?.name}</Text>
           </View>
-          <Text style={styles.headerTitle}>{t('match.live')}</Text>
-          <Text style={styles.headerSubtitle}>
-            {t('home.welcome')}, {user?.name}
-          </Text>
+          <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
+            <Ionicons name="refresh" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
       </LinearGradient>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+      {/* Filter Tabs */}
+      <View style={[styles.tabsContainer, { backgroundColor: colors.surface }]}>
+        <View style={[styles.tabsRow, { flexDirection }]}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.tab,
+                  isActive && { backgroundColor: tab.color + '18' },
+                ]}
+                onPress={() => setActiveTab(tab.key)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={tab.icon as any}
+                  size={16}
+                  color={isActive ? tab.color : colors.textTertiary}
+                />
+                <Text style={[
+                  styles.tabLabel,
+                  { color: isActive ? tab.color : colors.textTertiary },
+                  isActive && { fontWeight: '700' },
+                ]}>
+                  {tab.label}
+                </Text>
+                {tab.count > 0 && (
+                  <View style={[styles.tabBadge, { backgroundColor: isActive ? tab.color : colors.border }]}>
+                    <Text style={[styles.tabBadgeText, { color: isActive ? '#fff' : colors.textTertiary }]}>
+                      {tab.count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Match List */}
+      <FlatList
+        data={filteredMatches}
+        keyExtractor={(item) => item.id}
+        renderItem={renderMatchCard}
+        contentContainerStyle={[styles.listContent, filteredMatches.length === 0 && { flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
-      >
-        {/* Stats Card */}
-        <View style={[styles.statsCard, { backgroundColor: colors.surface, flexDirection }]}>
-          <View style={styles.statItem}>
-            <View style={[styles.statIconBg, { backgroundColor: colors.liveLight }]}>
-              <Ionicons name="radio" size={20} color={colors.live} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.live }]}>
-              {liveMatches.length}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>{t('match.live')}</Text>
+        ListEmptyComponent={
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <EmptyState
+              icon="clipboard-outline"
+              title={t('common.noResults')}
+              subtitle={t('home.noUpcomingMatches')}
+              actionLabel={t('common.refresh')}
+              actionIcon="refresh"
+              onAction={onRefresh}
+            />
           </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <View style={[styles.statIconBg, { backgroundColor: colors.infoLight }]}>
-              <Ionicons name="time" size={20} color={colors.info} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {scheduledMatches.length}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>{t('match.upcoming')}</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <View style={[styles.statIconBg, { backgroundColor: colors.successLight }]}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              {finishedMatches.length}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>{t('match.finished')}</Text>
-          </View>
-        </View>
-
-        {/* Live Matches */}
-        {liveMatches.length > 0 && (
-          <View style={styles.section}>
-            <View style={[styles.sectionHeader, { flexDirection }]}>
-              <View style={[styles.sectionTitleRow, { flexDirection }]}>
-                <View style={[styles.liveDot, { backgroundColor: colors.live }]} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.liveNow')}</Text>
-              </View>
-              <Text style={[styles.sectionCount, { color: colors.textTertiary }]}>
-                {liveMatches.length} {t('tabs.matches')}
-              </Text>
-            </View>
-            {liveMatches.map((match) => (
-              <TouchableOpacity
-                key={match.id}
-                style={[styles.matchCard, { 
-                  backgroundColor: colors.surface,
-                  borderColor: colors.live,
-                  borderWidth: 2,
-                }]}
-                onPress={() => router.push(`/operator/match/${match.id}`)}
-              >
-                <View style={[styles.matchHeader, { flexDirection }]}>
-                  <View style={[styles.minuteBadge, { backgroundColor: colors.liveLight }]}>
-                    <Text style={[styles.minuteText, { color: colors.live }]}>
-                      {match.currentMinute ? `${match.currentMinute}'` : t('match.live')}
-                    </Text>
-                  </View>
-                  <LinearGradient
-                    colors={['#E63946', '#C1121F']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.statusBadge}
-                  >
-                    <Text style={styles.statusText}>
-                      {MATCH_STATUS[match.status].label}
-                    </Text>
-                  </LinearGradient>
-                </View>
-                
-                <View style={[styles.teamsRow, { flexDirection }]}>
-                  <View style={styles.teamInfo}>
-                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-                      {match.homeTeam.name}
-                    </Text>
-                  </View>
-                  <View style={styles.scoreContainer}>
-                    <Text style={[styles.score, { color: colors.text }]}>
-                      {match.homeScore}
-                    </Text>
-                    <Text style={[styles.scoreDivider, { color: colors.textTertiary }]}>-</Text>
-                    <Text style={[styles.score, { color: colors.text }]}>
-                      {match.awayScore}
-                    </Text>
-                  </View>
-                  <View style={[styles.teamInfo, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}>
-                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-                      {match.awayTeam.name}
-                    </Text>
-                  </View>
-                </View>
-                
-                <LinearGradient
-                  colors={['#E63946', '#C1121F']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.actionButton}
-                >
-                  <Ionicons name="radio" size={18} color="#fff" />
-                  <Text style={styles.actionButtonText}>{t('match.live')}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Scheduled Matches */}
-        {scheduledMatches.length > 0 && (
-          <View style={styles.section}>
-            <View style={[styles.sectionHeader, { flexDirection }]}>
-              <View style={[styles.sectionTitleRow, { flexDirection }]}>
-                <Ionicons name="time-outline" size={18} color={colors.info} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('home.upcoming')}</Text>
-              </View>
-              <Text style={[styles.sectionCount, { color: colors.textTertiary }]}>
-                {scheduledMatches.length} {t('tabs.matches')}
-              </Text>
-            </View>
-            {scheduledMatches.map((match) => (
-              <TouchableOpacity
-                key={match.id}
-                style={[styles.matchCard, { backgroundColor: colors.surface }]}
-                onPress={() => router.push(`/operator/match/${match.id}`)}
-              >
-                <View style={[styles.matchHeader, { flexDirection }]}>
-                  <Text style={[styles.matchDate, { color: colors.textSecondary }]}>
-                    {format(new Date(match.startTime), 'MMM d, HH:mm', { locale: isRTL ? ar : enUS })}
-                  </Text>
-                  <View style={[styles.scheduledBadge, { backgroundColor: colors.backgroundSecondary }]}>
-                    <Text style={[styles.scheduledText, { color: colors.textSecondary }]}>
-                      {t('match.scheduled')}
-                    </Text>
-                  </View>
-                </View>
-                
-                <View style={[styles.teamsRow, { flexDirection }]}>
-                  <View style={styles.teamInfo}>
-                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-                      {match.homeTeam.name}
-                    </Text>
-                  </View>
-                  <View style={[styles.vsContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                    <Text style={[styles.vsText, { color: colors.textTertiary }]}>VS</Text>
-                  </View>
-                  <View style={[styles.teamInfo, { alignItems: isRTL ? 'flex-start' : 'flex-end' }]}>
-                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-                      {match.awayTeam.name}
-                    </Text>
-                  </View>
-                </View>
-                
-                <TouchableOpacity
-                  style={[styles.startButton, { backgroundColor: colors.success }]}
-                  onPress={() => router.push(`/operator/match/${match.id}`)}
-                >
-                  <Ionicons name="play" size={18} color="#fff" />
-                  <Text style={styles.actionButtonText}>{t('common.ok')}</Text>
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Empty State */}
-        {matches.length === 0 && (
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIconBg, { backgroundColor: colors.surface }]}>
-              <Ionicons name="clipboard-outline" size={48} color={colors.textTertiary} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('common.noResults')}
-            </Text>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {t('home.noUpcomingMatches')}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+        }
+      />
     </View>
   );
 }
@@ -288,246 +245,163 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 46 : (StatusBar.currentHeight || 24) + SPACING.xs,
-    paddingBottom: SPACING.xl,
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 24) + SPACING.xs,
+    paddingBottom: SPACING.md,
     paddingHorizontal: SPACING.md,
-    position: 'relative',
-    overflow: 'hidden',
   },
-  headerDecor1: {
-    position: 'absolute',
-    top: -30,
-    right: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  headerDecor2: {
-    position: 'absolute',
-    bottom: -15,
-    left: -15,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  headerContent: {
-    alignItems: 'center',
-  },
-  headerIconBg: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
   },
   headerTitle: {
-    ...TYPOGRAPHY.headlineSmall,
+    ...TYPOGRAPHY.headlineMedium,
     color: '#fff',
     fontWeight: '700',
-    marginBottom: SPACING.xxs,
   },
   headerSubtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: 'rgba(255,255,255,0.8)',
+    ...TYPOGRAPHY.labelMedium,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
   },
-  scrollView: {
-    flex: 1,
-    marginTop: -SPACING.md,
-  },
-  scrollContent: {
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.xxl,
-  },
-  statsCard: {
-    flexDirection: 'row',
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    ...SHADOWS.sm,
-    marginBottom: SPACING.md,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  refreshBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xxs,
   },
-  statValue: {
-    ...TYPOGRAPHY.titleMedium,
-    fontWeight: '700',
+  tabsContainer: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    ...SHADOWS.xs,
   },
-  statLabel: {
-    ...TYPOGRAPHY.labelSmall,
-    marginTop: 1,
-  },
-  statDivider: {
-    width: 1,
-    marginVertical: SPACING.xs,
-  },
-  section: {
-    marginBottom: SPACING.md,
-  },
-  sectionHeader: {
+  tabsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
+    gap: 4,
   },
-  sectionTitleRow: {
+  tab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    gap: 5,
   },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  tabLabel: {
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
   },
-  sectionTitle: {
-    ...TYPOGRAPHY.titleSmall,
+  tabBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
   },
-  sectionCount: {
-    ...TYPOGRAPHY.labelSmall,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContent: {
+    padding: SPACING.md,
+    paddingBottom: SPACING.xxl,
   },
   matchCard: {
     borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
+    overflow: 'hidden',
     ...SHADOWS.sm,
   },
-  matchHeader: {
+  matchCardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
-  minuteBadge: {
-    paddingHorizontal: SPACING.xs,
+  matchTeam: {
+    flex: 1,
+  },
+  matchTeamName: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+  },
+  matchCenter: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    minWidth: 80,
+  },
+  matchScoreBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  matchScore: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  matchScoreSep: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '400',
+  },
+  matchTimeBadge: {
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xxs,
     borderRadius: RADIUS.sm,
   },
-  minuteText: {
-    ...TYPOGRAPHY.labelSmall,
+  matchTimeText: {
+    ...TYPOGRAPHY.titleMedium,
     fontWeight: '700',
   },
-  statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xxs,
+  matchStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xs + 2,
+    paddingVertical: 1,
     borderRadius: RADIUS.full,
+    marginTop: 3,
+    gap: 3,
   },
-  statusText: {
-    ...TYPOGRAPHY.labelSmall,
-    color: '#fff',
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  matchStatusText: {
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
-  matchDate: {
-    ...TYPOGRAPHY.labelSmall,
-  },
-  scheduledBadge: {
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: SPACING.xxs,
-    borderRadius: RADIUS.sm,
-  },
-  scheduledText: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
-  },
-  teamsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  teamInfo: {
-    flex: 1,
-  },
-  teamName: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontWeight: '600',
-  },
-  scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-  },
-  score: {
-    ...TYPOGRAPHY.headlineSmall,
-    fontWeight: '700',
-  },
-  scoreDivider: {
-    ...TYPOGRAPHY.titleSmall,
-    marginHorizontal: SPACING.xs,
-  },
-  vsContainer: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xxs,
-    borderRadius: RADIUS.sm,
-  },
-  vsText: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
-  },
-  actionButton: {
+  matchAction: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    gap: SPACING.xs,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(128,128,128,0.15)',
   },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    gap: SPACING.xs,
-  },
-  actionButtonText: {
+  matchActionText: {
     ...TYPOGRAPHY.labelMedium,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyIconBg: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-    ...SHADOWS.xs,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.titleMedium,
     fontWeight: '700',
-    marginBottom: SPACING.xs,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.bodySmall,
+    flex: 1,
     textAlign: 'center',
-    lineHeight: 20,
   },
 });

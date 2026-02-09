@@ -1,16 +1,17 @@
 import React, { memo } from 'react';
+import { MatchTime } from '@/hooks/useLiveMinute';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Match } from '@/types';
 import { MATCH_STATUS } from '@/constants/config';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
@@ -23,11 +24,13 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FeaturedMatchProps {
   match: Match;
+  liveMinute?: number | null;
+  liveTime?: MatchTime | null;
 }
 
-function FeaturedMatch({ match }: FeaturedMatchProps) {
+function FeaturedMatch({ match, liveMinute, liveTime }: FeaturedMatchProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
   const statusInfo = MATCH_STATUS[match.status];
@@ -70,7 +73,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
           <View style={[styles.header, { flexDirection }]}>
             <View style={[styles.competitionBadge, { flexDirection }]}>
               <View style={styles.competitionIcon}>
-                <Ionicons name="trophy" size={12} color="#FFD700" />
+                <Ionicons name="trophy" size={10} color="#FFD700" />
               </View>
               <Text style={styles.competition} numberOfLines={1}>
                 {match.competition?.name || t('home.featuredMatches')}
@@ -82,12 +85,12 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
                 <View style={[styles.liveBadge, { backgroundColor: colors.live }]}>
                   <View style={styles.liveDotInner} />
                   <Text style={styles.liveText}>LIVE</Text>
-                  {match.currentMinute && (
+                  {(liveTime || liveMinute || match.currentMinute) ? (
                     <>
                       <View style={styles.liveDivider} />
-                      <Text style={styles.liveMinute}>{match.currentMinute}'</Text>
+                      <Text style={styles.liveMinute}>{liveTime ? liveTime.display : `${liveMinute ?? match.currentMinute}'`}</Text>
                     </>
-                  )}
+                  ) : null}
                 </View>
               </View>
             ) : isUpcoming ? (
@@ -105,7 +108,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
           </View>
 
           {/* Teams Row - Main Content */}
-          <View style={styles.teamsContainer}>
+          <View style={[styles.teamsContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             {/* Home Team */}
             <View style={styles.teamInfo}>
               <View style={styles.teamLogoWrapper}>
@@ -121,7 +124,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
                   <View style={[styles.winIndicator, { backgroundColor: colors.success }]} />
                 )}
               </View>
-              <Text style={styles.teamName} numberOfLines={1}>
+              <Text style={styles.teamName} numberOfLines={2}>
                 {match.homeTeam.name}
               </Text>
             </View>
@@ -143,9 +146,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
                     </Text>
                   </View>
                   <View style={styles.scoreDividerContainer}>
-                    <View style={styles.scoreDividerLine} />
-                    <Text style={styles.scoreDividerText}>:</Text>
-                    <View style={styles.scoreDividerLine} />
+                    <Text style={styles.scoreDividerText}>-</Text>
                   </View>
                   <View style={styles.scoreBox}>
                     <Text style={[
@@ -174,7 +175,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
                   <View style={[styles.winIndicator, { backgroundColor: colors.success }]} />
                 )}
               </View>
-              <Text style={styles.teamName} numberOfLines={1}>
+              <Text style={styles.teamName} numberOfLines={2}>
                 {match.awayTeam.name}
               </Text>
             </View>
@@ -186,7 +187,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <View style={[styles.statIcon, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
-                    <Ionicons name="football" size={14} color={colors.success} />
+                    <Ionicons name="football" size={12} color={colors.success} />
                   </View>
                   <Text style={styles.statValue}>
                     {match.events.filter(e => e.type === 'goal').length} {t('match.goals')}
@@ -208,7 +209,7 @@ function FeaturedMatch({ match }: FeaturedMatchProps) {
           {/* Bottom CTA */}
           <View style={styles.ctaRow}>
             <Text style={styles.ctaText}>{t('common.seeAll')}</Text>
-            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={16} color="rgba(255,255,255,0.6)" />
+            <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={14} color="rgba(255,255,255,0.6)" />
           </View>
         </LinearGradient>
       </View>
@@ -222,54 +223,51 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     overflow: 'hidden',
     ...SHADOWS.md,
+    transform: [{ scale: 1 }], // Force layer render
   },
   gradient: {
-    padding: SPACING.md,
-    minHeight: 160,
-  },
-  shimmer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 100,
+    padding: SPACING.lg,
+    minHeight: 170,
   },
   liveGlow: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 3,
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
+    height: 4,
+    opacity: 0.8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   competitionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
-    gap: SPACING.xs,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   competitionIcon: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   competition: {
-    color: 'rgba(255,255,255,0.9)',
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
-    maxWidth: 120,
+    color: 'rgba(255,255,255,0.95)',
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    flexShrink: 1,
   },
   liveBadgeContainer: {
     position: 'relative',
@@ -277,19 +275,10 @@ const styles = StyleSheet.create({
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
-    gap: 4,
-  },
-  livePulseRing: {
-    position: 'absolute',
-    left: SPACING.sm - 2,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    opacity: 0.5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+    gap: 6,
   },
   liveDotInner: {
     width: 6,
@@ -300,48 +289,52 @@ const styles = StyleSheet.create({
   liveText: {
     color: '#fff',
     ...TYPOGRAPHY.labelSmall,
-    fontWeight: '700',
-    marginLeft: 2,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   liveDivider: {
     width: 1,
     height: 10,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   liveMinute: {
     color: '#fff',
     ...TYPOGRAPHY.labelSmall,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   timeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
-    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    gap: 6,
   },
   timeText: {
     color: 'rgba(255,255,255,0.9)',
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   statusBadge: {
     backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
   },
   statusText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.8)',
     ...TYPOGRAPHY.labelSmall,
     fontWeight: '600',
+    textTransform: 'uppercase',
   },
   teamsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: SPACING.xs,
   },
   teamInfo: {
     flex: 1,
@@ -349,97 +342,89 @@ const styles = StyleSheet.create({
   },
   teamLogoWrapper: {
     position: 'relative',
-    marginBottom: SPACING.xs,
-  },
-  teamLogo: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  teamLogoText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
+    marginBottom: SPACING.md,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
   winIndicator: {
     position: 'absolute',
     bottom: -2,
     right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: '#1E293B',
   },
   teamName: {
     color: '#fff',
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
+    ...TYPOGRAPHY.labelLarge,
+    fontWeight: '700',
     textAlign: 'center',
-    maxWidth: 80,
   },
   scoreContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 90,
+    minWidth: 100,
   },
   vsContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   vsText: {
-    color: 'rgba(255,255,255,0.5)',
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '700',
+    color: 'rgba(255,255,255,0.6)',
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '800',
   },
   scoreWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
   },
   scoreBox: {
-    width: 30,
+    minWidth: 32,
     alignItems: 'center',
   },
   score: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
     color: '#fff',
+    fontVariant: ['tabular-nums'],
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   scoreDividerContainer: {
     alignItems: 'center',
-    marginHorizontal: SPACING.xxs,
-  },
-  scoreDividerLine: {
-    width: 6,
-    height: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 1,
+    marginHorizontal: 4,
   },
   scoreDividerText: {
-    fontSize: 20,
-    color: 'rgba(255,255,255,0.3)',
+    fontSize: 24,
+    color: 'rgba(255,255,255,0.4)',
     fontWeight: '300',
-    marginVertical: -4,
+    marginTop: -4,
   },
   winningScore: {
     color: '#34D399',
+    textShadowColor: 'rgba(52, 211, 153, 0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   footer: {
-    marginTop: SPACING.lg,
-    paddingTop: SPACING.sm,
+    marginTop: SPACING.xl,
+    paddingTop: SPACING.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   statsRow: {
     flexDirection: 'row',
@@ -449,43 +434,46 @@ const styles = StyleSheet.create({
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 8,
   },
   statIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cardMini: {
     width: 8,
-    height: 12,
+    height: 11,
     backgroundColor: '#FBBF24',
-    borderRadius: 1,
+    borderRadius: 2,
   },
   statValue: {
-    color: 'rgba(255,255,255,0.8)',
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.9)',
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
   },
   statDivider: {
     width: 1,
-    height: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginHorizontal: SPACING.md,
+    height: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: SPACING.lg,
   },
   ctaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: SPACING.md,
-    gap: 3,
+    marginTop: SPACING.lg,
+    gap: 4,
+    opacity: 0.8,
   },
   ctaText: {
-    color: 'rgba(255,255,255,0.6)',
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '500',
+    color: '#fff',
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });
 

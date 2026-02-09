@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  useColorScheme,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 
 type BadgeVariant = 'default' | 'live' | 'success' | 'warning' | 'error' | 'info' | 'premium';
@@ -28,7 +28,7 @@ export default function StatusBadge({
   style,
 }: StatusBadgeProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   const sizeStyles = {
     small: {

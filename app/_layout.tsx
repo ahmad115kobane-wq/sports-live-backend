@@ -1,23 +1,29 @@
 import { useEffect, useState, useRef } from 'react';
 import { Stack, router, useSegments, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, I18nManager, View, ActivityIndicator } from 'react-native';
+import { I18nManager, View, ActivityIndicator } from 'react-native';
+import { enableScreens } from 'react-native-screens';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@/store/authStore';
 import { Colors } from '@/constants/Colors';
 import { RTLProvider, useRTL } from '@/contexts/RTLContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { registerForPushNotifications, handleNotificationTap } from '@/services/notifications';
+import { setupForegroundNotificationHandler } from '@/services/firebase';
 import '@/i18n';
 
+// Enable native screens for maximum performance
+enableScreens(true);
+
 function RootLayoutContent() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const { colorScheme, isDark } = useTheme();
+  const colors = Colors[colorScheme];
   const { loadStoredAuth, isLoading, isAuthenticated, hasSeenWelcome } = useAuthStore();
   const { t, isRTL } = useRTL();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
+  const notificationListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
     loadStoredAuth();
@@ -29,10 +35,12 @@ function RootLayoutContent() {
       // Register for push notifications
       registerForPushNotifications();
 
-      // Listen for notifications received while app is open
+      // Setup FCM foreground handler - THIS IS CRITICAL for receiving FCM messages
+      const unsubscribeFCM = setupForegroundNotificationHandler();
+
+      // Listen for notifications received while app is open (local notifications)
       notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
         console.log('📬 Notification received:', notification);
-        // You can show an in-app notification here if needed
       });
 
       // Listen for notification taps
@@ -42,11 +50,15 @@ function RootLayoutContent() {
       });
 
       return () => {
+        // Cleanup FCM listener
+        if (unsubscribeFCM) {
+          unsubscribeFCM();
+        }
         if (notificationListener.current) {
-          Notifications.removeNotificationSubscription(notificationListener.current);
+          notificationListener.current.remove();
         }
         if (responseListener.current) {
-          Notifications.removeNotificationSubscription(responseListener.current);
+          responseListener.current.remove();
         }
       };
     }
@@ -59,15 +71,15 @@ function RootLayoutContent() {
     const inWelcomeScreen = segments[0] === 'welcome';
     const inAuthGroup = segments[0] === 'auth';
 
-    // If user hasn't seen welcome and isn't on welcome screen, redirect to welcome
-    if (!hasSeenWelcome && !inWelcomeScreen && !inAuthGroup) {
+    // If user is NOT authenticated (not logged in, not guest) → go to welcome
+    if (!isAuthenticated && !inWelcomeScreen && !inAuthGroup) {
       router.replace('/welcome');
     }
-    // If user has seen welcome and is on welcome screen, redirect to tabs
-    else if (hasSeenWelcome && isAuthenticated && inWelcomeScreen) {
+    // If user IS authenticated and still on welcome screen → go to tabs
+    else if (isAuthenticated && inWelcomeScreen) {
       router.replace('/(tabs)');
     }
-  }, [isLoading, isAuthenticated, hasSeenWelcome, segments, navigationState?.key]);
+  }, [isLoading, isAuthenticated, segments, navigationState?.key]);
 
   // Show loading while checking auth state
   if (isLoading) {
@@ -80,22 +92,26 @@ function RootLayoutContent() {
 
   return (
     <>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: {
             backgroundColor: colors.primary,
           },
-          headerTintColor: '#fff',
+          headerTintColor: isDark ? '#fff' : '#0F0F0F',
           headerTitleStyle: {
             fontWeight: 'bold',
           },
           contentStyle: {
             backgroundColor: colors.background,
           },
-          // تسريع الانتقالات
-          animation: 'fade',
-          animationDuration: 150,
+          // ── Smooth transitions with swipe-back gesture ──
+          animation: 'slide_from_right',
+          animationDuration: 250,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          fullScreenGestureEnabled: true,
+          freezeOnBlur: true,
         }}
       >
         <Stack.Screen 
@@ -103,40 +119,54 @@ function RootLayoutContent() {
           options={{ 
             headerShown: false,
             animation: 'fade',
+            animationDuration: 200,
           }} 
         />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: false,
+            animation: 'fade',
+            animationDuration: 150,
+          }} 
+        />
         <Stack.Screen
           name="match/[id]"
           options={{
             title: t('match.stats'),
-            headerBackTitle: t('common.back'),
             headerShown: false,
+            animation: 'slide_from_right',
           }}
         />
         <Stack.Screen
           name="team/[id]"
           options={{
             headerShown: false,
+            animation: 'slide_from_right',
           }}
         />
         <Stack.Screen
           name="player/[id]"
           options={{
             headerShown: false,
+            animation: 'slide_from_right',
           }}
         />
         <Stack.Screen
           name="search"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            presentation: 'transparentModal',
+            animation: 'fade',
+            animationDuration: 200,
           }}
         />
         <Stack.Screen
           name="notifications"
           options={{
             headerShown: false,
+            animation: 'slide_from_bottom',
+            animationDuration: 200,
           }}
         />
         <Stack.Screen
@@ -145,6 +175,7 @@ function RootLayoutContent() {
             title: t('auth.login'),
             presentation: 'modal',
             headerShown: false,
+            animation: 'slide_from_bottom',
           }}
         />
         <Stack.Screen
@@ -153,18 +184,67 @@ function RootLayoutContent() {
             title: t('auth.register'),
             presentation: 'modal',
             headerShown: false,
+            animation: 'slide_from_bottom',
           }}
         />
         <Stack.Screen
           name="operator/index"
           options={{
-            title: t('common.loading'),
+            headerShown: false,
+            animation: 'fade_from_bottom',
+            animationDuration: 200,
           }}
         />
         <Stack.Screen
           name="operator/match/[id]"
           options={{
-            title: t('match.live'),
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="operator/match/setup"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="cart"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_bottom',
+            animationDuration: 250,
+          }}
+        />
+        <Stack.Screen
+          name="checkout"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="orders"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="admin"
+          options={{
+            headerShown: false,
+            animation: 'fade_from_bottom',
+            animationDuration: 200,
+          }}
+        />
+        <Stack.Screen
+          name="publisher/index"
+          options={{
+            headerShown: false,
+            animation: 'fade_from_bottom',
+            animationDuration: 200,
           }}
         />
       </Stack>
@@ -174,8 +254,10 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <RTLProvider>
-      <RootLayoutContent />
-    </RTLProvider>
+    <ThemeProvider>
+      <RTLProvider>
+        <RootLayoutContent />
+      </RTLProvider>
+    </ThemeProvider>
   );
 }

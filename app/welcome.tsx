@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  useColorScheme,
   Dimensions,
   Animated,
   StatusBar,
@@ -14,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
@@ -24,7 +24,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, languageInfo, flexDirection } = useRTL();
   const { guestLogin, isLoading } = useAuthStore();
@@ -91,7 +91,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <LanguageSelector 
         visible={showLanguageSelector} 
@@ -112,7 +112,7 @@ export default function WelcomeScreen() {
         onPress={() => setShowLanguageSelector(true)}
       >
         <Text style={styles.languageFlag}>{languageInfo.flag}</Text>
-        <Ionicons name="chevron-down" size={16} color="#fff" />
+        <Ionicons name="chevron-down" size={16} color={colors.text} />
       </TouchableOpacity>
 
       {/* Logo Section */}
@@ -127,14 +127,14 @@ export default function WelcomeScreen() {
       >
         <View style={styles.logoContainer}>
           <LinearGradient
-            colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
-            style={styles.logoBg}
+            colors={isDark ? ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)'] : ['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.04)']}
+            style={[styles.logoBg, { borderColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)' }]}
           >
-            <Ionicons name="football" size={50} color="#fff" />
+            <Ionicons name="football" size={50} color={colors.text} />
           </LinearGradient>
         </View>
-        <Text style={styles.appName}>{t('app.name')}</Text>
-        <Text style={styles.tagline}>{t('welcome.tagline')}</Text>
+        <Text style={[styles.appName, { color: colors.text }]}>{t('app.name')}</Text>
+        <Text style={[styles.tagline, { color: colors.textSecondary }]}>{t('welcome.tagline')}</Text>
       </Animated.View>
 
       {/* Features Section */}
@@ -147,27 +147,27 @@ export default function WelcomeScreen() {
           },
         ]}
       >
-        <View style={[styles.featureItem, { flexDirection }]}>
-          <View style={styles.featureIcon}>
-            <Ionicons name="flash" size={16} color="#fff" />
+        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}>
+          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)' }]}>
+            <Ionicons name="flash" size={16} color={colors.text} />
           </View>
-          <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left', color: colors.text }]}>
             {t('welcome.feature1')}
           </Text>
         </View>
-        <View style={[styles.featureItem, { flexDirection }]}>
-          <View style={styles.featureIcon}>
-            <Ionicons name="notifications" size={16} color="#fff" />
+        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}>
+          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)' }]}>
+            <Ionicons name="notifications" size={16} color={colors.text} />
           </View>
-          <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left', color: colors.text }]}>
             {t('welcome.feature2')}
           </Text>
         </View>
-        <View style={[styles.featureItem, { flexDirection }]}>
-          <View style={styles.featureIcon}>
-            <Ionicons name="heart" size={16} color="#fff" />
+        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}>
+          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)' }]}>
+            <Ionicons name="heart" size={16} color={colors.text} />
           </View>
-          <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left' }]}>
+          <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left', color: colors.text }]}>
             {t('welcome.feature3')}
           </Text>
         </View>
@@ -189,11 +189,11 @@ export default function WelcomeScreen() {
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={['#fff', '#f5f5f5']}
+            colors={isDark ? ['#fff', '#f5f5f5'] : [colors.accent, colors.accentDark]}
             style={styles.primaryButtonGradient}
           >
-            <Ionicons name="log-in-outline" size={18} color={colors.primary} />
-            <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
+            <Ionicons name="log-in-outline" size={18} color={isDark ? colors.primary : '#fff'} />
+            <Text style={[styles.primaryButtonText, { color: isDark ? colors.primary : '#fff' }]}>
               {t('welcome.loginOrRegister')}
             </Text>
           </LinearGradient>
@@ -201,17 +201,17 @@ export default function WelcomeScreen() {
 
         {/* Guest Button */}
         <TouchableOpacity
-          style={styles.guestButton}
+          style={[styles.guestButton, { borderColor: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.15)', backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}
           onPress={handleGuestLogin}
           disabled={guestLoading}
           activeOpacity={0.8}
         >
           {guestLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.text} size="small" />
           ) : (
             <>
-              <Ionicons name="person-outline" size={16} color="#fff" />
-              <Text style={styles.guestButtonText}>
+              <Ionicons name="person-outline" size={16} color={colors.text} />
+              <Text style={[styles.guestButtonText, { color: colors.text }]}>
                 {t('welcome.continueAsGuest')}
               </Text>
             </>
@@ -219,7 +219,7 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
 
         {/* Terms text */}
-        <Text style={styles.termsText}>
+        <Text style={[styles.termsText, { color: colors.textTertiary }]}>
           {t('welcome.termsNotice')}
         </Text>
       </Animated.View>
@@ -240,7 +240,6 @@ const styles = StyleSheet.create({
     top: 45,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
@@ -264,20 +263,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
   },
   appName: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 4,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
   tagline: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
     paddingHorizontal: SPACING.lg,
   },
@@ -289,7 +282,6 @@ const styles = StyleSheet.create({
   featureItem: {
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     padding: SPACING.sm,
     borderRadius: RADIUS.md,
   },
@@ -297,13 +289,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   featureText: {
     flex: 1,
-    color: '#fff',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -339,17 +329,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: RADIUS.md,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.4)',
-    backgroundColor: 'rgba(255,255,255,0.1)',
     gap: 6,
   },
   guestButtonText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
   termsText: {
-    color: 'rgba(255,255,255,0.6)',
     fontSize: 11,
     textAlign: 'center',
     marginTop: 8,

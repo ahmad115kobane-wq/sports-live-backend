@@ -6,21 +6,22 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  useColorScheme,
-  Alert,
   ActivityIndicator,
-  Modal,
   Image,
   FlatList,
   StatusBar,
 } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
-import { teamApi, competitionApi } from '@/services/api';
+import { teamApi, competitionApi, playerApi } from '@/services/api';
+import AppDialog from '@/components/ui/AppDialog';
+import AppModal from '@/components/ui/AppModal';
 
 interface Player {
   id: string;
@@ -34,6 +35,7 @@ interface Team {
   id: string;
   name: string;
   shortName: string;
+  category?: string;
   logoUrl?: string;
   primaryColor?: string;
   coach?: string;
@@ -41,11 +43,20 @@ interface Team {
   city?: string;
   country?: string;
   players?: Player[];
+  competitions?: any[];
 }
+
+const TEAM_CATEGORIES = [
+  { value: 'FOOTBALL', label: 'كرة قدم', icon: 'football' },
+  { value: 'HANDBALL', label: 'كرة يد', icon: 'hand-left' },
+  { value: 'BASKETBALL', label: 'كرة سلة', icon: 'basketball' },
+  { value: 'FUTSAL', label: 'كرة قدم مصغرة', icon: 'fitness' },
+  { value: 'NATIONAL', label: 'منتخب', icon: 'flag' },
+];
 
 export default function TeamsManagementScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   const { user, isAuthenticated } = useAuthStore();
 
@@ -55,10 +66,8 @@ export default function TeamsManagementScreen() {
 
   // Modal states
   const [showTeamModal, setShowTeamModal] = useState(false);
-  const [showPlayerModal, setShowPlayerModal] = useState(false);
   const [showCompetitionsModal, setShowCompetitionsModal] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [selectedTeamForPlayer, setSelectedTeamForPlayer] = useState<Team | null>(null);
   const [selectedTeamForCompetitions, setSelectedTeamForCompetitions] = useState<Team | null>(null);
   const [competitions, setCompetitions] = useState<any[]>([]);
   const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>([]);
@@ -71,12 +80,35 @@ export default function TeamsManagementScreen() {
   const [teamCoach, setTeamCoach] = useState('');
   const [teamStadium, setTeamStadium] = useState('');
   const [teamCity, setTeamCity] = useState('');
+  const [teamCategory, setTeamCategory] = useState('FOOTBALL');
+
+  // Players management
+  const [showPlayersModal, setShowPlayersModal] = useState(false);
+  const [selectedTeamForPlayers, setSelectedTeamForPlayers] = useState<Team | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [showPlayerForm, setShowPlayerForm] = useState(false);
+  const [editCoachMode, setEditCoachMode] = useState(false);
+  const [coachName, setCoachName] = useState('');
 
   // Player form
   const [playerName, setPlayerName] = useState('');
   const [playerNumber, setPlayerNumber] = useState('');
   const [playerPosition, setPlayerPosition] = useState('');
   const [playerNationality, setPlayerNationality] = useState('العراق');
+
+  // Dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{ type: 'error' | 'warning' | 'confirm'; title: string; message: string; showCancel?: boolean; onConfirm?: () => void }>({
+    type: 'error', title: '', message: '',
+  });
+  const showError = (title: string, message: string) => {
+    setDialogConfig({ type: 'error', title, message });
+    setDialogVisible(true);
+  };
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setDialogConfig({ type: 'warning', title, message, showCancel: true, onConfirm });
+    setDialogVisible(true);
+  };
 
   // Colors palette
   const colorOptions = [
@@ -85,19 +117,52 @@ export default function TeamsManagementScreen() {
     '#059669', '#D97706', '#6366F1', '#EC4899'
   ];
 
-  // Positions
-  const positions = [
-    { value: 'goalkeeper', label: 'حارس مرمى' },
-    { value: 'defender', label: 'مدافع' },
-    { value: 'midfielder', label: 'وسط' },
-    { value: 'forward', label: 'مهاجم' },
-  ];
+  // Positions per category
+  const POSITIONS_BY_CATEGORY: Record<string, { value: string; label: string }[]> = {
+    FOOTBALL: [
+      { value: 'Goalkeeper', label: 'حارس مرمى' },
+      { value: 'Defender', label: 'مدافع' },
+      { value: 'Midfielder', label: 'وسط' },
+      { value: 'Forward', label: 'مهاجم' },
+    ],
+    FUTSAL: [
+      { value: 'Goalkeeper', label: 'حارس مرمى' },
+      { value: 'Fixo', label: 'فيكسو (مدافع)' },
+      { value: 'Ala', label: 'آلا (جناح)' },
+      { value: 'Pivot', label: 'بيفوت (محور)' },
+    ],
+    HANDBALL: [
+      { value: 'Goalkeeper', label: 'حارس مرمى' },
+      { value: 'Left Wing', label: 'جناح أيسر' },
+      { value: 'Right Wing', label: 'جناح أيمن' },
+      { value: 'Left Back', label: 'ظهير أيسر' },
+      { value: 'Right Back', label: 'ظهير أيمن' },
+      { value: 'Center Back', label: 'وسط' },
+      { value: 'Pivot', label: 'محور' },
+    ],
+    BASKETBALL: [
+      { value: 'Point Guard', label: 'صانع ألعاب' },
+      { value: 'Shooting Guard', label: 'حارس هجومي' },
+      { value: 'Small Forward', label: 'جناح صغير' },
+      { value: 'Power Forward', label: 'جناح قوي' },
+      { value: 'Center', label: 'مركز' },
+    ],
+    NATIONAL: [
+      { value: 'Goalkeeper', label: 'حارس مرمى' },
+      { value: 'Defender', label: 'مدافع' },
+      { value: 'Midfielder', label: 'وسط' },
+      { value: 'Forward', label: 'مهاجم' },
+    ],
+  };
+  const getPositionsForTeam = (team?: Team | null) => {
+    const cat = team?.category || 'FOOTBALL';
+    return POSITIONS_BY_CATEGORY[cat] || POSITIONS_BY_CATEGORY['FOOTBALL'];
+  };
+  const positions = getPositionsForTeam(selectedTeamForPlayers);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
-      Alert.alert('غير مصرح', 'يجب أن تكون مديراً للوصول إلى هذه الصفحة', [
-        { text: 'حسناً', onPress: () => router.back() }
-      ]);
+      showError(t('admin.unauthorized'), t('admin.unauthorizedDesc'));
       return;
     }
     loadTeams();
@@ -106,12 +171,12 @@ export default function TeamsManagementScreen() {
   const loadTeams = async () => {
     try {
       setLoading(true);
-      const response = await teamApi.getAll();
+      const response = await teamApi.getAllWithPlayers();
       const teamsData = response.data?.data || response.data || [];
       setTeams(Array.isArray(teamsData) ? teamsData : []);
     } catch (error) {
       console.error('Error loading teams:', error);
-      Alert.alert('خطأ', 'فشل في تحميل الفرق');
+      showError(t('admin.error'), t('admin.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -126,6 +191,7 @@ export default function TeamsManagementScreen() {
     setTeamCoach('');
     setTeamStadium('');
     setTeamCity('');
+    setTeamCategory('FOOTBALL');
     setShowTeamModal(true);
   };
 
@@ -138,16 +204,34 @@ export default function TeamsManagementScreen() {
     setTeamCoach(team.coach || '');
     setTeamStadium(team.stadium || '');
     setTeamCity(team.city || '');
+    setTeamCategory(team.category || 'FOOTBALL');
     setShowTeamModal(true);
   };
 
-  const openAddPlayerModal = (team: Team) => {
-    setSelectedTeamForPlayer(team);
-    setPlayerName('');
-    setPlayerNumber('');
-    setPlayerPosition('midfielder');
-    setPlayerNationality('العراق');
-    setShowPlayerModal(true);
+  const openPlayersModal = (team: Team) => {
+    setSelectedTeamForPlayers(team);
+    setEditingPlayer(null);
+    setShowPlayerForm(false);
+    setEditCoachMode(false);
+    setCoachName(team.coach || '');
+    setShowPlayersModal(true);
+  };
+
+  const openPlayerForm = (player?: Player) => {
+    if (player) {
+      setEditingPlayer(player);
+      setPlayerName(player.name);
+      setPlayerNumber(String(player.shirtNumber));
+      setPlayerPosition(player.position || 'midfielder');
+      setPlayerNationality(player.nationality || 'العراق');
+    } else {
+      setEditingPlayer(null);
+      setPlayerName('');
+      setPlayerNumber('');
+      setPlayerPosition('midfielder');
+      setPlayerNationality('العراق');
+    }
+    setShowPlayerForm(true);
   };
 
   const openCompetitionsModal = async (team: Team) => {
@@ -165,7 +249,7 @@ export default function TeamsManagementScreen() {
       setShowCompetitionsModal(true);
     } catch (error) {
       console.error('Error loading competitions:', error);
-      Alert.alert('خطأ', 'فشل في تحميل البطولات');
+      showError(t('admin.error'), t('admin.loadCompsFailed'));
     }
   };
 
@@ -184,7 +268,7 @@ export default function TeamsManagementScreen() {
 
   const handleSaveTeam = async () => {
     if (!teamName.trim() || !teamShortName.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم النادي والاسم المختصر');
+      showError(t('admin.error'), t('admin.fillTeamRequired'));
       return;
     }
 
@@ -193,6 +277,7 @@ export default function TeamsManagementScreen() {
       const teamData = {
         name: teamName.trim(),
         shortName: teamShortName.trim().toUpperCase(),
+        category: teamCategory,
         logoUrl: teamLogo || undefined,
         primaryColor: teamColor,
         coach: teamCoach.trim() || undefined,
@@ -203,29 +288,27 @@ export default function TeamsManagementScreen() {
 
       if (editingTeam) {
         await teamApi.update(editingTeam.id, teamData);
-        Alert.alert('نجاح', 'تم تحديث النادي بنجاح');
       } else {
         await teamApi.create(teamData);
-        Alert.alert('نجاح', 'تم إنشاء النادي بنجاح');
       }
 
       setShowTeamModal(false);
       loadTeams();
     } catch (error: any) {
       console.error('Error saving team:', error);
-      Alert.alert('خطأ', error.response?.data?.message || 'فشل في حفظ النادي');
+      showError(t('admin.error'), t('admin.createTeamFailed'));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddPlayer = async () => {
+  const handleSavePlayer = async () => {
     if (!playerName.trim() || !playerNumber) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم اللاعب ورقمه');
+      showError(t('admin.error'), t('admin.fillPlayerRequired'));
       return;
     }
 
-    if (!selectedTeamForPlayer) return;
+    if (!selectedTeamForPlayers) return;
 
     try {
       setSaving(true);
@@ -236,13 +319,62 @@ export default function TeamsManagementScreen() {
         nationality: playerNationality.trim() || 'العراق',
       };
 
-      await teamApi.addPlayer(selectedTeamForPlayer.id, playerData);
-      Alert.alert('نجاح', 'تم إضافة اللاعب بنجاح');
-      setShowPlayerModal(false);
-      loadTeams();
+      if (editingPlayer) {
+        await playerApi.update(editingPlayer.id, playerData);
+      } else {
+        await teamApi.addPlayer(selectedTeamForPlayers.id, playerData);
+      }
+
+      setShowPlayerForm(false);
+      setEditingPlayer(null);
+      // Reload teams to refresh player list
+      const response = await teamApi.getAllWithPlayers();
+      const teamsData = response.data?.data || response.data || [];
+      setTeams(Array.isArray(teamsData) ? teamsData : []);
+      // Update the selected team reference
+      const updated = teamsData.find((t: Team) => t.id === selectedTeamForPlayers.id);
+      if (updated) setSelectedTeamForPlayers(updated);
     } catch (error: any) {
-      console.error('Error adding player:', error);
-      Alert.alert('خطأ', error.response?.data?.message || 'فشل في إضافة اللاعب');
+      console.error('Error saving player:', error);
+      showError(t('admin.error'), t('admin.addPlayerFailed'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePlayer = (player: Player) => {
+    showConfirm(
+      'حذف اللاعب',
+      `هل أنت متأكد من حذف "${player.name}"؟`,
+      async () => {
+        setDialogVisible(false);
+        try {
+          await playerApi.delete(player.id);
+          const response = await teamApi.getAllWithPlayers();
+          const teamsData = response.data?.data || response.data || [];
+          setTeams(Array.isArray(teamsData) ? teamsData : []);
+          const updated = teamsData.find((t: Team) => t.id === selectedTeamForPlayers?.id);
+          if (updated) setSelectedTeamForPlayers(updated);
+        } catch (error) {
+          showError(t('admin.error'), t('admin.addPlayerFailed'));
+        }
+      }
+    );
+  };
+
+  const handleSaveCoach = async () => {
+    if (!selectedTeamForPlayers) return;
+    try {
+      setSaving(true);
+      await teamApi.update(selectedTeamForPlayers.id, { coach: coachName.trim() || null });
+      setEditCoachMode(false);
+      const response = await teamApi.getAllWithPlayers();
+      const teamsData = response.data?.data || response.data || [];
+      setTeams(Array.isArray(teamsData) ? teamsData : []);
+      const updated = teamsData.find((t: Team) => t.id === selectedTeamForPlayers.id);
+      if (updated) setSelectedTeamForPlayers(updated);
+    } catch (error) {
+      showError(t('admin.error'), t('admin.createTeamFailed'));
     } finally {
       setSaving(false);
     }
@@ -273,12 +405,11 @@ export default function TeamsManagementScreen() {
         await teamApi.removeFromCompetition(selectedTeamForCompetitions.id, compId);
       }
       
-      Alert.alert('نجاح', 'تم تحديث البطولات بنجاح');
       setShowCompetitionsModal(false);
       loadTeams();
     } catch (error: any) {
       console.error('Error saving competitions:', error);
-      Alert.alert('خطأ', error.response?.data?.message || 'فشل في حفظ البطولات');
+      showError(t('admin.error'), t('admin.saveCompFailed'));
     } finally {
       setSaving(false);
     }
@@ -293,25 +424,18 @@ export default function TeamsManagementScreen() {
   };
 
   const handleDeleteTeam = (team: Team) => {
-    Alert.alert(
-      'حذف النادي',
-      `هل أنت متأكد من حذف "${team.name}"؟`,
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'حذف',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await teamApi.delete(team.id);
-              Alert.alert('نجاح', 'تم حذف النادي');
-              loadTeams();
-            } catch (error) {
-              Alert.alert('خطأ', 'فشل في حذف النادي');
-            }
-          },
-        },
-      ]
+    showConfirm(
+      t('admin.deleteTeamTitle'),
+      t('admin.deleteTeamConfirm'),
+      async () => {
+        setDialogVisible(false);
+        try {
+          await teamApi.delete(team.id);
+          loadTeams();
+        } catch (error) {
+          showError(t('admin.error'), t('admin.deleteTeamFailed'));
+        }
+      }
     );
   };
 
@@ -328,7 +452,14 @@ export default function TeamsManagementScreen() {
           </View>
           <View style={styles.teamDetails}>
             <Text style={[styles.teamName, { color: colors.text }]}>{team.name}</Text>
-            <Text style={[styles.teamShortName, { color: colors.textSecondary }]}>{team.shortName}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 2 }}>
+              <Text style={[styles.teamShortName, { color: colors.textSecondary }]}>{team.shortName}</Text>
+              <View style={[styles.categoryBadge, { backgroundColor: colors.accent + '20' }]}>
+                <Text style={[styles.categoryBadgeText, { color: colors.accent }]}>
+                  {TEAM_CATEGORIES.find(c => c.value === team.category)?.label || 'كرة قدم'}
+                </Text>
+              </View>
+            </View>
             {team.coach && (
               <Text style={[styles.teamCoach, { color: colors.textSecondary }]}>
                 المدرب: {team.coach}
@@ -360,10 +491,10 @@ export default function TeamsManagementScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.addPlayerButton, { backgroundColor: colors.accent }]}
-            onPress={() => openAddPlayerModal(team)}
+            onPress={() => openPlayersModal(team)}
           >
-            <Ionicons name="add" size={16} color="#fff" />
-            <Text style={styles.addPlayerButtonText}>إضافة لاعب</Text>
+            <Ionicons name="people" size={16} color="#fff" />
+            <Text style={styles.addPlayerButtonText}>تعديل اللاعبين</Text>
           </TouchableOpacity>
         </View>
 
@@ -454,24 +585,14 @@ export default function TeamsManagementScreen() {
       />
 
       {/* Add/Edit Team Modal */}
-      <Modal
+      <AppModal
         visible={showTeamModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowTeamModal(false)}
+        onClose={() => setShowTeamModal(false)}
+        title={editingTeam ? 'تعديل النادي' : 'إضافة نادي جديد'}
+        icon="shield"
+        maxHeight="85%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {editingTeam ? 'تعديل النادي' : 'إضافة نادي جديد'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowTeamModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* Logo Picker */}
               <TouchableOpacity style={styles.logoPicker} onPress={pickImage}>
                 {teamLogo ? (
@@ -510,6 +631,38 @@ export default function TeamsManagementScreen() {
                   autoCapitalize="characters"
                   textAlign={isRTL ? 'right' : 'left'}
                 />
+              </View>
+
+              {/* Category Picker */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>الفئة *</Text>
+                <View style={styles.categoryPicker}>
+                  {TEAM_CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.value}
+                      style={[
+                        styles.categoryOption,
+                        { backgroundColor: colors.surface, borderColor: colors.border },
+                        teamCategory === cat.value && { backgroundColor: colors.accent, borderColor: colors.accent },
+                      ]}
+                      onPress={() => setTeamCategory(cat.value)}
+                    >
+                      <Ionicons
+                        name={cat.icon as any}
+                        size={16}
+                        color={teamCategory === cat.value ? '#fff' : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.categoryOptionText,
+                          { color: teamCategory === cat.value ? '#fff' : colors.text },
+                        ]}
+                      >
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
 
               {/* Color Picker */}
@@ -588,133 +741,202 @@ export default function TeamsManagementScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      </AppModal>
 
-      {/* Add Player Modal */}
-      <Modal
-        visible={showPlayerModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowPlayerModal(false)}
+      {/* Players Management Modal */}
+      <AppModal
+        visible={showPlayersModal}
+        onClose={() => { setShowPlayersModal(false); setShowPlayerForm(false); }}
+        title={showPlayerForm
+          ? (editingPlayer ? 'تعديل اللاعب' : 'إضافة لاعب')
+          : `اللاعبون`}
+        subtitle={selectedTeamForPlayers?.name}
+        icon="people"
+        maxHeight="85%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background, maxHeight: '70%' }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                إضافة لاعب - {selectedTeamForPlayer?.name}
-              </Text>
-              <TouchableOpacity onPress={() => setShowPlayerModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+            {showPlayerForm ? (
+              <>
+                <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>اسم اللاعب *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                      value={playerName}
+                      onChangeText={setPlayerName}
+                      placeholder="الاسم الكامل للاعب"
+                      placeholderTextColor={colors.textSecondary}
+                      textAlign={isRTL ? 'right' : 'left'}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>رقم القميص *</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                      value={playerNumber}
+                      onChangeText={setPlayerNumber}
+                      placeholder="10"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                      maxLength={2}
+                      textAlign={isRTL ? 'right' : 'left'}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>المركز</Text>
+                    <View style={styles.positionPicker}>
+                      {positions.map((pos) => (
+                        <TouchableOpacity
+                          key={pos.value}
+                          style={[
+                            styles.positionOption,
+                            { backgroundColor: colors.surface, borderColor: colors.border },
+                            playerPosition === pos.value && { backgroundColor: colors.accent, borderColor: colors.accent },
+                          ]}
+                          onPress={() => setPlayerPosition(pos.value)}
+                        >
+                          <Text style={[styles.positionOptionText, { color: playerPosition === pos.value ? '#fff' : colors.text }]}>
+                            {pos.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.inputLabel, { color: colors.text }]}>الجنسية</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                      value={playerNationality}
+                      onChangeText={setPlayerNationality}
+                      placeholder="العراق"
+                      placeholderTextColor={colors.textSecondary}
+                      textAlign={isRTL ? 'right' : 'left'}
+                    />
+                  </View>
+                </ScrollView>
+                <TouchableOpacity
+                  style={[styles.saveButton, { backgroundColor: colors.accent }]}
+                  onPress={handleSavePlayer}
+                  disabled={saving}
+                >
+                  {saving ? <ActivityIndicator color="#fff" /> : (
+                    <Text style={styles.saveButtonText}>{editingPlayer ? 'حفظ التغييرات' : 'إضافة اللاعب'}</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {/* Coach Section */}
+                  <View style={[styles.pmCoachSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={[styles.pmCoachRow, { flexDirection }]}>
+                      <View style={[styles.pmCoachInfo, { flexDirection }]}>
+                        <View style={[styles.pmCoachIcon, { backgroundColor: colors.accent + '20' }]}>
+                          <Ionicons name="person" size={18} color={colors.accent} />
+                        </View>
+                        {editCoachMode ? (
+                          <TextInput
+                            style={[styles.pmCoachInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                            value={coachName}
+                            onChangeText={setCoachName}
+                            placeholder="اسم المدرب"
+                            placeholderTextColor={colors.textSecondary}
+                            textAlign={isRTL ? 'right' : 'left'}
+                            autoFocus
+                          />
+                        ) : (
+                          <View>
+                            <Text style={[styles.pmCoachLabel, { color: colors.textSecondary }]}>المدرب</Text>
+                            <Text style={[styles.pmCoachName, { color: colors.text }]}>
+                              {selectedTeamForPlayers?.coach || 'غير محدد'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {editCoachMode ? (
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity onPress={() => setEditCoachMode(false)}>
+                            <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={handleSaveCoach}>
+                            {saving ? <ActivityIndicator size="small" color={colors.accent} /> : (
+                              <Ionicons name="checkmark-circle" size={28} color={colors.accent} />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity onPress={() => setEditCoachMode(true)}>
+                          <Ionicons name="pencil" size={18} color={colors.accent} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {/* Player Name */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>اسم اللاعب *</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                  value={playerName}
-                  onChangeText={setPlayerName}
-                  placeholder="الاسم الكامل للاعب"
-                  placeholderTextColor={colors.textSecondary}
-                  textAlign={isRTL ? 'right' : 'left'}
-                />
-              </View>
-
-              {/* Player Number */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>رقم القميص *</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                  value={playerNumber}
-                  onChangeText={setPlayerNumber}
-                  placeholder="مثال: 10"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  maxLength={2}
-                  textAlign={isRTL ? 'right' : 'left'}
-                />
-              </View>
-
-              {/* Position */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>المركز</Text>
-                <View style={styles.positionPicker}>
-                  {positions.map((pos) => (
+                  {/* Players List */}
+                  <View style={[styles.pmPlayersHeader, { flexDirection }]}>
+                    <Text style={[styles.pmPlayersTitle, { color: colors.text }]}>
+                      اللاعبون ({selectedTeamForPlayers?.players?.length || 0})
+                    </Text>
                     <TouchableOpacity
-                      key={pos.value}
-                      style={[
-                        styles.positionOption,
-                        { backgroundColor: colors.surface, borderColor: colors.border },
-                        playerPosition === pos.value && { backgroundColor: colors.accent, borderColor: colors.accent },
-                      ]}
-                      onPress={() => setPlayerPosition(pos.value)}
+                      style={[styles.pmAddBtn, { backgroundColor: colors.accent }]}
+                      onPress={() => openPlayerForm()}
                     >
-                      <Text
-                        style={[
-                          styles.positionOptionText,
-                          { color: playerPosition === pos.value ? '#fff' : colors.text },
-                        ]}
-                      >
-                        {pos.label}
-                      </Text>
+                      <Ionicons name="add" size={18} color="#fff" />
+                      <Text style={styles.pmAddBtnText}>إضافة</Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+                  </View>
 
-              {/* Nationality */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>الجنسية</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                  value={playerNationality}
-                  onChangeText={setPlayerNationality}
-                  placeholder="العراق"
-                  placeholderTextColor={colors.textSecondary}
-                  textAlign={isRTL ? 'right' : 'left'}
-                />
-              </View>
-            </ScrollView>
-
-            {/* Save Button */}
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: colors.accent }]}
-              onPress={handleAddPlayer}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>إضافة اللاعب</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+                  {selectedTeamForPlayers?.players && selectedTeamForPlayers.players.length > 0 ? (
+                    selectedTeamForPlayers.players.map((player) => (
+                      <View key={player.id} style={[styles.pmPlayerRow, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection }]}>
+                        <View style={[styles.pmPlayerInfo, { flexDirection }]}>
+                          <View style={[styles.pmPlayerNum, { backgroundColor: selectedTeamForPlayers.primaryColor || colors.accent }]}>
+                            <Text style={styles.pmPlayerNumText}>{player.shirtNumber}</Text>
+                          </View>
+                          <View>
+                            <Text style={[styles.pmPlayerName, { color: colors.text }]}>{player.name}</Text>
+                            <Text style={[styles.pmPlayerMeta, { color: colors.textSecondary }]}>
+                              {positions.find(p => p.value === player.position)?.label || player.position || '—'}
+                              {player.nationality ? ` • ${player.nationality}` : ''}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <TouchableOpacity
+                            style={[styles.pmActionBtn, { backgroundColor: colors.accent + '20' }]}
+                            onPress={() => openPlayerForm(player)}
+                          >
+                            <Ionicons name="pencil" size={16} color={colors.accent} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.pmActionBtn, { backgroundColor: '#DC262620' }]}
+                            onPress={() => handleDeletePlayer(player)}
+                          >
+                            <Ionicons name="trash" size={16} color="#DC2626" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.pmEmpty}>
+                      <Ionicons name="people-outline" size={40} color={colors.textTertiary} />
+                      <Text style={[styles.pmEmptyText, { color: colors.textSecondary }]}>لا يوجد لاعبون</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              </>
+            )}
+      </AppModal>
 
       {/* Manage Competitions Modal */}
-      <Modal
+      <AppModal
         visible={showCompetitionsModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowCompetitionsModal(false)}
+        onClose={() => setShowCompetitionsModal(false)}
+        title="إدارة البطولات"
+        subtitle={selectedTeamForCompetitions?.name}
+        icon="trophy"
+        maxHeight="70%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background, maxHeight: '70%' }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                إدارة البطولات - {selectedTeamForCompetitions?.name}
-              </Text>
-              <TouchableOpacity onPress={() => setShowCompetitionsModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
                 اختر البطولات التي يشارك فيها هذا النادي
               </Text>
@@ -773,9 +995,19 @@ export default function TeamsManagementScreen() {
                 <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
               )}
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      </AppModal>
+
+      <AppDialog
+        visible={dialogVisible}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        confirmText={dialogConfig.showCancel ? t('admin.confirm') : t('admin.ok')}
+        cancelText={t('admin.cancel')}
+        showCancel={dialogConfig.showCancel}
+        onConfirm={dialogConfig.onConfirm || (() => setDialogVisible(false))}
+        onCancel={() => setDialogVisible(false)}
+      />
     </View>
   );
 }
@@ -890,6 +1122,15 @@ const styles = StyleSheet.create({
   teamShortName: {
     fontSize: 12,
     marginTop: 2,
+  },
+  categoryBadge: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: RADIUS.sm,
+  },
+  categoryBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   teamCoach: {
     fontSize: 12,
@@ -1067,6 +1308,24 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#fff',
   },
+  categoryPicker: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+  },
+  categoryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    gap: SPACING.xs,
+  },
+  categoryOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   positionPicker: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1158,5 +1417,116 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Players Management Modal styles
+  pmCoachSection: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  pmCoachRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pmCoachInfo: {
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flex: 1,
+  },
+  pmCoachIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pmCoachLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  pmCoachName: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  pmCoachInput: {
+    flex: 1,
+    height: 38,
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    fontSize: 14,
+  },
+  pmPlayersHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  pmPlayersTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pmAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    borderRadius: RADIUS.md,
+  },
+  pmAddBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  pmPlayerRow: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACING.sm,
+    marginBottom: SPACING.xs,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pmPlayerInfo: {
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flex: 1,
+  },
+  pmPlayerNum: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pmPlayerNumText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  pmPlayerName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  pmPlayerMeta: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  pmActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pmEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xl,
+    gap: SPACING.sm,
+  },
+  pmEmptyText: {
+    fontSize: 14,
   },
 });

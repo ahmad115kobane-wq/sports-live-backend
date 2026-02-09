@@ -6,34 +6,33 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
   StatusBar,
   Platform,
   RefreshControl,
-  Animated,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { playerApi } from '@/services/api';
 import { Player } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
-import GlassCard from '@/components/ui/GlassCard';
 import { useRTL } from '@/contexts/RTLContext';
+
+const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 24);
 
 export default function PlayerProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
   
   const [player, setPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const scrollY = new Animated.Value(0);
 
   useEffect(() => {
     loadPlayerData();
@@ -43,7 +42,7 @@ export default function PlayerProfileScreen() {
     try {
       setIsLoading(true);
       const response = await playerApi.getById(id as string);
-      setPlayer(response.data);
+      setPlayer(response.data.data);
     } catch (error) {
       console.error('Error loading player:', error);
     } finally {
@@ -57,48 +56,37 @@ export default function PlayerProfileScreen() {
     setRefreshing(false);
   };
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 150],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
   const getPositionColor = (position?: string) => {
     switch (position?.toLowerCase()) {
-      case 'goalkeeper':
-        return '#FBBF24';
-      case 'defender':
-        return '#3B82F6';
-      case 'midfielder':
-        return '#10B981';
-      case 'forward':
-        return '#EF4444';
-      default:
-        return colors.accent;
+      case 'goalkeeper': return '#FBBF24';
+      case 'defender': return '#3B82F6';
+      case 'midfielder': return '#10B981';
+      case 'forward': return '#EF4444';
+      default: return colors.accent;
     }
   };
 
   const getPositionIcon = (position?: string): keyof typeof Ionicons.glyphMap => {
     switch (position?.toLowerCase()) {
-      case 'goalkeeper':
-        return 'hand-left-outline';
-      case 'defender':
-        return 'shield-outline';
-      case 'midfielder':
-        return 'settings-outline';
-      case 'forward':
-        return 'flash-outline';
-      default:
-        return 'football-outline';
+      case 'goalkeeper': return 'hand-left-outline';
+      case 'defender': return 'shield-outline';
+      case 'midfielder': return 'settings-outline';
+      case 'forward': return 'flash-outline';
+      default: return 'football-outline';
     }
   };
 
   if (!player && !isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.text }]}>
-          {t('common.error')}
-        </Text>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar barStyle="light-content" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
+          <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+            {t('common.error')}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -107,181 +95,166 @@ export default function PlayerProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitle: '',
-          headerLeft: () => (
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.surface }]}
-              onPress={() => router.back()}
-            >
-              <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color={colors.text} />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      
+      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="light-content" />
-      
-      {/* Animated Header Background */}
-      <Animated.View
-        style={[
-          styles.headerBackground,
-          { opacity: headerOpacity, backgroundColor: teamColor },
-        ]}
-      />
 
-      <Animated.ScrollView
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
+      {/* ═══ FIXED GRADIENT HEADER ═══ */}
+      <LinearGradient
+        colors={isDark
+          ? [teamColor, '#1E293B', '#0F172A']
+          : [teamColor, '#334155', '#1E293B']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.headerGradient}
+      >
+        {/* Nav Bar */}
+        <View style={[styles.navBar, { flexDirection }]}>
+          <TouchableOpacity style={styles.navBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={22} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.navTitle} numberOfLines={1}>
+            {t('player.profile')}
+          </Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        {/* Player Hero */}
+        <View style={styles.heroContent}>
+          {/* Player Number Circle */}
+          <View style={[styles.numberCircle, { borderColor: 'rgba(255,255,255,0.25)' }]}>
+            <Text style={styles.numberText}>
+              {player?.shirtNumber || '?'}
+            </Text>
+          </View>
+
+          {/* Player Name */}
+          <Text style={styles.playerName} numberOfLines={2}>
+            {player?.name}
+          </Text>
+
+          {/* Position Badge */}
+          <View style={[styles.positionBadge, { backgroundColor: getPositionColor(player?.position) }]}>
+            <Ionicons name={getPositionIcon(player?.position)} size={14} color="#fff" />
+            <Text style={styles.positionText}>{player?.position ? (t(`positions.${player.position}`) || player.position) : t('operator.player')}</Text>
+          </View>
+
+          {/* Team Chip */}
+          {player?.team && (
+            <TouchableOpacity
+              style={styles.teamChip}
+              onPress={() => router.push(`/team/${player.team?.id}` as any)}
+              activeOpacity={0.7}
+            >
+              <TeamLogo team={player.team} size="small" />
+              <Text style={styles.teamChipText}>{player.team.name}</Text>
+              <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={14} color="rgba(255,255,255,0.6)" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
+
+      {/* ═══ SCROLLABLE CONTENT ═══ */}
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
-        {/* Hero Header */}
-        <LinearGradient
-          colors={[teamColor, colors.background]}
-          style={styles.heroHeader}
-        >
-          <View style={styles.heroContent}>
-            {/* Player Number */}
-            <View style={[styles.playerNumberLarge, { borderColor: 'rgba(255,255,255,0.3)' }]}>
-              <Text style={styles.playerNumberText}>
-                {player?.shirtNumber || '?'}
-              </Text>
-            </View>
-            
-            <Text style={[styles.playerName, { color: '#fff' }]}>
-              {player?.name}
-            </Text>
-            
-            {/* Position Badge */}
-            <View style={[styles.positionBadge, { backgroundColor: getPositionColor(player?.position) }]}>
-              <Ionicons name={getPositionIcon(player?.position)} size={16} color="#fff" style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }} />
-              <Text style={styles.positionText}>{player?.position || 'Player'}</Text>
-            </View>
-            
-            {/* Team Info */}
-            {player?.team && (
-              <TouchableOpacity 
-                style={[styles.teamBadge, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
-                onPress={() => router.push(`/team/${player.team?.id}` as any)}
-              >
-                <TeamLogo team={player.team} size="small" />
-                <Text style={[styles.teamName, { color: '#fff' }]}>
-                  {player.team.name}
-                </Text>
-                <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={16} color="rgba(255,255,255,0.7)" />
-              </TouchableOpacity>
+        {/* ── Basic Info ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {t('player.basicInfo')}
+          </Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <InfoRow label={t('player.nationality')} value={player?.nationality || '-'} colors={colors} flexDirection={flexDirection} />
+            {player?.dateOfBirth && (
+              <InfoRow
+                label={t('player.age')}
+                value={`${Math.floor((Date.now() - new Date(player.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))}`}
+                colors={colors}
+                flexDirection={flexDirection}
+                showBorder
+              />
             )}
-          </View>
-        </LinearGradient>
-
-        {/* Player Info Cards */}
-        <View style={styles.infoSection}>
-          {/* Basic Info */}
-          <GlassCard variant="default" style={styles.infoCard}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {t('player.basicInfo')}
-            </Text>
-            
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                  {t('player.nationality')}
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {player?.nationality || 'International'}
-                </Text>
-              </View>
-              
-              <View style={styles.infoItem}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                  {t('player.number')}
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  #{player?.shirtNumber || '-'}
-                </Text>
-              </View>
-              
-              <View style={styles.infoItem}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                  {t('player.position')}
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {player?.position || '-'}
-                </Text>
-              </View>
-              
-              <View style={styles.infoItem}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                  {t('player.team')}
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {player?.team?.shortName || '-'}
-                </Text>
-              </View>
-            </View>
-          </GlassCard>
-
-          {/* Season Stats - Placeholder for future */}
-          <GlassCard variant="accent" style={styles.statsCard}>
-            <View style={[styles.statsHeader, { flexDirection }]}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>
-                {t('player.seasonStats')}
-              </Text>
-              <Text style={[styles.seasonLabel, { color: colors.accent }]}>
-                2025/26
-              </Text>
-            </View>
-            
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: colors.text }]}>0</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('player.matches')}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: colors.success }]}>0</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('player.goals')}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: colors.info }]}>0</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('player.assists')}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: colors.warning }]}>0</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('player.cards')}
-                </Text>
-              </View>
-            </View>
-          </GlassCard>
-
-          {/* Recent Performance - Placeholder */}
-          <View style={[styles.placeholderCard, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
-            <Ionicons name="stats-chart-outline" size={40} color={colors.textTertiary} style={{ marginBottom: SPACING.sm }} />
-            <Text style={[styles.placeholderTitle, { color: colors.text }]}>
-              {t('player.recentPerformance')}
-            </Text>
-            <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-              {t('player.statsComingSoon')}
-            </Text>
+            {player?.height && (
+              <InfoRow label={t('player.height')} value={`${player.height} cm`} colors={colors} flexDirection={flexDirection} showBorder />
+            )}
+            {player?.weight && (
+              <InfoRow label={t('player.weight')} value={`${player.weight} kg`} colors={colors} flexDirection={flexDirection} showBorder />
+            )}
+            {player?.preferredFoot && (
+              <InfoRow label={t('player.foot')} value={player.preferredFoot} colors={colors} flexDirection={flexDirection} showBorder />
+            )}
+            <InfoRow label={t('player.appearances')} value={`${player?.statistics?.appearances || 0}`} colors={colors} flexDirection={flexDirection} showBorder />
+            <InfoRow label={t('player.goals')} value={`${player?.statistics?.goals || 0}`} colors={colors} flexDirection={flexDirection} showBorder />
+            <InfoRow label={t('player.assists')} value={`${player?.statistics?.assists || 0}`} colors={colors} flexDirection={flexDirection} showBorder />
+            <InfoRow label={t('player.yellowCards')} value={`${player?.statistics?.yellowCards || 0}`} colors={colors} flexDirection={flexDirection} showBorder />
+            <InfoRow label={t('player.redCards')} value={`${player?.statistics?.redCards || 0}`} colors={colors} flexDirection={flexDirection} showBorder />
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
-      </Animated.ScrollView>
+        {/* ── Recent Goals ── */}
+        {player?.recentGoals && player.recentGoals.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t('player.recentPerformance')}
+            </Text>
+            <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {player.recentGoals.map((goal, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.goalItem,
+                    { flexDirection },
+                    index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                  ]}
+                  onPress={() => router.push(`/match/${goal.matchId}`)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.goalMinute, { backgroundColor: colors.success + '15' }]}>
+                    <Ionicons name="football" size={12} color={colors.success} />
+                    <Text style={[styles.goalMinuteText, { color: colors.success }]}>{goal.minute}'</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.goalMatchText, { color: colors.text }]} numberOfLines={1}>
+                      {goal.match?.homeTeam?.shortName || goal.match?.homeTeam?.name} - {goal.match?.awayTeam?.shortName || goal.match?.awayTeam?.name}
+                    </Text>
+                    {goal.match?.competition && (
+                      <Text style={[styles.goalCompText, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {goal.match.competition.name}
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={16} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Info Row Component ──
+function InfoRow({ label, value, colors, flexDirection, showBorder }: {
+  label: string;
+  value: string;
+  colors: any;
+  flexDirection: 'row' | 'row-reverse';
+  showBorder?: boolean;
+}) {
+  return (
+    <View style={[
+      styles.infoRow,
+      { flexDirection },
+      showBorder && { borderTopWidth: 1, borderTopColor: colors.border },
+    ]}>
+      <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.infoValue, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
@@ -290,161 +263,160 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    zIndex: 10,
+
+  // ── Header ──
+  headerGradient: {
+    paddingTop: STATUS_BAR_HEIGHT,
+    paddingBottom: SPACING.xl,
   },
-  backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    height: 48,
+  },
+  navBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.xs,
   },
-  heroHeader: {
-    paddingTop: Platform.OS === 'ios' ? 90 : 70,
-    paddingBottom: SPACING.xl,
-    alignItems: 'center',
+  navTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    color: '#fff',
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
   },
   heroContent: {
     alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.sm,
   },
-  playerNumberLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  numberCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  playerNumberText: {
+  numberText: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#fff',
+    fontVariant: ['tabular-nums'],
   },
   playerName: {
-    ...TYPOGRAPHY.headlineMedium,
+    ...TYPOGRAPHY.titleLarge,
     fontWeight: '800',
-    marginTop: SPACING.md,
+    color: '#fff',
+    marginTop: SPACING.sm,
     textAlign: 'center',
   },
   positionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xxs,
+    gap: 4,
+    paddingHorizontal: SPACING.sm + 2,
+    paddingVertical: 4,
     borderRadius: RADIUS.full,
     marginTop: SPACING.sm,
-  },
-  positionIcon: {
-    fontSize: 14,
   },
   positionText: {
     ...TYPOGRAPHY.labelSmall,
     fontWeight: '700',
     color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  teamBadge: {
+  teamChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.xs,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
     marginTop: SPACING.md,
-    gap: SPACING.xs,
   },
-  teamName: {
-    ...TYPOGRAPHY.labelMedium,
+  teamChipText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: 'rgba(255,255,255,0.85)',
     fontWeight: '600',
   },
-  infoSection: {
+
+  // ── Sections ──
+  section: {
     paddingHorizontal: SPACING.md,
-    marginTop: -SPACING.lg,
+    marginTop: SPACING.lg,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.headlineMedium,
+    fontWeight: '700',
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.xs,
   },
   infoCard: {
-    marginBottom: SPACING.md,
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  cardTitle: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
-    marginBottom: SPACING.md,
-  },
-  infoGrid: {
+
+  // ── Info Rows ──
+  infoRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-  },
-  infoItem: {
-    width: '48%',
-    marginBottom: SPACING.md,
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
   },
   infoLabel: {
-    ...TYPOGRAPHY.labelSmall,
-    marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    ...TYPOGRAPHY.headlineSmall,
+    fontWeight: '500',
   },
   infoValue: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '600',
-  },
-  statsCard: {
-    marginBottom: SPACING.md,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  seasonLabel: {
-    ...TYPOGRAPHY.labelSmall,
+    ...TYPOGRAPHY.headlineSmall,
     fontWeight: '700',
   },
-  statsGrid: {
+
+  // ── Goal Items ──
+  goalItem: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
     alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
   },
-  statNumber: {
-    ...TYPOGRAPHY.headlineSmall,
+  goalMinute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+  },
+  goalMinuteText: {
+    ...TYPOGRAPHY.labelSmall,
     fontWeight: '800',
   },
-  statLabel: {
+  goalMatchText: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '600',
+  },
+  goalCompText: {
     ...TYPOGRAPHY.labelSmall,
     marginTop: 2,
   },
-  placeholderCard: {
-    padding: SPACING.xl,
-    alignItems: 'center',
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-  },
-  placeholderIcon: {
-    fontSize: 36,
-    marginBottom: SPACING.sm,
-  },
-  placeholderTitle: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
-    marginBottom: SPACING.xxs,
-  },
-  placeholderText: {
-    ...TYPOGRAPHY.bodySmall,
-    textAlign: 'center',
-  },
+
+  // ── Error ──
   errorText: {
-    ...TYPOGRAPHY.titleSmall,
+    ...TYPOGRAPHY.bodyMedium,
     textAlign: 'center',
-    marginTop: 100,
+    marginTop: SPACING.md,
   },
 });

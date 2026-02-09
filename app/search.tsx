@@ -7,7 +7,6 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
   StatusBar,
   Platform,
   Keyboard,
@@ -16,6 +15,7 @@ import {
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { teamApi, playerApi, matchApi } from '@/services/api';
 import { Team, Player, Match } from '@/types';
@@ -28,7 +28,7 @@ type SearchCategory = 'all' | 'teams' | 'players' | 'matches';
 
 export default function SearchScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,13 +74,13 @@ export default function SearchScreen() {
       const promises: Promise<any>[] = [];
       
       if (activeCategory === 'all' || activeCategory === 'teams') {
-        promises.push(teamApi.getAll().then(res => ({ type: 'teams', data: res.data })));
+        promises.push(teamApi.getAll().then(res => ({ type: 'teams', data: res.data?.data || res.data || [] })));
       }
       if (activeCategory === 'all' || activeCategory === 'players') {
-        promises.push(playerApi.getAll({ search: searchQuery }).then(res => ({ type: 'players', data: res.data })));
+        promises.push(playerApi.getAll({ search: searchQuery }).then(res => ({ type: 'players', data: res.data?.data || res.data || [] })));
       }
       if (activeCategory === 'all' || activeCategory === 'matches') {
-        promises.push(matchApi.getAll().then(res => ({ type: 'matches', data: res.data })));
+        promises.push(matchApi.getAll().then(res => ({ type: 'matches', data: res.data?.data || res.data || [] })));
       }
 
       const results = await Promise.all(promises);
@@ -102,10 +102,14 @@ export default function SearchScreen() {
           );
         }
         if (result.type === 'matches') {
+          const q = searchQuery.toLowerCase();
           setMatches(
             result.data?.filter((m: Match) =>
-              m.homeTeam?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              m.awayTeam?.name.toLowerCase().includes(searchQuery.toLowerCase())
+              m.homeTeam?.name?.toLowerCase().includes(q) ||
+              m.awayTeam?.name?.toLowerCase().includes(q) ||
+              m.homeTeam?.shortName?.toLowerCase().includes(q) ||
+              m.awayTeam?.shortName?.toLowerCase().includes(q) ||
+              m.competition?.name?.toLowerCase().includes(q)
             ) || []
           );
         }
@@ -139,10 +143,10 @@ export default function SearchScreen() {
       
       <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
         {/* Search Bar */}
-        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons 
-              name={isRTL ? "arrow-forward" : "arrow-back"} 
+              name={isRTL ? "arrow-back" : "arrow-forward"}
               size={24} 
               color={colors.textSecondary} 
             />
@@ -219,7 +223,7 @@ export default function SearchScreen() {
             {teams.map(team => (
               <TouchableOpacity
                 key={team.id}
-                style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.cardBorder, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 onPress={() => router.push(`/team/${team.id}` as any)}
               >
                 <TeamLogo team={team} size="medium" />
@@ -229,7 +233,7 @@ export default function SearchScreen() {
                     {team.country} • {team.shortName}
                   </Text>
                 </View>
-                <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={colors.textTertiary} />
+                <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -247,7 +251,7 @@ export default function SearchScreen() {
             {players.map(player => (
               <TouchableOpacity
                 key={player.id}
-                style={[styles.playerCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                style={[styles.playerCard, { backgroundColor: colors.card, borderColor: colors.cardBorder, flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 onPress={() => router.push(`/player/${player.id}` as any)}
               >
                 <View style={[styles.playerNumber, { backgroundColor: player.team?.primaryColor || colors.accent }]}>
@@ -256,10 +260,10 @@ export default function SearchScreen() {
                 <View style={[styles.playerInfo, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0 }]}>
                   <Text style={[styles.playerName, { color: colors.text }]}>{player.name}</Text>
                   <Text style={[styles.playerDetails, { color: colors.textSecondary }]}>
-                    {player.position} • {player.team?.name || 'Free Agent'}
+                    {player.position ? (t(`positions.${player.position}`) || player.position) : '-'} • {player.team?.name || t('match.freeAgent')}
                   </Text>
                 </View>
-                <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={colors.textTertiary} />
+                <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             ))}
           </View>
@@ -286,8 +290,8 @@ export default function SearchScreen() {
 
         {/* No Results */}
         {showNoResults && (
-          <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
-            <Ionicons name="search" size={48} color={colors.textTertiary} style={{ marginBottom: SPACING.md }} />
+          <View style={styles.emptyState}>
+            <Ionicons name="search" size={44} color={colors.textTertiary} style={{ marginBottom: SPACING.md }} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {t('search.noResults')}
             </Text>
@@ -299,8 +303,8 @@ export default function SearchScreen() {
 
         {/* Initial State */}
         {searchQuery.length < 2 && !isLoading && (
-          <View style={[styles.initialState, { backgroundColor: colors.surface }]}>
-            <Ionicons name="search-outline" size={48} color={colors.textTertiary} style={{ marginBottom: SPACING.md }} />
+          <View style={styles.initialState}>
+            <Ionicons name="search-outline" size={44} color={colors.textTertiary} style={{ marginBottom: SPACING.sm }} />
             <Text style={[styles.initialTitle, { color: colors.text }]}>
               {t('search.startSearching')}
             </Text>
@@ -328,106 +332,123 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    borderRadius: RADIUS.xl,
     borderWidth: 1,
     gap: SPACING.sm,
+    ...SHADOWS.sm,
   },
   searchInput: {
     flex: 1,
-    ...TYPOGRAPHY.bodyMedium,
+    ...TYPOGRAPHY.bodyLarge,
     paddingVertical: SPACING.xs,
   },
   categories: {
-    paddingVertical: SPACING.sm,
-    gap: SPACING.xs,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
   },
   categoryTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 8,
     borderRadius: RADIUS.full,
-    gap: SPACING.xxs,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   categoryIcon: {
-    fontSize: 12,
+    fontSize: 14,
   },
   categoryLabel: {
-    ...TYPOGRAPHY.labelSmall,
+    ...TYPOGRAPHY.labelMedium,
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   loadingSection: {
     marginTop: SPACING.lg,
   },
   section: {
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
+    gap: SPACING.xs,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    opacity: 0.8,
   },
   teamCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.xs,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
+    ...SHADOWS.xs,
   },
   teamInfo: {
     flex: 1,
+    paddingHorizontal: SPACING.sm,
   },
   teamName: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '600',
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   teamCountry: {
-    ...TYPOGRAPHY.labelSmall,
-    marginTop: 2,
+    ...TYPOGRAPHY.bodySmall,
+    opacity: 0.7,
   },
   playerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.xs,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
+    ...SHADOWS.xs,
   },
   playerNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    ...SHADOWS.sm,
   },
   playerNumberText: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
     color: '#fff',
+    fontVariant: ['tabular-nums'],
   },
   playerInfo: {
     flex: 1,
+    paddingHorizontal: SPACING.sm,
   },
   playerName: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '600',
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
   },
   playerDetails: {
-    ...TYPOGRAPHY.labelSmall,
+    ...TYPOGRAPHY.bodySmall,
     marginTop: 2,
+    opacity: 0.7,
   },
   emptyState: {
     padding: SPACING.xl,
@@ -440,7 +461,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   emptyTitle: {
-    ...TYPOGRAPHY.titleSmall,
+    ...TYPOGRAPHY.titleMedium,
     fontWeight: '700',
     marginBottom: SPACING.xxs,
   },
@@ -459,7 +480,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   initialTitle: {
-    ...TYPOGRAPHY.titleSmall,
+    ...TYPOGRAPHY.titleMedium,
     fontWeight: '700',
     marginBottom: SPACING.xxs,
   },

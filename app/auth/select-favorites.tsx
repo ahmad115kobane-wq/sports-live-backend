@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
   ScrollView,
   StatusBar,
   Platform,
@@ -16,6 +15,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { competitionApi, teamApi, matchApi, userApi } from '@/services/api';
@@ -23,7 +23,8 @@ import { Competition, Team, Match } from '@/types';
 
 export default function SelectFavoritesScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
 
   const [step, setStep] = useState<'competitions' | 'teams'>('competitions');
@@ -183,7 +184,7 @@ export default function SelectFavoritesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       <LinearGradient
         colors={colors.gradients.dark}
@@ -324,7 +325,7 @@ export default function SelectFavoritesScreen() {
               onPress={handleBack}
               activeOpacity={0.8}
             >
-              <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={20} color={colors.text} />
+              <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={20} color={colors.text} />
               <Text style={[styles.backButtonText, { color: colors.text }]}>{t('common.back')}</Text>
             </TouchableOpacity>
           )}
@@ -363,7 +364,7 @@ export default function SelectFavoritesScreen() {
                     {step === 'teams' ? t('common.done') : t('common.next')}
                   </Text>
                   <Ionicons 
-                    name={step === 'teams' ? "checkmark" : (isRTL ? "arrow-back" : "arrow-forward")} 
+                    name={step === 'teams' ? "checkmark" : (isRTL ? "arrow-forward" : "arrow-back")} 
                     size={20} 
                     color="#fff" 
                   />
@@ -459,14 +460,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectionLogo: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     marginBottom: 6,
   },
   selectionLogoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,

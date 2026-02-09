@@ -3,6 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '@/types';
 import api from '@/services/api';
 
+// Global reference for API interceptor to trigger logout
+let _forceLogout: (() => void) | null = null;
+export const getForceLogout = () => _forceLogout;
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -18,7 +22,7 @@ interface AuthState {
   upgradeGuest: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loadStoredAuth: () => Promise<void>;
-  updateUser: (user: User) => void;
+  updateUser: (updatedFields: Partial<User>) => void;
   setHasSeenWelcome: (seen: boolean) => void;
 }
 
@@ -129,7 +133,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('isGuest');
-    // Keep hasSeenWelcome so they see the welcome screen again
     delete api.defaults.headers.common['Authorization'];
     set({ user: null, token: null, isAuthenticated: false, isGuest: false });
   },
@@ -141,17 +144,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcome');
       const isGuest = await AsyncStorage.getItem('isGuest');
       
+      // Register force logout for API interceptor
+      _forceLogout = () => {
+        AsyncStorage.removeItem('token');
+        AsyncStorage.removeItem('user');
+        AsyncStorage.removeItem('isGuest');
+        delete api.defaults.headers.common['Authorization'];
+        set({ user: null, token: null, isAuthenticated: false, isGuest: false });
+      };
+      
       if (token && userStr) {
         const user = JSON.parse(userStr);
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        set({ 
-          user, 
-          token, 
-          isAuthenticated: true, 
-          isLoading: false,
-          hasSeenWelcome: hasSeenWelcome === 'true',
-          isGuest: isGuest === 'true',
-        });
+        
+        // Validate token against backend
+        try {
+          const response = await api.get('/users/me');
+          const validUser = response.data?.data || user;
+          set({ 
+            user: validUser, 
+            token, 
+            isAuthenticated: true, 
+            isLoading: false,
+            hasSeenWelcome: hasSeenWelcome === 'true',
+            isGuest: isGuest === 'true',
+          });
+        } catch (validationError: any) {
+          // Token is invalid or expired - clear auth and go to welcome
+          console.log('⚠️ Stored token is invalid, clearing auth');
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+          await AsyncStorage.removeItem('isGuest');
+          delete api.defaults.headers.common['Authorization'];
+          set({ 
+            isLoading: false,
+            isAuthenticated: false,
+            hasSeenWelcome: hasSeenWelcome === 'true',
+          });
+        }
       } else {
         set({ 
           isLoading: false,
@@ -163,9 +193,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  updateUser: (user: User) => {
-    set({ user });
-    AsyncStorage.setItem('user', JSON.stringify(user));
+  updateUser: (updatedFields: Partial<User>) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
+    const merged = { ...currentUser, ...updatedFields };
+    set({ user: merged });
+    AsyncStorage.setItem('user', JSON.stringify(merged));
   },
 
   setHasSeenWelcome: (seen: boolean) => {

@@ -1,80 +1,184 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   RefreshControl,
-  useColorScheme,
   Animated,
   TouchableOpacity,
   StatusBar,
   Platform,
   Dimensions,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from '@/components/ui/BlurView';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
-import { useMatchStore } from '@/store/matchStore';
-import { useSocket } from '@/services/socket';
-import MatchCard from '@/components/MatchCard';
-import { MatchCardSkeleton } from '@/components/ui/Skeleton';
+import { newsApi } from '@/services/api';
+import EmptyState from '@/components/ui/EmptyState';
+import { NewsSkeleton } from '@/components/ui/Skeleton';
 import { useRTL } from '@/contexts/RTLContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useAuthStore } from '@/store/authStore';
+import { router } from 'expo-router';
+import PageHeader from '@/components/ui/PageHeader';
+import { SOCKET_URL } from '@/constants/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const IMAGE_PADDING = SPACING.md * 2;
+const IMAGE_WIDTH = SCREEN_WIDTH - (SPACING.md * 2) - IMAGE_PADDING;
 
-export default function LiveScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
-  const isDark = colorScheme === 'dark';
-  const { t, isRTL, flexDirection } = useRTL();
-  const [refreshing, setRefreshing] = useState(false);
-  
-  // Animations
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0.5)).current;
-  const waveAnim = useRef(new Animated.Value(0)).current;
-  
-  const { liveMatches, isLoading, fetchLiveMatches } = useMatchStore();
-  const { joinLiveFeed } = useSocket();
+// مكوّن صورة مرنة — يقرأ أبعاد الصورة الحقيقية ويعرضها بنسبتها الأصلية
+function AutoImage({ uri, colors }: { uri: string; colors: any }) {
+  const [ratio, setRatio] = useState(4 / 3);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetchLiveMatches();
-    joinLiveFeed();
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w && h) setRatio(w / h);
+        setLoading(false);
+      },
+      () => {
+        setLoading(false);
+        setError(true);
+      },
+    );
+  }, [uri]);
 
-    // Pulse animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-      ])
-    ).start();
+  if (error) return null;
 
-    // Glow animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0.4, duration: 1500, useNativeDriver: true }),
-      ])
-    ).start();
+  return (
+    <View style={[autoImgStyles.container, { backgroundColor: colors.backgroundSecondary }]}>
+      {loading && (
+        <View style={autoImgStyles.placeholder}>
+          <ActivityIndicator size="small" color={colors.accent} />
+        </View>
+      )}
+      <Image
+        source={{ uri }}
+        style={[autoImgStyles.image, { aspectRatio: ratio }]}
+        resizeMode="cover"
+        onLoad={() => setLoading(false)}
+      />
+    </View>
+  );
+}
 
-    // Wave animation
+const autoImgStyles = StyleSheet.create({
+  container: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+  },
+  placeholder: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  image: {
+    width: '100%',
+    borderRadius: RADIUS.lg,
+  },
+});
+
+interface NewsArticle {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl?: string;
+  isPublished: boolean;
+  createdAt: string;
+  author: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+}
+
+export default function NewsScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+  const { t, isRTL, flexDirection } = useRTL();
+  const { user } = useAuthStore();
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const waveAnim = useRef(new Animated.Value(0)).current;
+
+  const isPublisher = user?.role === 'publisher';
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  useEffect(() => {
+    loadNews();
     Animated.loop(
       Animated.timing(waveAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
     ).start();
-
-    // Auto refresh
-    const interval = setInterval(() => fetchLiveMatches(), 30000);
-    return () => clearInterval(interval);
   }, []);
+
+  const loadNews = async (pageNum = 1) => {
+    try {
+      if (pageNum === 1) setLoading(true);
+      const response = await newsApi.getAll(pageNum, 10);
+      const data = response.data?.data || [];
+      if (pageNum === 1) {
+        setArticles(data);
+      } else {
+        setArticles(prev => [...prev, ...data]);
+      }
+      setHasMore(data.length >= 10);
+      setPage(pageNum);
+    } catch (error) {
+      console.error('Error loading news:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchLiveMatches();
+    await loadNews(1);
     setRefreshing(false);
+  };
+
+  const loadMore = async () => {
+    if (!loadingMore && hasMore) {
+      setLoadingMore(true);
+      await loadNews(page + 1);
+      setLoadingMore(false);
+    }
+  };
+
+  const getTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return t('time.justNow');
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return t('time.minutesAgo', { count: minutes });
+    }
+    if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600);
+      return t('time.hoursAgo', { count: hours });
+    }
+    const days = Math.floor(seconds / 86400);
+    return t('time.daysAgo', { count: days });
+  };
+
+  const getImageUrl = (imageUrl?: string) => {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith('http')) return imageUrl;
+    return `${SOCKET_URL}${imageUrl}`;
   };
 
   const waveTranslate = waveAnim.interpolate({
@@ -82,107 +186,141 @@ export default function LiveScreen() {
     outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
   });
 
+  const renderArticle = ({ item }: { item: NewsArticle }) => {
+    const imgUrl = getImageUrl(item.imageUrl);
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={[styles.articleCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+      >
+        {/* Author Row - Top */}
+        <View style={styles.authorSection}>
+          <View style={[styles.authorRow, { flexDirection }]}>
+            <View style={[styles.authorAvatar, { backgroundColor: colors.accent + '20' }]}>
+              {item.author.avatar ? (
+                <Image source={{ uri: `${SOCKET_URL}${item.author.avatar}` }} style={styles.authorAvatarImg} />
+              ) : (
+                <Ionicons name="person" size={22} color={colors.accent} />
+              )}
+            </View>
+            <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>{item.author.name}</Text>
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark" size={10} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }} />
+            <View style={[styles.newsBadge, { backgroundColor: colors.accent + '15' }]}>
+              <Ionicons name="newspaper-outline" size={12} color={colors.accent} />
+            </View>
+          </View>
+          <Text style={[styles.articleTime, { color: colors.textTertiary }]}>
+            {getTimeAgo(item.createdAt)}
+          </Text>
+        </View>
+
+        {/* Title */}
+        <Text style={[styles.articleTitle, { color: colors.text }]}>
+          {item.title}
+        </Text>
+
+        {/* Content Preview */}
+        <Text
+          style={[styles.articleContent, { color: colors.textSecondary }]}
+          numberOfLines={2}
+        >
+          {item.content}
+        </Text>
+
+        {/* Image */}
+        {imgUrl && <AutoImage uri={imgUrl} colors={colors} />}
+
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Premium Header - Same as Favorites */}
-      <LinearGradient
-        colors={colors.gradients.dark}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        {/* Shimmer Effect */}
-        <Animated.View style={[styles.shimmerEffect, { transform: [{ translateX: waveTranslate }] }]}>
-          <LinearGradient
-            colors={['transparent', 'rgba(255,255,255,0.1)', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
-
-        <View style={[styles.headerContent, { flexDirection }]}>
-          <View>
-            <Text style={styles.headerTitle}>{t('match.live')}</Text>
-            <Text style={styles.headerSubtitle}>
-              {liveMatches.length > 0 
-                ? `${liveMatches.length} ${t('tabs.matches')} ${t('match.live')}`
-                : t('home.noUpcomingMatches')
-              }
-            </Text>
-          </View>
-          <Animated.View style={[styles.headerIcon, { transform: [{ scale: pulseAnim }] }]}>
-            <View style={[styles.liveDot, { backgroundColor: liveMatches.length > 0 ? '#fff' : 'rgba(255,255,255,0.5)' }]} />
-            <Ionicons name="pulse" size={28} color="#fff" />
-          </Animated.View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressViewOffset={Platform.OS === 'ios' ? 180 : 160}
-          />
-        }
-      >
-        {isLoading ? (
-          <View style={styles.matchList}>
-            <MatchCardSkeleton />
-            <MatchCardSkeleton />
-            <MatchCardSkeleton />
-          </View>
-        ) : liveMatches.length > 0 ? (
-          <View style={styles.matchList}>
-            {liveMatches.map((match, index) => (
-              <Animated.View 
-                key={match.id}
-                style={{
-                  opacity: 1,
-                  transform: [{ translateY: 0 }],
-                }}
+      <PageHeader
+        title={t('news.title')}
+        logo={colorScheme === 'dark' ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}
+        rightContent={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {isPublisher && (
+              <TouchableOpacity
+                style={styles.headerBtn}
+                onPress={() => router.push('/publisher' as any)}
               >
-                <MatchCard
-                  match={match}
-                  onPress={() => router.push(`/match/${match.id}`)}
-                  showLiveIndicator
-                />
-              </Animated.View>
-            ))}
-          </View>
-        ) : (
-          <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
-            <View style={[styles.emptyIconWrapper, { backgroundColor: colors.backgroundSecondary }]}>
-              <Ionicons name="tv-outline" size={40} color={colors.textTertiary} />
+                <Ionicons name="create-outline" size={18} color={colors.text} />
+              </TouchableOpacity>
+            )}
+            <View style={[styles.headerBtn, { backgroundColor: colors.accent + '15' }]}>
+              <Ionicons name="newspaper-outline" size={18} color={colors.accent} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('home.noUpcomingMatches')}
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              {t('home.checkBackLater')}
-            </Text>
-            <TouchableOpacity 
-              style={[styles.refreshBtn, { backgroundColor: colors.accent }]}
-              onPress={onRefresh}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="refresh" size={18} color="#fff" />
-              <Text style={styles.refreshBtnText}>{t('common.refresh')}</Text>
-            </TouchableOpacity>
           </View>
-        )}
+        }
+      />
 
-        {/* Bottom Safe Area */}
-        <View style={{ height: 120 }} />
-      </ScrollView>
+      {/* News Feed */}
+      {loading && articles.length === 0 ? (
+        <View style={styles.listContent}>
+          <NewsSkeleton />
+          <NewsSkeleton />
+          <NewsSkeleton />
+        </View>
+      ) : (
+        <FlatList
+          data={articles}
+          renderItem={renderArticle}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContent,
+            articles.length === 0 && { flexGrow: 1 },
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+            />
+          }
+          ListEmptyComponent={
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <EmptyState
+                icon="newspaper-outline"
+                title={t('news.empty')}
+                subtitle={t('news.emptySubtitle')}
+                actionLabel={t('common.refresh')}
+                actionIcon="refresh"
+                onAction={onRefresh}
+              />
+            </View>
+          }
+          ListFooterComponent={
+            <View style={{ paddingBottom: 120 }}>
+              {hasMore && articles.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.loadMoreBtn, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                  onPress={loadMore}
+                  disabled={loadingMore}
+                  activeOpacity={0.7}
+                >
+                  {loadingMore ? (
+                    <ActivityIndicator size="small" color={colors.accent} />
+                  ) : (
+                    <>
+                      <Ionicons name="chevron-down" size={18} color={colors.accent} />
+                      <Text style={[styles.loadMoreText, { color: colors.accent }]}>
+                        {t('news.loadMore')}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
@@ -210,78 +348,152 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headlineMedium,
-    color: '#fff',
     fontWeight: '800',
   },
   headerSubtitle: {
-    ...TYPOGRAPHY.labelMedium,
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
     marginTop: 2,
+    fontWeight: '500',
   },
-  headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  liveDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: SPACING.md,
-  },
-  matchList: {
-    paddingHorizontal: SPACING.md,
-  },
-  emptyState: {
-    margin: SPACING.md,
-    padding: SPACING.xl,
-    alignItems: 'center',
-    borderRadius: RADIUS.xl,
-    ...SHADOWS.xs,
-  },
-  emptyIconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.titleMedium,
-    fontWeight: '700',
-    marginBottom: SPACING.xs,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: SPACING.lg,
-    paddingHorizontal: SPACING.md,
-  },
-  refreshBtn: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-    gap: SPACING.xs,
+    gap: SPACING.sm,
   },
-  refreshBtnText: {
-    ...TYPOGRAPHY.labelMedium,
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(128,128,128,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(128,128,128,0.1)',
+  },
+  headerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(128,128,128,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContent: {
+    padding: SPACING.md,
+    gap: SPACING.lg,
+  },
+  articleCard: {
+    borderRadius: RADIUS.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    ...SHADOWS.sm,
+    backgroundColor: '#fff', // Will be overridden by inline style for dark mode, but good default
+  },
+  authorSection: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  authorAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  authorAvatarImg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  authorInitial: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+  },
+  authorName: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    flexShrink: 1,
+  },
+  verifiedBadge: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#1DA1F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  articleTime: {
+    ...TYPOGRAPHY.labelSmall,
+    marginTop: 2,
+    opacity: 0.6,
+    fontWeight: '500',
+  },
+  newsBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.03)',
+  },
+  articleTitle: {
+    ...TYPOGRAPHY.headlineSmall,
+    fontWeight: '800',
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.sm,
+    letterSpacing: -0.5,
+  },
+  articleContent: {
+    ...TYPOGRAPHY.bodyMedium,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    opacity: 0.8,
+  },
+  articleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    marginHorizontal: SPACING.lg,
+    borderTopWidth: 1,
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+  },
+  footerText: {
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '500',
+  },
+  loadMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+  },
+  loadMoreText: {
+    ...TYPOGRAPHY.labelLarge,
+    fontWeight: '600',
   },
 });

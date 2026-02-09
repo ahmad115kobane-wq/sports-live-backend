@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
-  useColorScheme,
   StatusBar,
   Platform,
   TouchableOpacity,
@@ -26,21 +25,26 @@ import { useAuthStore } from '@/store/authStore';
 import { matchApi, competitionApi, teamApi, userApi } from '@/services/api';
 import { Match, Competition, Team } from '@/types';
 import MatchCard from '@/components/MatchCard';
+import EmptyState from '@/components/ui/EmptyState';
 import { MatchCardSkeleton } from '@/components/ui/Skeleton';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import Button from '@/components/ui/Button';
 import { useRTL } from '@/contexts/RTLContext';
+import PageHeader from '@/components/ui/PageHeader';
+import { matchUpdateEmitter } from '@/utils/matchEvents';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function FavoritesScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<Match[]>([]);
   const { isAuthenticated } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'all' | 'live' | 'upcoming' | 'finished'>('all');
 
   // Favorite teams and competitions
   const [favoriteTeamIds, setFavoriteTeamIds] = useState<string[]>([]);
@@ -59,6 +63,14 @@ export default function FavoritesScreen() {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  // Subscribe to real-time match updates (goals, status changes, etc.)
+  useEffect(() => {
+    const unsubscribe = matchUpdateEmitter.subscribe((updated) => {
+      setFavorites(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -278,37 +290,38 @@ export default function FavoritesScreen() {
     outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
   });
 
+  // Sort: live → upcoming → finished, then filter by tab
+  const sortedMatches = useMemo(() => {
+    const statusOrder = (s: string) => {
+      if (s === 'live' || s === 'halftime') return 0;
+      if (s === 'scheduled') return 1;
+      return 2; // finished
+    };
+    const sorted = [...favorites].sort((a, b) => {
+      const diff = statusOrder(a.status) - statusOrder(b.status);
+      if (diff !== 0) return diff;
+      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    });
+    if (activeTab === 'all') return sorted;
+    if (activeTab === 'live') return sorted.filter(m => m.status === 'live' || m.status === 'halftime');
+    if (activeTab === 'upcoming') return sorted.filter(m => m.status === 'scheduled');
+    return sorted.filter(m => m.status === 'finished');
+  }, [favorites, activeTab]);
+
+  const tabs = useMemo(() => [
+    { key: 'all' as const, label: t('common.all') || 'الكل' },
+    { key: 'live' as const, label: t('match.live') || 'مباشر' },
+    { key: 'upcoming' as const, label: t('match.upcoming') || 'القادمة' },
+    { key: 'finished' as const, label: t('match.finished') || 'المنتهية' },
+  ], [t]);
+
   if (!isAuthenticated) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle="light-content" />
-        
-        {/* Premium Header */}
-        <LinearGradient
-          colors={colors.gradients.dark}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.header}
-        >
-          <Animated.View style={[styles.shimmerEffect, { transform: [{ translateX: shimmerTranslate }] }]}>
-            <LinearGradient
-              colors={['transparent', 'rgba(255,255,255,0.1)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-
-          <View style={[styles.headerContent, { flexDirection }]}>
-            <View>
-              <Text style={styles.headerTitle}>{t('favorites.title')}</Text>
-              <Text style={styles.headerSubtitle}>{t('favorites.addFavorites')}</Text>
-            </View>
-            <Animated.View style={[styles.headerIcon, { transform: [{ scale: pulseAnim }] }]}>
-              <Ionicons name="heart" size={28} color="#fff" />
-            </Animated.View>
-          </View>
-        </LinearGradient>
+        <PageHeader
+          title={t('favorites.title')}
+          logo={isDark ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}
+        />
 
         <ScrollView 
           style={styles.scrollView}
@@ -338,7 +351,7 @@ export default function FavoritesScreen() {
               {t('favorites.title')} ❤️
             </Text>
             <Text style={[styles.loginSubtitle, { color: colors.textSecondary }]}>
-              Sign in to save your favorite matches and teams
+              {t('favorites.loginSubtitle')}
             </Text>
             
             <View style={styles.loginButtons}>
@@ -366,10 +379,10 @@ export default function FavoritesScreen() {
               </View>
               <View style={styles.featureContent}>
                 <Text style={[styles.featureTitle, { color: colors.text }]}>
-                  Live Notifications
+                  {t('favorites.liveNotifications')}
                 </Text>
                 <Text style={[styles.featureDesc, { color: colors.textSecondary }]}>
-                  Get instant score alerts
+                  {t('favorites.liveNotificationsDesc')}
                 </Text>
               </View>
             </View>
@@ -382,7 +395,7 @@ export default function FavoritesScreen() {
               </View>
               <View style={styles.featureContent}>
                 <Text style={[styles.featureTitle, { color: colors.text }]}>
-                  Follow Teams
+                  {t('favorites.followTeams')}
                 </Text>
                 <Text style={[styles.featureDesc, { color: colors.textSecondary }]}>
                   {t('favorites.trackTeams')}
@@ -415,79 +428,50 @@ export default function FavoritesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Header */}
-      <LinearGradient
-        colors={colors.gradients.dark}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <Animated.View style={[styles.shimmerEffect, { transform: [{ translateX: shimmerTranslate }] }]}>
-          <LinearGradient
-            colors={['transparent', 'rgba(255,255,255,0.08)', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
+      <PageHeader
+        title={t('favorites.title')}
+        logo={isDark ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}
+        rightContent={
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={openEditModal}
+          >
+            <Ionicons name="settings-outline" size={18} color={colors.text} />
+          </TouchableOpacity>
+        }
+      />
 
-        <View style={[styles.headerContent, { flexDirection }]}>
-          <View>
-            <Text style={styles.headerTitle}>{t('favorites.title')}</Text>
-            <Text style={styles.headerSubtitle}>
-              {favorites.length > 0 
-                ? `${favorites.length} ${t('tabs.matches')}` 
-                : t('favorites.addFavorites')
-              }
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab.key}
+            onPress={() => setActiveTab(tab.key)}
+            activeOpacity={0.7}
+            style={[
+              styles.tab,
+              {
+                backgroundColor: activeTab === tab.key
+                  ? colors.accent
+                  : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              },
+            ]}
+          >
+            <Text style={[
+              styles.tabText,
+              {
+                color: activeTab === tab.key ? '#fff' : colors.textSecondary,
+              },
+            ]}>
+              {tab.label}
             </Text>
-          </View>
-          
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={openEditModal}
-            >
-              <Ionicons name="settings-outline" size={20} color="#fff" />
-            </TouchableOpacity>
-            <View style={styles.headerBadge}>
-              <Ionicons name="heart" size={18} color="#fff" />
-              <Text style={styles.headerBadgeText}>{favorites.length}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Quick Stats */}
-        {favorites.length > 0 && (
-          <View style={styles.quickStats}>
-            <View style={styles.quickStatItem}>
-              <Text style={styles.quickStatValue}>
-                {favorites.filter(m => m.status === 'live').length}
-              </Text>
-              <Text style={styles.quickStatLabel}>{t('match.live')}</Text>
-            </View>
-            <View style={styles.quickStatDivider} />
-            <View style={styles.quickStatItem}>
-              <Text style={styles.quickStatValue}>
-                {favorites.filter(m => m.status === 'scheduled').length}
-              </Text>
-              <Text style={styles.quickStatLabel}>{t('match.upcoming')}</Text>
-            </View>
-            <View style={styles.quickStatDivider} />
-            <View style={styles.quickStatItem}>
-              <Text style={styles.quickStatValue}>
-                {favorites.filter(m => m.status === 'finished').length}
-              </Text>
-              <Text style={styles.quickStatLabel}>{t('match.finished')}</Text>
-            </View>
-          </View>
-        )}
-      </LinearGradient>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, !loading && favorites.length === 0 && { flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl 
@@ -504,9 +488,9 @@ export default function FavoritesScreen() {
             <MatchCardSkeleton />
             <MatchCardSkeleton />
           </View>
-        ) : favorites.length > 0 ? (
+        ) : sortedMatches.length > 0 ? (
           <View style={styles.matchList}>
-            {favorites.map((match, index) => (
+            {sortedMatches.map((match, index) => (
               <Animated.View 
                 key={match.id}
                 style={{
@@ -522,28 +506,28 @@ export default function FavoritesScreen() {
                 <MatchCard
                   match={match}
                   onPress={() => router.push(`/match/${match.id}`)}
-                  showLiveIndicator={match.status === 'live'}
+                  showLiveIndicator={match.status === 'live' || match.status === 'halftime'}
                 />
               </Animated.View>
             ))}
           </View>
+        ) : favorites.length > 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', paddingVertical: SPACING.xxl }}>
+            <EmptyState
+              icon={activeTab === 'live' ? 'radio-outline' : activeTab === 'upcoming' ? 'time-outline' : 'flag-outline'}
+              title={activeTab === 'live' ? (t('favorites.noLive') || 'لا توجد مباريات مباشرة') : activeTab === 'upcoming' ? (t('favorites.noUpcoming') || 'لا توجد مباريات قادمة') : (t('favorites.noFinished') || 'لا توجد مباريات منتهية')}
+              subtitle={''}
+            />
+          </View>
         ) : (
-          <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
-            <View style={[styles.emptyIconBg, { backgroundColor: colors.backgroundSecondary }]}>
-              <Ionicons name="heart-outline" size={44} color={colors.textTertiary} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('favorites.noFavorites')}
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              {t('favorites.tapHeartIcon')}
-            </Text>
-            <Button
-              title={t('favorites.editFavorites')}
-              onPress={openEditModal}
-              variant="primary"
-              size="medium"
-              icon={<Ionicons name="add-circle-outline" size={18} color="#fff" />}
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <EmptyState
+              icon="heart-outline"
+              title={t('favorites.noFavorites')}
+              subtitle={t('favorites.tapHeartIcon')}
+              actionLabel={t('favorites.editFavorites')}
+              actionIcon="add-circle-outline"
+              onAction={openEditModal}
             />
           </View>
         )}
@@ -682,12 +666,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headlineMedium,
-    color: '#fff',
     fontWeight: '800',
   },
   headerSubtitle: {
     ...TYPOGRAPHY.labelMedium,
-    color: 'rgba(255,255,255,0.75)',
     marginTop: 2,
   },
   headerIcon: {
@@ -701,7 +683,7 @@ const styles = StyleSheet.create({
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(128,128,128,0.15)',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
@@ -709,7 +691,6 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     ...TYPOGRAPHY.labelLarge,
-    color: '#fff',
     fontWeight: '700',
   },
   quickStats: {
@@ -717,7 +698,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     marginTop: SPACING.xl,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(128,128,128,0.1)',
     borderRadius: RADIUS.xl,
     paddingVertical: SPACING.md,
   },
@@ -727,18 +708,32 @@ const styles = StyleSheet.create({
   },
   quickStatValue: {
     ...TYPOGRAPHY.titleLarge,
-    color: '#fff',
     fontWeight: '800',
   },
   quickStatLabel: {
     ...TYPOGRAPHY.labelSmall,
-    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
   quickStatDivider: {
     width: 1,
     height: 26,
     backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: RADIUS.full,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -763,9 +758,9 @@ const styles = StyleSheet.create({
     ...SHADOWS.xs,
   },
   emptyIconBg: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
@@ -795,9 +790,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   heartBg: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -837,9 +832,9 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
   },
   featureIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
@@ -866,12 +861,14 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(128,128,128,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(128,128,128,0.1)',
   },
   // Modal Styles
   modalOverlay: {
@@ -932,14 +929,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectionLogo: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     marginBottom: 6,
   },
   selectionLogoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Match, MatchEvent } from '@/types';
 import api from '@/services/api';
+import { matchUpdateEmitter } from '@/utils/matchEvents';
 
 interface MatchState {
   matches: Match[];
@@ -100,6 +101,9 @@ export const useMatchStore = create<MatchState>((set, get) => ({
       currentMatch: updatedCurrentMatch,
       featuredMatch: updatedFeaturedMatch,
     });
+
+    // Notify local state listeners (home page, favorites, etc.)
+    matchUpdateEmitter.emit(updatedMatch);
   },
 
   addEventToMatch: (event) => {

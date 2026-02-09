@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert } f
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useRTL } from '@/contexts/RTLContext';
 import { getNotificationPreferences, updateNotificationPreferences } from '@/services/notifications';
 
 export default function NotificationSettings() {
   const { t, isRTL } = useRTL();
-  const colors = Colors.dark;
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,12 +41,12 @@ export default function NotificationSettings() {
     }
   }
 
-  async function updateSetting(key: string, value: boolean) {
+  async function updateSetting(key: keyof typeof settings, value: boolean) {
     const newSettings = { ...settings, [key]: value };
     
     // If disabling main toggle, disable all
     if (key === 'enabled' && !value) {
-      Object.keys(newSettings).forEach(k => {
+      (Object.keys(newSettings) as Array<keyof typeof settings>).forEach(k => {
         if (k !== 'enabled') newSettings[k] = false;
       });
     }
@@ -78,50 +80,50 @@ export default function NotificationSettings() {
     {
       key: 'enabled',
       icon: 'notifications',
-      title: isRTL ? 'تفعيل الإشعارات' : 'Enable Notifications',
-      description: isRTL ? 'تفعيل/تعطيل جميع الإشعارات' : 'Enable/disable all notifications',
+      title: t('notificationSettings.enableNotifications'),
+      description: t('notificationSettings.enableNotificationsDesc'),
       color: colors.primary,
     },
     {
       key: 'preMatch',
       icon: 'time',
-      title: isRTL ? 'تذكير قبل المباراة' : 'Pre-Match Reminder',
-      description: isRTL ? 'إشعار قبل 15 دقيقة من بداية المباراة' : 'Notification 15 minutes before match starts',
+      title: t('notificationSettings.preMatch'),
+      description: t('notificationSettings.preMatchDesc'),
       color: '#FF9500',
     },
     {
       key: 'matchStart',
       icon: 'play-circle',
-      title: isRTL ? 'بداية المباراة' : 'Match Start',
-      description: isRTL ? 'إشعار عند بداية المباراة' : 'Notification when match starts',
+      title: t('notificationSettings.matchStart'),
+      description: t('notificationSettings.matchStartDesc'),
       color: '#34C759',
     },
     {
       key: 'goals',
       icon: 'football',
-      title: isRTL ? 'الأهداف' : 'Goals',
-      description: isRTL ? 'إشعار عند تسجيل هدف' : 'Notification when a goal is scored',
+      title: t('notificationSettings.goals'),
+      description: t('notificationSettings.goalsDesc'),
       color: '#00C7BE',
     },
     {
       key: 'redCards',
       icon: 'square',
-      title: isRTL ? 'البطاقات الحمراء' : 'Red Cards',
-      description: isRTL ? 'إشعار عند طرد لاعب' : 'Notification when a player is sent off',
+      title: t('notificationSettings.redCards'),
+      description: t('notificationSettings.redCardsDesc'),
       color: '#FF3B30',
     },
     {
       key: 'penalties',
       icon: 'flag',
-      title: isRTL ? 'ركلات الجزاء' : 'Penalties',
-      description: isRTL ? 'إشعار عند احتساب ركلة جزاء' : 'Notification when a penalty is awarded',
+      title: t('notificationSettings.penalties'),
+      description: t('notificationSettings.penaltiesDesc'),
       color: '#FF9500',
     },
     {
       key: 'matchEnd',
       icon: 'checkmark-circle',
-      title: isRTL ? 'نهاية المباراة' : 'Match End',
-      description: isRTL ? 'إشعار عند انتهاء المباراة' : 'Notification when match ends',
+      title: t('notificationSettings.matchEnd'),
+      description: t('notificationSettings.matchEndDesc'),
       color: '#5856D6',
     },
   ];
@@ -131,9 +133,9 @@ export default function NotificationSettings() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen
           options={{
-            title: isRTL ? 'إعدادات الإشعارات' : 'Notification Settings',
+            title: t('notificationSettings.title'),
             headerStyle: { backgroundColor: colors.primary },
-            headerTintColor: '#fff',
+            headerTintColor: colors.text,
           }}
         />
         <View style={styles.loadingContainer}>
@@ -149,22 +151,20 @@ export default function NotificationSettings() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
-          title: isRTL ? 'إعدادات الإشعارات' : 'Notification Settings',
+          title: t('notificationSettings.title'),
           headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: '#fff',
+          headerTintColor: colors.text,
         }}
       />
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
-          <Ionicons name="notifications" size={48} color={colors.primary} />
+          <Ionicons name="notifications" size={48} color={colors.accent} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {isRTL ? 'إدارة الإشعارات' : 'Manage Notifications'}
+            {t('notificationSettings.manage')}
           </Text>
           <Text style={[styles.headerDescription, { color: colors.textSecondary }]}>
-            {isRTL
-              ? 'اختر أنواع الإشعارات التي تريد استقبالها'
-              : 'Choose which notifications you want to receive'}
+            {t('notificationSettings.manageDesc')}
           </Text>
         </View>
 
@@ -179,8 +179,8 @@ export default function NotificationSettings() {
                 index === settingItems.length - 1 && styles.lastItem,
               ]}
             >
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
+              <View style={[styles.settingLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={[styles.iconContainer, { backgroundColor: item.color + '20', marginRight: isRTL ? 0 : 12, marginLeft: isRTL ? 12 : 0 }]}>
                   <Ionicons name={item.icon as any} size={24} color={item.color} />
                 </View>
                 <View style={styles.settingText}>
@@ -194,7 +194,7 @@ export default function NotificationSettings() {
               </View>
               <Switch
                 value={settings[item.key as keyof typeof settings]}
-                onValueChange={(value) => updateSetting(item.key, value)}
+                onValueChange={(value) => updateSetting(item.key as keyof typeof settings, value)}
                 disabled={saving || (item.key !== 'enabled' && !settings.enabled)}
                 trackColor={{ false: colors.border, true: item.color }}
                 thumbColor="#fff"
@@ -206,9 +206,7 @@ export default function NotificationSettings() {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color={colors.primary} />
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            {isRTL
-              ? 'ستتلقى إشعارات فقط للفرق والبطولات المفضلة لديك'
-              : 'You will only receive notifications for your favorite teams and competitions'}
+            {t('notificationInfo.hint')}
           </Text>
         </View>
       </ScrollView>
@@ -277,7 +275,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   settingText: {
     flex: 1,
@@ -303,7 +300,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    marginLeft: 12,
+    marginHorizontal: 12,
     lineHeight: 18,
   },
 });

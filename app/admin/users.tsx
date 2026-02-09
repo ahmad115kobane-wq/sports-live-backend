@@ -6,24 +6,24 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  useColorScheme,
-  Alert,
   ActivityIndicator,
-  Modal,
   RefreshControl,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { userApi } from '@/services/api';
+import AppDialog from '@/components/ui/AppDialog';
+import AppModal from '@/components/ui/AppModal';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'operator' | 'admin';
+  role: 'user' | 'operator' | 'admin' | 'publisher';
   avatar?: string;
   isBanned?: boolean;
   createdAt: string;
@@ -34,66 +34,93 @@ interface User {
 
 export default function UsersManagementScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
-  const { isRTL, flexDirection } = useRTL();
+  const colors = Colors[colorScheme];
+  const { t, isRTL, flexDirection } = useRTL();
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{ type: 'error' | 'warning' | 'confirm'; title: string; message: string; showCancel?: boolean; onConfirm?: () => void }>({
+    type: 'error', title: '', message: '',
+  });
+  const showError = (title: string, message: string) => {
+    setDialogConfig({ type: 'error', title, message });
+    setDialogVisible(true);
+  };
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setDialogConfig({ type: 'warning', title, message, showCancel: true, onConfirm });
+    setDialogVisible(true);
+  };
+
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsers = async (pageNum = 1, append = false) => {
     try {
-      setLoading(true);
-      const response = await userApi.getAll();
-      const data = response.data?.data || response.data || [];
-      setUsers(Array.isArray(data) ? data : []);
+      if (pageNum === 1) setLoading(true);
+      else setLoadingMore(true);
+      const response = await userApi.getAll(pageNum, 10);
+      const data = response.data?.data || [];
+      const pagination = response.data?.pagination;
+      if (append) {
+        setUsers(prev => [...prev, ...(Array.isArray(data) ? data : [])]);
+      } else {
+        setUsers(Array.isArray(data) ? data : []);
+      }
+      setPage(pageNum);
+      setHasMore(pagination?.hasMore ?? false);
+      setTotalUsers(pagination?.total ?? 0);
     } catch (error) {
       console.error('Error loading users:', error);
-      Alert.alert('خطأ', 'فشل في تحميل المستخدمين');
+      showError(t('admin.error'), t('admin.loadUsersFailed'));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadUsers(page + 1, true);
     }
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadUsers();
+    loadUsers(1, false);
   };
 
   const handleBanUser = (user: User) => {
-    const action = user.isBanned ? 'إلغاء حظر' : 'حظر';
-    Alert.alert(
-      `${action} المستخدم`,
-      `هل أنت متأكد من ${action} "${user.name}"؟`,
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: action,
-          style: user.isBanned ? 'default' : 'destructive',
-          onPress: async () => {
-            try {
-              setSaving(true);
-              await userApi.toggleBan(user.id);
-              Alert.alert('نجاح', `تم ${action} المستخدم`);
-              loadUsers();
-            } catch (error) {
-              Alert.alert('خطأ', `فشل في ${action} المستخدم`);
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ]
+    const isBan = !user.isBanned;
+    showConfirm(
+      isBan ? t('admin.banUserTitle') : t('admin.unbanUserTitle'),
+      isBan ? t('admin.banUserConfirm') : t('admin.unbanUserConfirm'),
+      async () => {
+        setDialogVisible(false);
+        try {
+          setSaving(true);
+          await userApi.toggleBan(user.id);
+          loadUsers();
+        } catch (error) {
+          showError(t('admin.error'), t('admin.banFailed'));
+        } finally {
+          setSaving(false);
+        }
+      }
     );
   };
 
@@ -101,14 +128,10 @@ export default function UsersManagementScreen() {
     try {
       setSaving(true);
       await userApi.updateRole(user.id, newRole);
-      Alert.alert(
-        'نجاح', 
-        `تم تحديث صلاحية المستخدم إلى "${getRoleText(newRole)}".\n\nملاحظة: يحتاج المستخدم إلى تسجيل الخروج وتسجيل الدخول مرة أخرى لتفعيل الصلاحيات الجديدة.`
-      );
       setShowUserModal(false);
       loadUsers();
     } catch (error) {
-      Alert.alert('خطأ', 'فشل في تحديث الصلاحية');
+      showError(t('admin.error'), t('admin.roleFailed'));
     } finally {
       setSaving(false);
     }
@@ -118,6 +141,7 @@ export default function UsersManagementScreen() {
     switch (role) {
       case 'admin': return '#DC2626';
       case 'operator': return '#F59E0B';
+      case 'publisher': return '#8B5CF6';
       default: return colors.accent;
     }
   };
@@ -126,6 +150,7 @@ export default function UsersManagementScreen() {
     switch (role) {
       case 'admin': return 'مدير';
       case 'operator': return 'مشغل';
+      case 'publisher': return 'ناشر';
       default: return 'مستخدم';
     }
   };
@@ -251,7 +276,7 @@ export default function UsersManagementScreen() {
       <View style={styles.statsContainer}>
         <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
           <Ionicons name="people" size={24} color={colors.accent} />
-          <Text style={[styles.statNumber, { color: colors.text }]}>{users.length}</Text>
+          <Text style={[styles.statNumber, { color: colors.text }]}>{totalUsers}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>إجمالي</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
@@ -291,6 +316,7 @@ export default function UsersManagementScreen() {
           { key: 'all', label: 'الكل' },
           { key: 'user', label: 'مستخدمون' },
           { key: 'operator', label: 'مشغلون' },
+          { key: 'publisher', label: 'ناشرون' },
           { key: 'admin', label: 'مدراء' },
         ].map((filter) => (
           <TouchableOpacity
@@ -322,6 +348,24 @@ export default function UsersManagementScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.accent]} />
         }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.loadMoreContainer}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={[styles.loadMoreText, { color: colors.textSecondary }]}>جاري تحميل المزيد...</Text>
+            </View>
+          ) : hasMore && filteredUsers.length > 0 ? (
+            <TouchableOpacity style={[styles.loadMoreBtn, { borderColor: colors.border }]} onPress={loadMore}>
+              <Text style={[styles.loadMoreBtnText, { color: colors.accent }]}>تحميل المزيد</Text>
+            </TouchableOpacity>
+          ) : filteredUsers.length > 0 ? (
+            <Text style={[styles.loadMoreText, { color: colors.textTertiary, textAlign: 'center', paddingVertical: SPACING.md }]}>
+              تم عرض جميع المستخدمين ({totalUsers})
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={64} color={colors.textTertiary} />
@@ -333,101 +377,104 @@ export default function UsersManagementScreen() {
       />
 
       {/* User Modal */}
-      <Modal
+      <AppModal
         visible={showUserModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowUserModal(false)}
+        onClose={() => setShowUserModal(false)}
+        title="إدارة المستخدم"
+        icon="person-circle"
+        subtitle={selectedUser?.email}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>إدارة المستخدم</Text>
-              <TouchableOpacity onPress={() => setShowUserModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
+        {selectedUser && (
+          <View style={styles.modalBody}>
+            {/* User Info */}
+            <View style={styles.userInfoModal}>
+              <View style={[styles.avatarContainerLarge, { backgroundColor: colors.accent + '20' }]}>
+                {selectedUser.avatar ? (
+                  <Image source={{ uri: selectedUser.avatar }} style={styles.avatarLarge} />
+                ) : (
+                  <Text style={[styles.avatarTextLarge, { color: colors.accent }]}>
+                    {selectedUser.name.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <Text style={[styles.userNameModal, { color: colors.text }]}>{selectedUser.name}</Text>
+              <Text style={[styles.userEmailModal, { color: colors.textSecondary }]}>{selectedUser.email}</Text>
             </View>
 
-            {selectedUser && (
-              <View style={styles.modalBody}>
-                {/* User Info */}
-                <View style={styles.userInfoModal}>
-                  <View style={[styles.avatarContainerLarge, { backgroundColor: colors.accent + '20' }]}>
-                    {selectedUser.avatar ? (
-                      <Image source={{ uri: selectedUser.avatar }} style={styles.avatarLarge} />
-                    ) : (
-                      <Text style={[styles.avatarTextLarge, { color: colors.accent }]}>
-                        {selectedUser.name.charAt(0).toUpperCase()}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={[styles.userNameModal, { color: colors.text }]}>{selectedUser.name}</Text>
-                  <Text style={[styles.userEmailModal, { color: colors.textSecondary }]}>{selectedUser.email}</Text>
-                </View>
-
-                {/* Role Selection */}
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>تغيير الصلاحية</Text>
-                <View style={styles.roleOptions}>
-                  {['user', 'operator', 'admin'].map((role) => (
-                    <TouchableOpacity
-                      key={role}
-                      style={[
-                        styles.roleOption,
-                        { borderColor: colors.border },
-                        selectedUser.role === role && { 
-                          backgroundColor: getRoleColor(role) + '20',
-                          borderColor: getRoleColor(role),
-                        },
-                      ]}
-                      onPress={() => handleChangeRole(selectedUser, role)}
-                      disabled={saving}
-                    >
-                      <Ionicons 
-                        name={
-                          role === 'admin' ? 'shield' : 
-                          role === 'operator' ? 'construct' : 'person'
-                        } 
-                        size={20} 
-                        color={selectedUser.role === role ? getRoleColor(role) : colors.textSecondary} 
-                      />
-                      <Text style={[
-                        styles.roleOptionText,
-                        { color: selectedUser.role === role ? getRoleColor(role) : colors.text },
-                      ]}>
-                        {getRoleText(role)}
-                      </Text>
-                      {selectedUser.role === role && (
-                        <Ionicons name="checkmark-circle" size={20} color={getRoleColor(role)} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Ban Button */}
+            {/* Role Selection */}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>تغيير الصلاحية</Text>
+            <View style={styles.roleOptions}>
+              {['user', 'operator', 'publisher', 'admin'].map((role) => (
                 <TouchableOpacity
+                  key={role}
                   style={[
-                    styles.banButton,
-                    { backgroundColor: selectedUser.isBanned ? '#10B981' : '#DC2626' },
+                    styles.roleOption,
+                    { borderColor: colors.border },
+                    selectedUser.role === role && { 
+                      backgroundColor: getRoleColor(role) + '20',
+                      borderColor: getRoleColor(role),
+                    },
                   ]}
-                  onPress={() => {
-                    setShowUserModal(false);
-                    handleBanUser(selectedUser);
-                  }}
+                  onPress={() => handleChangeRole(selectedUser, role)}
+                  disabled={saving}
                 >
                   <Ionicons 
-                    name={selectedUser.isBanned ? "checkmark-circle" : "ban"} 
+                    name={
+                      role === 'admin' ? 'shield' : 
+                      role === 'operator' ? 'construct' :
+                      role === 'publisher' ? 'newspaper' : 'person'
+                    } 
                     size={20} 
-                    color="#fff" 
+                    color={selectedUser.role === role ? getRoleColor(role) : colors.textSecondary} 
                   />
-                  <Text style={styles.banButtonText}>
-                    {selectedUser.isBanned ? 'إلغاء الحظر' : 'حظر المستخدم'}
+                  <Text style={[
+                    styles.roleOptionText,
+                    { color: selectedUser.role === role ? getRoleColor(role) : colors.text },
+                  ]}>
+                    {getRoleText(role)}
                   </Text>
+                  {selectedUser.role === role && (
+                    <Ionicons name="checkmark-circle" size={20} color={getRoleColor(role)} />
+                  )}
                 </TouchableOpacity>
-              </View>
-            )}
+              ))}
+            </View>
+
+            {/* Ban Button */}
+            <TouchableOpacity
+              style={[
+                styles.banButton,
+                { backgroundColor: selectedUser.isBanned ? '#10B981' : '#DC2626' },
+              ]}
+              onPress={() => {
+                setShowUserModal(false);
+                handleBanUser(selectedUser);
+              }}
+            >
+              <Ionicons 
+                name={selectedUser.isBanned ? "checkmark-circle" : "ban"} 
+                size={20} 
+                color="#fff" 
+              />
+              <Text style={styles.banButtonText}>
+                {selectedUser.isBanned ? 'إلغاء الحظر' : 'حظر المستخدم'}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        )}
+      </AppModal>
+
+      <AppDialog
+        visible={dialogVisible}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        confirmText={dialogConfig.showCancel ? t('admin.confirm') : t('admin.ok')}
+        cancelText={t('admin.cancel')}
+        showCancel={dialogConfig.showCancel}
+        onConfirm={dialogConfig.onConfirm || (() => setDialogVisible(false))}
+        onCancel={() => setDialogVisible(false)}
+      />
     </View>
   );
 }
@@ -683,6 +730,28 @@ const styles = StyleSheet.create({
   banButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  loadMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  loadMoreText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  loadMoreBtn: {
+    alignItems: 'center',
+    paddingVertical: SPACING.sm + 2,
+    marginVertical: SPACING.sm,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  loadMoreBtnText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });

@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   Animated,
-  useColorScheme,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 
 interface LiveBadgeProps {
@@ -23,7 +23,7 @@ export default function LiveBadge({
   style 
 }: LiveBadgeProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
 

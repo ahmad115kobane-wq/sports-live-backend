@@ -1,89 +1,115 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme, View, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from '@/components/ui/BlurView';
 import { Colors } from '@/constants/Colors';
 import { useMatchStore } from '@/store/matchStore';
 import { useRTL } from '@/contexts/RTLContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import React, { useEffect, useRef } from 'react';
 
-// Custom Tab Icon Component - Optimized for performance
+// ─── Modern Floating Tab Icon ───
 function TabIcon({ 
   name, 
   focused, 
   color, 
-  isLive = false,
-  badgeCount = 0,
   accentColor,
-  liveColor,
+  isDark,
 }: { 
   name: string; 
   focused: boolean; 
   color: string;
-  isLive?: boolean;
-  badgeCount?: number;
   accentColor: string;
-  liveColor: string;
+  isDark: boolean;
 }) {
+  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      toValue: focused ? 1 : 0,
+      tension: 300,
+      friction: 20,
+      useNativeDriver: true,
+    }).start();
+  }, [focused]);
+
+  const pillScale = scaleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  const iconTranslate = scaleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -1],
+  });
+
   return (
     <View style={styles.iconWrapper}>
-      {focused && (
-        <View style={[styles.activeIndicator, { backgroundColor: accentColor }]} />
-      )}
-      <View style={styles.iconContainer}>
+      {/* Active pill background */}
+      <Animated.View
+        style={[
+          styles.activePill,
+          {
+            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+            transform: [{ scaleX: pillScale }, { scaleY: pillScale }],
+            opacity: scaleAnim,
+          },
+        ]}
+      />
+      {/* Icon */}
+      <Animated.View style={[styles.iconContainer, { transform: [{ translateY: iconTranslate }] }]}>
         <Ionicons 
           name={(focused ? name : `${name}-outline`) as any}
-          size={24} 
-          color={isLive && badgeCount > 0 ? liveColor : color} 
+          size={focused ? 22 : 21} 
+          color={color} 
         />
-        {isLive && badgeCount > 0 && (
-          <View 
-            style={[
-              styles.liveBadge, 
-              { backgroundColor: liveColor }
-            ]}
-          >
-            <View style={styles.liveDotInner} />
-          </View>
-        )}
-      </View>
+      </Animated.View>
     </View>
   );
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const { colorScheme, isDark } = useTheme();
+  const colors = Colors[colorScheme];
   const { liveMatches } = useMatchStore();
   const { t, isRTL } = useRTL();
 
   return (
     <Tabs
       screenOptions={{
+        lazy: true,
+        freezeOnBlur: true,
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
-          marginTop: 2,
+          letterSpacing: 0.2,
+          marginTop: 0,
           marginBottom: Platform.OS === 'ios' ? 0 : 4,
         },
         tabBarStyle: {
           position: 'absolute',
+          left: 12,
+          right: 12,
+          bottom: Platform.OS === 'ios' ? 26 : 12,
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           elevation: 0,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-          paddingTop: 10,
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 6,
           flexDirection: isRTL ? 'row-reverse' : 'row',
+          borderRadius: 20,
+          overflow: 'hidden',
         },
         tabBarBackground: () => (
-          <View style={StyleSheet.absoluteFill}>
+          <View style={[StyleSheet.absoluteFill, { borderRadius: 20, overflow: 'hidden' }]}>
             {Platform.OS === 'ios' ? (
               <BlurView
-                intensity={90}
-                tint={colorScheme === 'dark' ? 'dark' : 'light'}
+                intensity={80}
+                tint={isDark ? 'dark' : 'light'}
                 style={StyleSheet.absoluteFill}
               />
             ) : null}
@@ -91,9 +117,10 @@ export default function TabLayout() {
               style={[
                 StyleSheet.absoluteFill, 
                 { 
-                  backgroundColor: colors.tabBar,
-                  borderTopWidth: 1,
-                  borderTopColor: colors.border,
+                  backgroundColor: isDark ? 'rgba(20,20,20,0.92)' : 'rgba(245,245,245,0.92)',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                  borderRadius: 20,
                 }
               ]} 
             />
@@ -108,11 +135,11 @@ export default function TabLayout() {
           title: t('tabs.home'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon 
-              name="home" 
+              name="football" 
               focused={focused} 
               color={color}
               accentColor={colors.accent}
-              liveColor={colors.live}
+              isDark={isDark}
             />
           ),
         }}
@@ -120,29 +147,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="live"
         options={{
-          title: t('match.live'),
+          title: t('news.title'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon 
-              name="pulse" 
+              name="newspaper" 
               focused={focused} 
               color={color}
-              isLive={true}
-              badgeCount={liveMatches.length}
               accentColor={colors.accent}
-              liveColor={colors.live}
+              isDark={isDark}
             />
           ),
-          tabBarBadge: liveMatches.length > 0 ? liveMatches.length : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: colors.live,
-            color: '#fff',
-            fontSize: 10,
-            fontWeight: '700',
-            minWidth: 18,
-            height: 18,
-            borderRadius: 9,
-            top: -2,
-          },
         }}
       />
       <Tabs.Screen
@@ -151,11 +165,26 @@ export default function TabLayout() {
           title: t('favorites.title'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon 
-              name="heart" 
+              name="star" 
               focused={focused} 
               color={focused ? colors.tertiary : color}
               accentColor={colors.tertiary}
-              liveColor={colors.live}
+              isDark={isDark}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="store"
+        options={{
+          title: t('store.tab'),
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon 
+              name="bag-handle" 
+              focused={focused} 
+              color={color}
+              accentColor={colors.accent}
+              isDark={isDark}
             />
           ),
         }}
@@ -166,11 +195,11 @@ export default function TabLayout() {
           title: t('settings.title'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon 
-              name="person" 
+              name="person-circle" 
               focused={focused} 
               color={color}
               accentColor={colors.accent}
-              liveColor={colors.live}
+              isDark={isDark}
             />
           ),
         }}
@@ -183,37 +212,18 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 56,
-    height: 36,
+    width: 48,
+    height: 30,
+    position: 'relative',
   },
-  activeIndicator: {
+  activePill: {
     position: 'absolute',
-    top: -6,
-    width: 24,
-    height: 3,
-    borderRadius: 2,
+    width: 44,
+    height: 28,
+    borderRadius: 14,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-  liveBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -8,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  liveDotInner: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#fff',
   },
 });

@@ -5,10 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
   TextInput,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Team, Player } from '@/types';
 
 interface PlayerSelectorProps {
@@ -25,7 +25,7 @@ export default function PlayerSelector({
   onSelect,
 }: PlayerSelectorProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const [activeTeam, setActiveTeam] = useState<string>(selectedTeamId || homeTeam.id);
   const [search, setSearch] = useState('');
 

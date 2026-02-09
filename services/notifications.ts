@@ -47,6 +47,20 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
     console.log('✅ FCM token obtained');
 
+    // Send token to backend (only if authenticated)
+    try {
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const authToken = await AsyncStorage.getItem('token');
+      if (authToken) {
+        await api.post('/users/push-token', { pushToken: token });
+        console.log('✅ FCM token sent to backend');
+      } else {
+        console.log('⚠️ Skipping push token registration - user not authenticated');
+      }
+    } catch (error) {
+      console.log('⚠️ Failed to send FCM token to backend (will retry on login)');
+    }
+
     // Configure notification channel for Android
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('match-notifications', {
@@ -116,10 +130,14 @@ export async function getNotifications(page = 1, limit = 20, unreadOnly = false)
 // Get unread count
 export async function getUnreadCount(): Promise<number> {
   try {
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return 0;
+    
     const response = await api.get('/notifications/unread-count');
     return response.data.count || 0;
   } catch (error) {
-    console.error('Failed to get unread count:', error);
+    console.log('Failed to get unread count:', error);
     return 0;
   }
 }

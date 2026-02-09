@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
   StatusBar,
   Image,
   Platform,
@@ -17,6 +16,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { teamApi, matchApi } from '@/services/api';
 import { Team, Player, Match } from '@/types';
@@ -29,7 +29,7 @@ import { useRTL } from '@/contexts/RTLContext';
 export default function TeamDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   
   const [team, setTeam] = useState<Team | null>(null);
@@ -53,13 +53,14 @@ export default function TeamDetailsScreen() {
         teamApi.getPlayers(id as string),
       ]);
       
-      setTeam(teamRes.data);
-      setPlayers(playersRes.data || []);
+      setTeam(teamRes.data?.data || teamRes.data);
+      setPlayers(playersRes.data?.data || playersRes.data || []);
       
-      // Fetch team matches - using getAll for now
+      // Fetch team matches
       const matchesRes = await matchApi.getAll();
+      const matchesData = matchesRes.data?.data || matchesRes.data || [];
       // Filter matches that include this team
-      setMatches((matchesRes.data || []).filter((m: Match) => 
+      setMatches(matchesData.filter((m: Match) => 
         m.homeTeam?.id === id || m.awayTeam?.id === id
       ));
     } catch (error) {
@@ -113,31 +114,8 @@ export default function TeamDetailsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitle: '',
-          headerLeft: () => (
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.surface }]}
-              onPress={() => router.back()}
-            >
-              <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color={colors.text} />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      
+      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar barStyle="light-content" />
-      
-      {/* Animated Header Background */}
-      <Animated.View
-        style={[
-          styles.headerBackground,
-          { opacity: headerOpacity, backgroundColor: team?.primaryColor || colors.primary },
-        ]}
-      />
 
       <Animated.ScrollView
         onScroll={Animated.event(
@@ -157,51 +135,57 @@ export default function TeamDetailsScreen() {
           ]}
           style={styles.heroHeader}
         >
+          {/* Back Button */}
+          <TouchableOpacity
+            style={[styles.backButton, { alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={24} color="#fff" />
+          </TouchableOpacity>
+
           <View style={styles.heroContent}>
-            <TeamLogo team={team || { name: '' }} size="large" />
+            <TeamLogo team={team || { name: '' }} size="xlarge" />
             <Text style={[styles.teamName, { color: '#fff' }]}>{team?.name}</Text>
             <Text style={[styles.teamCountry, { color: 'rgba(255,255,255,0.7)' }]}>
               {team?.country} • {team?.shortName}
             </Text>
+            {team?.coach && (
+              <Text style={[styles.teamCoach, { color: 'rgba(255,255,255,0.6)' }]}>
+                {t('match.coach')}: {team.coach}
+              </Text>
+            )}
           </View>
         </LinearGradient>
 
-        {/* Stats Overview */}
-        <View style={styles.statsSection}>
-          <GlassCard variant="default" style={styles.statsCard}>
-            <View style={[styles.statsRow, { flexDirection }]}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {players.length}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('team.players')}
-                </Text>
-              </View>
-              <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {matches.length}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('team.matches')}
-                </Text>
-              </View>
-              <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.success }]}>
-                  {matches.filter(m => 
-                    (m.homeTeam?.id === id && m.homeScore > m.awayScore) ||
-                    (m.awayTeam?.id === id && m.awayScore > m.homeScore)
-                  ).length}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  {t('team.wins')}
-                </Text>
-              </View>
+        {/* Team Stats Row */}
+        {team && (team.wins !== undefined || team.draws !== undefined || team.losses !== undefined) && (
+          <View style={[styles.statsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: '#4CAF50' }]}>{team.wins || 0}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.wins')}</Text>
             </View>
-          </GlassCard>
-        </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: '#FF9800' }]}>{team.draws || 0}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.draws')}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: '#F44336' }]}>{team.losses || 0}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.losses')}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>{team.goalsFor || 0}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.goalsFor')}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>{team.goalsAgainst || 0}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.goalsAgainst')}</Text>
+            </View>
+          </View>
+        )}
 
         {/* Tabs */}
         <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
@@ -247,28 +231,29 @@ export default function TeamDetailsScreen() {
                 posPlayers.length > 0 && (
                   <View key={position} style={styles.positionSection}>
                     <Text style={[styles.positionTitle, { color: colors.textSecondary }]}>
-                      {position}s ({posPlayers.length})
+                      {t(`positions.${position}`) || position} ({posPlayers.length})
                     </Text>
                     {posPlayers.map(player => (
                       <TouchableOpacity
                         key={player.id}
-                        style={[styles.playerCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                        style={[styles.playerCard, { backgroundColor: colors.card, borderColor: colors.cardBorder, flexDirection }]}
                         onPress={() => router.push(`/player/${player.id}` as any)}
+                        activeOpacity={0.7}
                       >
                         <View style={[styles.playerNumber, { backgroundColor: team?.primaryColor || colors.accent }]}>
                           <Text style={styles.playerNumberText}>
                             {player.shirtNumber || '-'}
                           </Text>
                         </View>
-                        <View style={[styles.playerInfo, { marginLeft: isRTL ? 0 : SPACING.sm, marginRight: isRTL ? SPACING.sm : 0 }]}>
+                        <View style={[styles.playerInfo, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0, flex: 1 }]}>
                           <Text style={[styles.playerName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
                             {player.name}
                           </Text>
                           <Text style={[styles.playerPosition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-                            {player.nationality || 'International'}
+                            {player.nationality || ''}
                           </Text>
                         </View>
-                        <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={colors.textTertiary} />
+                        <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={18} color={colors.textTertiary} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -312,126 +297,144 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    zIndex: 10,
-  },
   backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.xs,
+    marginHorizontal: SPACING.md,
   },
   heroHeader: {
-    paddingTop: Platform.OS === 'ios' ? 90 : 70,
-    paddingBottom: SPACING.xl,
-    alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 20,
+    paddingBottom: SPACING.xxl,
+    borderBottomLeftRadius: RADIUS.xl,
+    borderBottomRightRadius: RADIUS.xl,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
   },
   heroContent: {
     alignItems: 'center',
+    marginTop: SPACING.lg,
   },
   teamName: {
-    ...TYPOGRAPHY.headlineMedium,
-    fontWeight: '800',
+    ...TYPOGRAPHY.headlineLarge,
+    fontWeight: '900',
     marginTop: SPACING.md,
     textAlign: 'center',
+    paddingHorizontal: SPACING.lg,
+    letterSpacing: -0.5,
   },
   teamCountry: {
-    ...TYPOGRAPHY.bodyMedium,
-    marginTop: SPACING.xxs,
+    ...TYPOGRAPHY.titleMedium,
+    marginTop: SPACING.xs,
+    opacity: 0.9,
+    fontWeight: '500',
   },
-  statsSection: {
-    paddingHorizontal: SPACING.md,
-    marginTop: -SPACING.lg,
-  },
-  statsCard: {
-    marginBottom: SPACING.md,
+  teamCoach: {
+    ...TYPOGRAPHY.bodySmall,
+    marginTop: SPACING.xs,
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
+    justifyContent: 'space-around',
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    ...SHADOWS.sm,
   },
   statItem: {
-    alignItems: 'center',
     flex: 1,
+    alignItems: 'center',
   },
   statValue: {
-    ...TYPOGRAPHY.headlineSmall,
-    fontWeight: '800',
+    ...TYPOGRAPHY.titleLarge,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
   },
   statLabel: {
     ...TYPOGRAPHY.labelSmall,
+    fontWeight: '500',
     marginTop: 2,
   },
   statDivider: {
     width: 1,
-    height: 32,
+    height: 28,
   },
   tabContainer: {
     flexDirection: 'row',
-    marginHorizontal: SPACING.md,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
+    marginHorizontal: SPACING.lg,
+    borderRadius: RADIUS.full,
+    marginBottom: SPACING.lg,
+    padding: 4,
+    ...SHADOWS.sm,
   },
   tab: {
     flex: 1,
     paddingVertical: SPACING.sm,
     alignItems: 'center',
+    borderRadius: RADIUS.full,
   },
   tabText: {
-    ...TYPOGRAPHY.titleSmall,
+    ...TYPOGRAPHY.labelLarge,
     fontWeight: '600',
   },
   content: {
     paddingHorizontal: SPACING.md,
   },
   positionSection: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   positionTitle: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '700',
-    marginBottom: SPACING.sm,
+    ...TYPOGRAPHY.titleSmall,
+    fontWeight: '800',
+    marginBottom: SPACING.md,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
+    opacity: 0.7,
+    marginLeft: SPACING.xs,
   },
   playerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.xs,
+    padding: SPACING.md,
+    borderRadius: RADIUS.xl,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
+    ...SHADOWS.xs,
   },
   playerNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    ...SHADOWS.sm,
   },
   playerNumberText: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#fff',
+    fontVariant: ['tabular-nums'],
   },
   playerInfo: {
     flex: 1,
+    paddingHorizontal: SPACING.sm,
   },
   playerName: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '600',
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   playerPosition: {
-    ...TYPOGRAPHY.labelSmall,
-    marginTop: 1,
+    ...TYPOGRAPHY.bodySmall,
+    marginTop: 2,
+    opacity: 0.7,
   },
   matchesList: {},
   emptyState: {

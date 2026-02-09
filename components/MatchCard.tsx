@@ -1,14 +1,15 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
+import { MatchTime } from '@/hooks/useLiveMinute';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Match } from '@/types';
 import { MATCH_STATUS } from '@/constants/config';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
@@ -24,16 +25,20 @@ interface MatchCardProps {
   onPress: () => void;
   showLiveIndicator?: boolean;
   variant?: 'default' | 'compact' | 'detailed';
+  liveMinute?: number | null;
+  liveTime?: MatchTime | null;
 }
 
 function MatchCard({ 
   match, 
   onPress, 
   showLiveIndicator = true,
-  variant = 'default' 
+  variant = 'default',
+  liveMinute,
+  liveTime,
 }: MatchCardProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
   const statusInfo = MATCH_STATUS[match.status];
@@ -50,6 +55,26 @@ function MatchCard({
 
   const matchDate = new Date(match.startTime);
 
+  // Countdown for matches within 24 hours
+  const [countdown, setCountdown] = useState('');
+  useEffect(() => {
+    if (!isUpcoming) return;
+    const updateCountdown = () => {
+      const diff = matchDate.getTime() - Date.now();
+      if (diff <= 0 || diff > 24 * 60 * 60 * 1000) {
+        setCountdown('');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [isUpcoming, matchDate.getTime()]);
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
       <View 
@@ -57,55 +82,59 @@ function MatchCard({
           styles.container,
           { 
             backgroundColor: colors.card,
-            borderColor: isLive ? colors.live : colors.cardBorder,
+            borderColor: isLive ? 'rgba(239, 68, 68, 0.35)' : colors.cardBorder,
           },
           isLive && styles.liveContainer,
         ]}
       >
-        {/* Live Gradient Border Effect */}
+        {/* Live Top Accent */}
         {isLive && (
-          <View style={styles.liveGlow}>
-            <LinearGradient
-              colors={colors.gradients.live}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </View>
+          <LinearGradient
+            colors={['rgba(239, 68, 68, 0.8)', 'rgba(239, 68, 68, 0.2)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.liveAccent}
+          />
         )}
 
-        {/* Header Row */}
+        {/* Header: Competition + Status */}
         <View style={[styles.header, { flexDirection }]}>
-          <View style={[styles.competitionRow, { flexDirection, marginRight: isRTL ? 0 : SPACING.md, marginLeft: isRTL ? SPACING.md : 0 }]}>
-            <View style={[styles.competitionDot, { backgroundColor: colors.accent, marginRight: isRTL ? 0 : SPACING.xs, marginLeft: isRTL ? SPACING.xs : 0 }]} />
+          <View style={[styles.competitionRow, { flexDirection }]}>
+            <View style={[styles.competitionDot, { backgroundColor: isLive ? colors.live : colors.accent }]} />
             <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
-              {match.competition?.name || 'Football'}
+              {match.competition?.name || t('match.match')}
             </Text>
           </View>
           
           {isLive && showLiveIndicator ? (
-            <View style={[styles.liveBadge, { backgroundColor: colors.liveBackground }]}>
-              <View style={[styles.liveDot, { backgroundColor: colors.live }]} />
-              <Text style={[styles.liveText, { color: colors.live }]}>
-                {match.currentMinute ? `${match.currentMinute}'` : t('match.live')}
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>
+                {liveTime ? liveTime.display : (liveMinute ?? match.currentMinute) ? `${liveMinute ?? match.currentMinute}'` : 'LIVE'}
               </Text>
             </View>
           ) : isUpcoming ? (
-            <View style={[styles.timeBadge, { backgroundColor: colors.surface }]}>
-              <Ionicons name="time-outline" size={12} color={colors.textTertiary} />
-              <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-                {format(matchDate, 'HH:mm')}
-              </Text>
-            </View>
+            countdown ? (
+              <View style={styles.countdownBadge}>
+                <Ionicons name="time-outline" size={11} color="#3B82F6" />
+                <Text style={styles.countdownText}>{countdown}</Text>
+              </View>
+            ) : (
+              <View style={[styles.timeBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+                  {format(matchDate, 'HH:mm')}
+                </Text>
+              </View>
+            )
           ) : (
-            <View style={[styles.statusBadge, { backgroundColor: colors.backgroundSecondary }]}>
-              <Text style={[styles.statusText, { color: colors.textTertiary }]}>{t('match.finished')}</Text>
+            <View style={[styles.finishedBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+              <Text style={[styles.finishedText, { color: colors.textTertiary }]}>{t('match.finished')}</Text>
             </View>
           )}
         </View>
 
-        {/* Main Content - Teams & Score */}
-        <View style={styles.matchContent}>
+        {/* Teams & Score */}
+        <View style={[styles.matchContent, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {/* Home Team */}
           <View style={styles.teamSection}>
             <TeamLogo 
@@ -114,7 +143,7 @@ function MatchCard({
                 shortName: match.homeTeam.shortName,
                 logoUrl: match.homeTeam.logoUrl 
               }} 
-              size="small" 
+              size="medium" 
             />
             <Text 
               style={[
@@ -122,40 +151,44 @@ function MatchCard({
                 { color: colors.text },
                 match.homeScore > match.awayScore && isFinished && styles.winnerName
               ]} 
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {match.homeTeam.name}
             </Text>
           </View>
 
-          {/* Score Center */}
+          {/* Score / VS */}
           <View style={styles.scoreSection}>
             {isUpcoming ? (
               <View style={styles.vsContainer}>
-                <Text style={[styles.vsText, { color: colors.textTertiary }]}>VS</Text>
-                <Text style={[styles.matchDateText, { color: colors.textSecondary }]}>
+                <View style={[styles.vsBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                  <Text style={[styles.vsText, { color: colors.textTertiary }]}>VS</Text>
+                </View>
+                <Text style={[styles.matchDateText, { color: colors.textTertiary }]}>
                   {getDateLabel(matchDate)}
                 </Text>
               </View>
             ) : (
-              <View style={styles.scoreRow}>
-                <Text style={[
-                  styles.score,
-                  { color: colors.text },
-                  match.homeScore > match.awayScore && { color: colors.success }
-                ]}>
-                  {match.homeScore}
-                </Text>
-                <View style={[styles.scoreDivider, { backgroundColor: colors.border }]}>
-                  <Text style={[styles.scoreDash, { color: colors.textTertiary }]}>-</Text>
+              <View style={styles.scoreContainer}>
+                <View style={[styles.scoreBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
+                  <Text style={[
+                    styles.score,
+                    { color: colors.text },
+                    match.homeScore > match.awayScore && isFinished && { color: colors.success },
+                    isLive && { color: colors.live }
+                  ]}>
+                    {match.homeScore}
+                  </Text>
+                  <View style={[styles.scoreSeparator, { backgroundColor: colors.textTertiary }]} />
+                  <Text style={[
+                    styles.score,
+                    { color: colors.text },
+                    match.awayScore > match.homeScore && isFinished && { color: colors.success },
+                    isLive && { color: colors.live }
+                  ]}>
+                    {match.awayScore}
+                  </Text>
                 </View>
-                <Text style={[
-                  styles.score,
-                  { color: colors.text },
-                  match.awayScore > match.homeScore && { color: colors.success }
-                ]}>
-                  {match.awayScore}
-                </Text>
               </View>
             )}
           </View>
@@ -168,7 +201,7 @@ function MatchCard({
                 shortName: match.awayTeam.shortName,
                 logoUrl: match.awayTeam.logoUrl 
               }} 
-              size="small" 
+              size="medium" 
             />
             <Text 
               style={[
@@ -176,42 +209,22 @@ function MatchCard({
                 { color: colors.text },
                 match.awayScore > match.homeScore && isFinished && styles.winnerName
               ]} 
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {match.awayTeam.name}
             </Text>
           </View>
         </View>
 
-        {/* Live Match Events Preview */}
+        {/* Live Events Footer */}
         {isLive && match.events && match.events.length > 0 && (
-          <View style={[styles.eventsPreview, { borderTopColor: colors.divider }]}>
-            <View style={styles.eventItem}>
-              <View style={[styles.eventIcon, { backgroundColor: colors.goalBackground }]}>
-                <Ionicons name="football" size={12} color={colors.goal} />
-              </View>
-              <Text style={[styles.eventCount, { color: colors.text }]}>
-                {match.events.filter(e => e.type === 'goal').length}
-              </Text>
-            </View>
-            <View style={styles.eventItem}>
-              <View style={[styles.eventIcon, { backgroundColor: colors.yellowCardBackground }]}>
-                <View style={[styles.cardIcon, { backgroundColor: colors.yellowCard }]} />
-              </View>
-              <Text style={[styles.eventCount, { color: colors.text }]}>
-                {match.events.filter(e => e.type === 'yellow_card').length}
-              </Text>
-            </View>
-            {match.events.some(e => e.type === 'red_card') && (
-              <View style={styles.eventItem}>
-                <View style={[styles.eventIcon, { backgroundColor: colors.redCardBackground }]}>
-                  <View style={[styles.cardIcon, { backgroundColor: colors.redCard }]} />
-                </View>
-                <Text style={[styles.eventCount, { color: colors.text }]}>
-                  {match.events.filter(e => e.type === 'red_card').length}
+          <View style={[styles.eventsPreview, { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
+             <View style={styles.eventItem}>
+                <Ionicons name="football" size={13} color={colors.textTertiary} />
+                <Text style={[styles.eventText, { color: colors.textTertiary }]}>
+                  {match.events.filter(e => e.type === 'goal').length} {t('match.goals')}
                 </Text>
-              </View>
-            )}
+             </View>
           </View>
         )}
       </View>
@@ -221,17 +234,16 @@ function MatchCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: RADIUS.lg,
-    padding: SPACING.sm,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
     marginBottom: SPACING.sm,
     borderWidth: 1,
     overflow: 'hidden',
-    ...SHADOWS.xs,
   },
   liveContainer: {
     borderWidth: 1.5,
   },
-  liveGlow: {
+  liveAccent: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -242,156 +254,163 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   competitionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: SPACING.md,
+    gap: 6,
   },
   competitionDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginRight: SPACING.xs,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
   },
   competition: {
-    ...TYPOGRAPHY.labelSmall,
+    fontSize: 11,
+    fontWeight: '600',
     flex: 1,
+    letterSpacing: 0.2,
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: 2,
-    borderRadius: RADIUS.xs,
-    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    gap: 5,
   },
   liveDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EF4444',
   },
   liveText: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#EF4444',
+    letterSpacing: 0.3,
   },
-  timeBadge: {
+  countdownBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: 2,
-    borderRadius: RADIUS.xs,
-    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    gap: 4,
+  },
+  countdownText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#3B82F6',
+    fontVariant: ['tabular-nums'],
+  },
+  timeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
   },
   timeText: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
-  statusBadge: {
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: 2,
-    borderRadius: RADIUS.xs,
+  finishedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
   },
-  statusText: {
-    ...TYPOGRAPHY.labelSmall,
+  finishedText: {
+    fontSize: 10,
     fontWeight: '600',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   matchContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: SPACING.xs,
   },
   teamSection: {
     flex: 1,
     alignItems: 'center',
-  },
-  teamLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  teamInitials: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
+    gap: 6,
   },
   teamName: {
-    ...TYPOGRAPHY.labelSmall,
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
-    maxWidth: 70,
+    lineHeight: 16,
   },
   winnerName: {
-    fontWeight: '700',
+    fontWeight: '800',
   },
   scoreSection: {
     alignItems: 'center',
     paddingHorizontal: SPACING.sm,
-    minWidth: 70,
+    minWidth: 80,
   },
   vsContainer: {
     alignItems: 'center',
+    gap: 3,
+  },
+  vsBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: RADIUS.md,
   },
   vsText: {
-    ...TYPOGRAPHY.titleLarge,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   matchDateText: {
-    ...TYPOGRAPHY.labelSmall,
-    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '500',
   },
-  scoreRow: {
+  scoreContainer: {
+    alignItems: 'center',
+  },
+  scoreBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.lg,
+    gap: 8,
   },
   score: {
-    fontSize: 20,
-    fontWeight: '700',
-    minWidth: 22,
+    fontSize: 24,
+    fontWeight: '800',
+    minWidth: 24,
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
-  scoreDivider: {
-    width: 18,
-    height: 2,
-    borderRadius: 1,
-    marginHorizontal: SPACING.xs,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scoreDash: {
-    fontSize: 14,
-    fontWeight: '300',
+  scoreSeparator: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    opacity: 0.4,
   },
   eventsPreview: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: SPACING.sm,
     paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    gap: SPACING.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   eventItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xxs,
+    gap: 5,
   },
-  eventIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardIcon: {
-    width: 8,
-    height: 11,
-    borderRadius: 1,
-  },
-  eventCount: {
-    ...TYPOGRAPHY.labelMedium,
+  eventText: {
+    fontSize: 11,
     fontWeight: '600',
   },
 });

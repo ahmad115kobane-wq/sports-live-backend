@@ -4,12 +4,12 @@ import {
   View,
   StyleSheet,
   ViewStyle,
-  useColorScheme,
   Platform,
 } from 'react-native';
 import { BlurView } from '@/components/ui/BlurView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { RADIUS, SHADOWS, SPACING } from '@/constants/Theme';
 
 interface GlassCardProps {
@@ -30,7 +30,7 @@ export default function GlassCard({
   variant = 'default',
 }: GlassCardProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
 
   const getVariantColors = (): readonly [string, string] => {

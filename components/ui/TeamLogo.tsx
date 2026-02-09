@@ -4,9 +4,9 @@ import {
   Text,
   Image,
   StyleSheet,
-  useColorScheme,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { API_URL } from '@/constants/config';
 
@@ -31,13 +31,13 @@ export default function TeamLogo({
   style,
 }: TeamLogoProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   const sizeMap = {
-    small: { logo: 36, fontSize: 12, nameSize: 11 },
-    medium: { logo: 50, fontSize: 16, nameSize: 13 },
-    large: { logo: 70, fontSize: 22, nameSize: 15 },
-    xlarge: { logo: 90, fontSize: 28, nameSize: 17 },
+    small: { logo: 28, fontSize: 10, nameSize: 11 },
+    medium: { logo: 40, fontSize: 14, nameSize: 13 },
+    large: { logo: 56, fontSize: 20, nameSize: 15 },
+    xlarge: { logo: 72, fontSize: 26, nameSize: 17 },
   };
 
   const currentSize = sizeMap[size];

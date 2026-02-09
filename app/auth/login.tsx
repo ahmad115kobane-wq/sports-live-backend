@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
@@ -25,7 +25,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
   const [email, setEmail] = useState('');
@@ -56,7 +56,7 @@ export default function LoginScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       {/* Full Screen Gradient Background */}
       <LinearGradient
@@ -71,7 +71,7 @@ export default function LoginScreen() {
         style={[styles.backButton, { backgroundColor: colors.surfacePressed }, isRTL && styles.backButtonRTL]}
         onPress={() => router.back()}
       >
-        <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={colors.text} />
+        <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={24} color={colors.text} />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -196,7 +196,7 @@ export default function LoginScreen() {
                 ) : (
                   <View style={[styles.buttonContent, { flexDirection }]}>
                     <Text style={[styles.buttonText, { color: colors.textInverse }]}>{t('auth.signIn')}</Text>
-                    <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={20} color={colors.textInverse} />
+                    <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={20} color={colors.textInverse} />
                   </View>
                 )}
               </LinearGradient>
@@ -254,9 +254,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 16,
     left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',

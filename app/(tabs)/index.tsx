@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
-  useColorScheme,
   TouchableOpacity,
   StatusBar,
   Animated,
   Platform,
   Dimensions,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -22,16 +22,201 @@ import { useMatchStore } from '@/store/matchStore';
 import { useAuthStore } from '@/store/authStore';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { useSocket } from '@/services/socket';
+import { matchApi, sliderApi } from '@/services/api';
+import { getUnreadCount } from '@/services/notifications';
 import MatchCard from '@/components/MatchCard';
-import FeaturedMatch from '@/components/FeaturedMatch';
-import { MatchCardSkeleton, FeaturedMatchSkeleton } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
+import { MatchCardSkeleton } from '@/components/ui/Skeleton';
 import LiveBadge from '@/components/ui/LiveBadge';
+import PageHeader from '@/components/ui/PageHeader';
 import { format, isToday } from 'date-fns';
 import { ar, enUS, arSA } from 'date-fns/locale';
 import { useRTL } from '@/contexts/RTLContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { Match } from '@/types';
+import { useLiveMatchTimes, MatchTime } from '@/hooks/useLiveMinute';
+import { SOCKET_URL } from '@/constants/config';
+import { matchUpdateEmitter } from '@/utils/matchEvents';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const NEWS_BANNER_WIDTH = SCREEN_WIDTH - SPACING.lg * 2;
+const NEWS_BANNER_HEIGHT = 170;
+
+function getImageUrl(imageUrl?: string) {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith('http')) return imageUrl;
+  return `${SOCKET_URL}${imageUrl}`;
+}
+
+function NewsBanner({ articles, colors, isDark }: { articles: any[]; colors: any; isDark: boolean }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const timerRef = useRef<any>(null);
+
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (articles.length <= 1) return;
+    timerRef.current = setInterval(() => {
+      setActiveIndex(prev => {
+        const next = (prev + 1) % articles.length;
+        scrollRef.current?.scrollTo({ x: next * NEWS_BANNER_WIDTH, animated: true });
+        return next;
+      });
+    }, 5000);
+  }, [articles.length]);
+
+  useEffect(() => {
+    startTimer();
+    return () => clearInterval(timerRef.current);
+  }, [startTimer]);
+
+  const onScrollEnd = useCallback((e: any) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / NEWS_BANNER_WIDTH);
+    if (idx >= 0 && idx < articles.length) {
+      setActiveIndex(idx);
+      startTimer();
+    }
+  }, [articles.length, startTimer]);
+
+  if (articles.length === 0) return null;
+
+  return (
+    <View style={newsBannerStyles.container}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onScrollEnd}
+        snapToInterval={NEWS_BANNER_WIDTH}
+        decelerationRate="fast"
+        bounces={false}
+      >
+        {articles.map((article) => {
+          const imgUrl = getImageUrl(article.imageUrl);
+          return (
+            <TouchableOpacity
+              key={article.id}
+              activeOpacity={0.9}
+              onPress={() => article.linkUrl ? router.push(article.linkUrl as any) : null}
+              style={[newsBannerStyles.slide, { width: NEWS_BANNER_WIDTH }]}
+            >
+              {imgUrl ? (
+                <Image source={{ uri: imgUrl }} style={newsBannerStyles.image} resizeMode="cover" />
+              ) : (
+                <LinearGradient
+                  colors={isDark ? ['#1a1a2e', '#0f3460'] : ['#667eea', '#764ba2']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={newsBannerStyles.image}
+                />
+              )}
+              {article.title && (
+                <>
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.7)']}
+                    locations={[0, 0.35, 1]}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                  <View style={newsBannerStyles.textOverlay}>
+                    <Text style={newsBannerStyles.title} numberOfLines={2}>{article.title}</Text>
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Dots */}
+      {articles.length > 1 && (
+        <View style={newsBannerStyles.dotsRow}>
+          {articles.map((_: any, i: number) => (
+            <View
+              key={i}
+              style={[
+                newsBannerStyles.dot,
+                i === activeIndex ? newsBannerStyles.dotActive : newsBannerStyles.dotInactive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const newsBannerStyles = StyleSheet.create({
+  container: {
+    borderRadius: RADIUS.xl,
+    overflow: 'hidden',
+    height: NEWS_BANNER_HEIGHT,
+  },
+  slide: {
+    height: NEWS_BANNER_HEIGHT,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  textOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: SPACING.md,
+    paddingBottom: SPACING.lg,
+  },
+  newsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    gap: 4,
+    marginBottom: 6,
+  },
+  newsBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  title: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 22,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  dotsRow: {
+    position: 'absolute',
+    bottom: SPACING.sm,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    zIndex: 20,
+  },
+  dot: {
+    borderRadius: 4,
+  },
+  dotActive: {
+    width: 18,
+    height: 6,
+    backgroundColor: '#fff',
+  },
+  dotInactive: {
+    width: 6,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+});
 
 // أسماء الأيام بالكردي
 const KURDISH_DAYS: { [key: string]: string } = {
@@ -69,10 +254,8 @@ interface DayMatches {
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
-  const isDark = colorScheme === 'dark';
+  const colors = Colors[colorScheme];
   const [refreshing, setRefreshing] = useState(false);
-  const scrollY = useRef(new Animated.Value(0)).current;
   const { t, isRTL, flexDirection, language } = useRTL();
   
   // قائمة المباريات مجمعة حسب الأيام
@@ -93,12 +276,33 @@ export default function HomeScreen() {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [loadingAllMatches, setLoadingAllMatches] = useState(true);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [sliders, setSliders] = useState<any[]>([]);
+
+  // Single shared timer for all live matches — ticks every second, computes MM:SS
+  const allLiveMatches = useMemo(() => {
+    const combined = [...allMatches, ...liveMatches];
+    // Deduplicate by id
+    const map = new Map<string, Match>();
+    combined.forEach(m => map.set(m.id, m));
+    return Array.from(map.values());
+  }, [allMatches, liveMatches]);
+  const liveTimesMap = useLiveMatchTimes(allLiveMatches);
+
   const { user } = useAuthStore();
   const { joinLiveFeed } = useSocket();
 
   useEffect(() => {
     loadData();
     joinLiveFeed();
+  }, []);
+
+  // Subscribe to real-time match updates (goals, status changes, etc.)
+  useEffect(() => {
+    const unsubscribe = matchUpdateEmitter.subscribe((updated) => {
+      setAllMatches(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+    });
+    return unsubscribe;
   }, []);
 
   // تجميع المباريات حسب التاريخ
@@ -118,43 +322,55 @@ export default function HomeScreen() {
     
     return sortedDates.map(dateKey => ({
       date: new Date(dateKey),
-      matches: grouped[dateKey].sort((a, b) => 
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-      ),
+      matches: grouped[dateKey].sort((a, b) => {
+        // المباريات التي لم تبدأ أولاً ثم المنتهية
+        const statusOrder = (s: string) => s === 'finished' ? 1 : 0;
+        const diff = statusOrder(a.status) - statusOrder(b.status);
+        if (diff !== 0) return diff;
+        return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      }),
       isLoading: false,
     }));
   }, []);
+
+  // مجموعة IDs المباريات المباشرة لاستبعادها من قسم مباريات اليوم
+  const liveMatchIds = useMemo(() => new Set(liveMatches.map(m => m.id)), [liveMatches]);
 
   // تحديث قائمة الأيام عند تغير المباريات أو البطولة المختارة
   useEffect(() => {
     if (allMatches.length > 0) {
       // فلترة المباريات حسب البطولة المختارة
-      const filteredMatches = selectedCompetition 
+      let filteredMatches = selectedCompetition 
         ? allMatches.filter(match => match.competitionId === selectedCompetition)
         : allMatches;
+
+      // استبعاد المباريات المباشرة من قسم اليوم — تظهر فقط في قسم البث المباشر
+      filteredMatches = filteredMatches.filter(match => !liveMatchIds.has(match.id));
       
       const grouped = groupMatchesByDate(filteredMatches);
       setDayMatchesList(grouped);
     } else if (!loadingAllMatches && allMatches.length === 0) {
       setDayMatchesList([]);
     }
-  }, [allMatches, loadingAllMatches, groupMatchesByDate, selectedCompetition]);
+  }, [allMatches, loadingAllMatches, groupMatchesByDate, selectedCompetition, liveMatchIds]);
 
   const loadData = async () => {
     setLoadingAllMatches(true);
     try {
       // جلب جميع المباريات بدون فلتر تاريخ
-      const response = await fetch(`${require('@/constants/config').API_URL}/matches`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setAllMatches(data.data);
+      const response = await matchApi.getAll();
+      if (response.data.success) {
+        setAllMatches(response.data.data);
       }
       
       await Promise.all([
         fetchFeaturedMatch(),
         fetchLiveMatches(),
         fetchActiveCompetitions(),
+        getUnreadCount().then(count => setUnreadCount(count)),
+        sliderApi.getActive().then(res => {
+          setSliders(res.data.data || []);
+        }).catch(() => {}),
       ]);
     } catch (error) {
       console.error('Error loading matches:', error);
@@ -192,230 +408,185 @@ export default function HomeScreen() {
     return t('home.welcome');
   };
 
-  // Header animations
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 60],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  // Shimmer animation for header
+  const waveAnim = useRef(new Animated.Value(-150)).current;
+  
+  useEffect(() => {
+    const shimmerLoop = Animated.loop(
+      Animated.timing(waveAnim, {
+        toValue: SCREEN_WIDTH + 150,
+        duration: 3000,
+        useNativeDriver: true,
+      })
+    );
+    shimmerLoop.start();
+    return () => shimmerLoop.stop();
+  }, []);
 
-  const headerTranslate = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -20],
-    extrapolate: 'clamp',
-  });
-
-  const compactHeaderOpacity = scrollY.interpolate({
-    inputRange: [40, 100],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
+  const waveTranslate = waveAnim;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar 
-        barStyle={isDark ? 'light-content' : 'dark-content'} 
-        backgroundColor="transparent"
-        translucent
+      <PageHeader
+        title={t('home.title')}
+        logo={colorScheme === 'dark' ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}
+        rightContent={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity 
+              style={styles.headerBtn}
+              onPress={() => router.push('/search' as any)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="search-outline" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerBtn}
+              onPress={() => router.push('/notifications' as any)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="notifications-outline" size={20} color={colors.text} />
+              {unreadCount > 0 && (
+                <View style={styles.notifBadge}>
+                  <Text style={styles.notifCount}>{unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        }
       />
-      
-      {/* Premium Header */}
-      <View style={styles.headerWrapper}>
-        {/* Main Header Content */}
-        <Animated.View 
-          style={[
-            styles.header, 
-            { 
-              opacity: headerOpacity,
-              transform: [{ translateY: headerTranslate }]
-            }
-          ]}
-        >
-          <LinearGradient
-            colors={isDark 
-              ? [colors.background, 'transparent'] 
-              : [colors.background, 'transparent']
-            }
-            style={styles.headerGradient}
-          >
-            <View style={[styles.headerContent, { flexDirection }]}>
-              <View style={[styles.headerLeft, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                <Text style={[styles.greeting, { color: colors.text, fontSize: 20, fontWeight: '700' }]}>
-                  {getGreeting()} 👋
-                </Text>
-              </View>
-              <View style={[styles.headerActions, { flexDirection }]}>
-                <TouchableOpacity 
-                  style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                  onPress={() => router.push('/search' as any)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="search" size={20} color={colors.text} />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                  onPress={() => router.push('/notifications' as any)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="notifications" size={20} color={colors.text} />
-                  <View style={[styles.notifBadge, { backgroundColor: colors.live }]}>
-                    <Text style={styles.notifCount}>3</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
 
-
-          </LinearGradient>
-        </Animated.View>
-
-        {/* Compact Header (shown on scroll) */}
-        <Animated.View 
-          style={[
-            styles.compactHeader, 
-            { 
-              backgroundColor: colors.surface,
-              opacity: compactHeaderOpacity,
-              borderBottomColor: colors.border,
-            }
-          ]}
-        >
-          <Text style={[styles.compactTitle, { color: colors.text }]}>
-            {t('app.name')}
-          </Text>
-          {liveMatches.length > 0 && (
-            <View style={[styles.compactLive, { backgroundColor: colors.liveBackground }]}>
-              <View style={[styles.compactLiveDot, { backgroundColor: colors.live }]} />
-              <Text style={[styles.compactLiveText, { color: colors.live }]}>
-                {liveMatches.length}
-              </Text>
-            </View>
-          )}
-        </Animated.View>
-      </View>
-
-      <Animated.ScrollView
+      <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, !loadingAllMatches && dayMatchesList.length === 0 && { flexGrow: 1 }]}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
             tintColor={colors.accent}
-            progressViewOffset={120}
           />
         }
-        onScroll={(event) => {
-          // تحديث الرسوم المتحركة
-          scrollY.setValue(event.nativeEvent.contentOffset.y);
-        }}
-        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
         {/* Competitions/Categories Section */}
         {competitions.length > 0 && (
           <View style={styles.competitionsSection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.competitionsScroll}
-            >
-              {/* All Button */}
+            <View style={[styles.competitionsRow, { flexDirection }]}>
+              {/* Fixed: Clubs & National Teams button */}
               <TouchableOpacity
                 style={[
                   styles.competitionItem,
                   { 
-                    backgroundColor: !selectedCompetition ? colors.accent : colors.surface,
-                    borderColor: !selectedCompetition ? colors.accent : colors.border,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
                   },
                 ]}
-                onPress={() => setSelectedCompetition(null)}
+                onPress={() => router.push('/clubs' as any)}
                 activeOpacity={0.7}
               >
                 <Ionicons 
-                  name="grid" 
+                  name="shield" 
                   size={18} 
-                  color={!selectedCompetition ? '#fff' : colors.textSecondary} 
+                  color={colors.textSecondary} 
                 />
                 <Text style={[
                   styles.competitionName, 
-                  { color: !selectedCompetition ? '#fff' : colors.text }
-                ]}>
-                  {t('common.all')}
+                  { color: colors.text }
+                ]} numberOfLines={1}>
+                  {t('clubs.title')}
                 </Text>
               </TouchableOpacity>
 
-              {competitions.map((competition) => {
-                const isSelected = selectedCompetition === competition.id;
-                const iconName = competition.icon || 'trophy';
-                
-                return (
-                  <TouchableOpacity
-                    key={competition.id}
-                    style={[
-                      styles.competitionItem,
-                      { 
-                        backgroundColor: isSelected ? colors.accent : colors.surface,
-                        borderColor: isSelected ? colors.accent : colors.border,
-                      },
-                    ]}
-                    onPress={() => setSelectedCompetition(isSelected ? null : competition.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons 
-                      name={iconName as any} 
-                      size={18} 
-                      color={isSelected ? '#fff' : colors.textSecondary} 
-                    />
-                    <Text 
+              {/* Scrollable: All + competitions */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.competitionsScroll}
+                style={{ flex: 1 }}
+              >
+                {/* All Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.competitionItem,
+                    { 
+                      backgroundColor: !selectedCompetition ? colors.accent : colors.surface,
+                      borderColor: !selectedCompetition ? colors.accent : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedCompetition(null)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name="grid" 
+                    size={18} 
+                    color={!selectedCompetition ? '#fff' : colors.textSecondary} 
+                  />
+                  <Text style={[
+                    styles.competitionName, 
+                    { color: !selectedCompetition ? '#fff' : colors.text }
+                  ]}>
+                    {t('common.all')}
+                  </Text>
+                </TouchableOpacity>
+
+                {competitions.map((competition) => {
+                  const isSelected = selectedCompetition === competition.id;
+                  const iconName = competition.icon || 'trophy';
+                  
+                  return (
+                    <TouchableOpacity
+                      key={competition.id}
                       style={[
-                        styles.competitionName, 
-                        { color: isSelected ? '#fff' : colors.text }
+                        styles.competitionItem,
+                        { 
+                          backgroundColor: isSelected ? colors.accent : colors.surface,
+                          borderColor: isSelected ? colors.accent : colors.border,
+                        },
                       ]}
-                      numberOfLines={1}
+                      onPress={() => setSelectedCompetition(isSelected ? null : competition.id)}
+                      activeOpacity={0.7}
                     >
-                      {competition.shortName || competition.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                      <Ionicons 
+                        name={iconName as any} 
+                        size={18} 
+                        color={isSelected ? '#fff' : colors.textSecondary} 
+                      />
+                      <Text 
+                        style={[
+                          styles.competitionName, 
+                          { color: isSelected ? '#fff' : colors.text }
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {competition.shortName || competition.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
           </View>
         )}
 
-        {/* Featured Match - Premium Card (only show if matches selected competition or no filter) */}
-        {isLoading ? (
-          <View style={styles.section}>
-            <FeaturedMatchSkeleton />
+        {/* Home Slider */}
+        {sliders.length > 0 && (
+          <View style={{ paddingHorizontal: SPACING.lg, marginBottom: SPACING.md }}>
+            <NewsBanner articles={sliders} colors={colors} isDark={colorScheme === 'dark'} />
           </View>
-        ) : featuredMatch && (!selectedCompetition || featuredMatch.competitionId === selectedCompetition) ? (
-          <View style={styles.section}>
-            <View style={[styles.sectionHeader, { flexDirection }]}>
-              <View style={[styles.sectionTitleRow, { flexDirection }]}>
-                <View style={[styles.sectionIconBg, { backgroundColor: colors.accent + '15' }]}>
-                  <Ionicons name="star" size={16} color={colors.accent} />
-                </View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t('home.featuredMatches')}
-                </Text>
-              </View>
-            </View>
-            <FeaturedMatch match={featuredMatch} />
-          </View>
-        ) : null}
+        )}
 
         {/* Live Matches Section (filtered by competition) */}
         {(() => {
-          const filteredLiveMatches = selectedCompetition 
+          const filteredLiveMatches = (selectedCompetition 
             ? liveMatches.filter(m => m.competitionId === selectedCompetition)
-            : liveMatches;
+            : liveMatches
+          ).filter(m => !featuredMatch || m.id !== featuredMatch.id);
           
           return filteredLiveMatches.length > 0 ? (
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection }]}>
               <View style={[styles.sectionTitleRow, { flexDirection }]}>
                 <View style={[styles.sectionIconBg, { backgroundColor: colors.liveBackground }]}>
-                  <LiveBadge size="small" showPulse />
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.live }} />
                 </View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {t('home.liveNow')}
@@ -429,7 +600,7 @@ export default function HomeScreen() {
                   {t('common.seeAll')}
                 </Text>
                 <Ionicons 
-                  name={isRTL ? "chevron-back" : "chevron-forward"} 
+                  name={isRTL ? "chevron-forward" : "chevron-back"} 
                   size={14} 
                   color={colors.accent} 
                 />
@@ -441,6 +612,7 @@ export default function HomeScreen() {
                   key={match.id}
                   match={match}
                   onPress={() => router.push(`/match/${match.id}`)}
+                  liveTime={liveTimesMap.get(match.id)}
                 />
               ))}
             </View>
@@ -489,6 +661,7 @@ export default function HomeScreen() {
                       key={match.id}
                       match={match}
                       onPress={() => router.push(`/match/${match.id}`)}
+                      liveTime={liveTimesMap.get(match.id)}
                     />
                   ))
                 ) : (
@@ -504,31 +677,33 @@ export default function HomeScreen() {
           );
         })}
 
-        {/* Loading Indicator */}
+        {/* Loading Skeletons */}
         {loadingAllMatches && dayMatchesList.length === 0 && (
-          <View style={styles.loadingMore}>
-            <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.loadingMoreText, { color: colors.textSecondary }]}>
-              {t('common.loading')}
-            </Text>
+          <View style={styles.matchList}>
+            <MatchCardSkeleton />
+            <MatchCardSkeleton />
+            <MatchCardSkeleton />
+            <MatchCardSkeleton />
           </View>
         )}
 
         {/* Empty State - No Matches */}
         {!loadingAllMatches && dayMatchesList.length === 0 && (
-          <View style={[styles.emptyState, { backgroundColor: colors.surface, marginHorizontal: SPACING.lg }]}>
-            <View style={[styles.emptyIconWrapper, { backgroundColor: colors.backgroundSecondary }]}>
-              <Ionicons name="football-outline" size={32} color={colors.textTertiary} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('home.noUpcomingMatches')}
-            </Text>
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <EmptyState
+              icon="football-outline"
+              title={t('home.noUpcomingMatches')}
+              subtitle={t('home.checkBackLater')}
+              actionLabel={t('common.refresh')}
+              actionIcon="refresh"
+              onAction={onRefresh}
+            />
           </View>
         )}
 
         {/* Bottom Safe Area */}
         <View style={{ height: 120 }} />
-      </Animated.ScrollView>
+      </ScrollView>
     </View>
   );
 }
@@ -537,70 +712,72 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerWrapper: {
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight || 24) + 12,
+    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    overflow: 'hidden',
+  },
+  shimmerEffect: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  header: {
-    zIndex: 10,
-  },
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? 48 : (StatusBar.currentHeight || 24) + 8,
-    paddingBottom: SPACING.md,
-    paddingHorizontal: SPACING.md,
+    bottom: 0,
+    width: 150,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  headerLeft: {},
-  greeting: {
-    ...TYPOGRAPHY.bodyMedium,
-    marginBottom: 2,
+  headerTitle: {
+    ...TYPOGRAPHY.headlineMedium,
+    fontWeight: '800',
   },
-  appNameRow: {
+  headerSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  headerSubtitleStatic: {
+    fontSize: 13,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: 6,
+    marginTop: 4,
   },
-  appName: {
-    ...TYPOGRAPHY.headlineMedium,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  betaBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-  },
-  betaText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F44336',
   },
   headerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: SPACING.sm,
   },
-  actionButton: {
-    width: 34,
-    height: 34,
-    borderRadius: RADIUS.md,
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(128,128,128,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(128,128,128,0.1)',
   },
   notifBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 1,
+    right: 1,
     width: 14,
     height: 14,
     borderRadius: 7,
+    backgroundColor: '#F44336',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -609,70 +786,42 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
   },
-  compactHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: Platform.OS === 'ios' ? 46 : (StatusBar.currentHeight || 24) + 6,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    ...SHADOWS.xs,
-  },
-  compactTitle: {
-    ...TYPOGRAPHY.titleLarge,
-    fontWeight: '700',
-  },
-  compactLive: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: SPACING.sm,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-    gap: 4,
-  },
-  compactLiveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  compactLiveText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? 150 : 130,
+    paddingTop: SPACING.md,
   },
   competitionsSection: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
+    paddingTop: SPACING.xs,
+  },
+  competitionsRow: {
+    alignItems: 'center',
+    paddingLeft: SPACING.md,
+    gap: SPACING.sm,
   },
   competitionsScroll: {
-    paddingHorizontal: SPACING.md,
     gap: SPACING.sm,
+    paddingRight: SPACING.md,
   },
   competitionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.lg,
+    paddingVertical: 10,
+    borderRadius: RADIUS.full,
     borderWidth: 1,
-    gap: SPACING.xs,
-    ...SHADOWS.xs,
+    gap: 6,
+    ...SHADOWS.sm,
   },
   competitionName: {
     ...TYPOGRAPHY.labelMedium,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   section: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.xxl,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -685,65 +834,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
+    flex: 1,
+    minWidth: 0,
   },
   sectionIconBg: {
-    width: 26,
-    height: 26,
-    borderRadius: RADIUS.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   sectionTitle: {
     ...TYPOGRAPHY.titleLarge,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    flexShrink: 1,
   },
   seeAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: RADIUS.full,
     gap: 4,
-    ...SHADOWS.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   seeAllText: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '600',
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   matchCountPill: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: RADIUS.full,
-    ...SHADOWS.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   matchCountText: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '500',
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '600',
+    opacity: 0.8,
   },
   matchList: {
     paddingHorizontal: SPACING.lg,
-  },
-  emptyState: {
-    padding: SPACING.xl,
-    alignItems: 'center',
-    borderRadius: RADIUS.lg,
-    ...SHADOWS.xs,
-  },
-  emptyIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.titleMedium,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.bodySmall,
   },
   // Styles for infinite scroll
   noDayMatches: {

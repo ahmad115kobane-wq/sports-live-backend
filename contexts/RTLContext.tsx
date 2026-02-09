@@ -62,9 +62,9 @@ export const RTLProvider: React.FC<RTLProviderProps> = ({ children }) => {
       
       // Inform user to restart app for RTL changes
       Alert.alert(
-        'Restart Required',
-        'Please restart the app to apply language direction changes.',
-        [{ text: 'OK' }]
+        code === 'ar' ? 'إعادة التشغيل مطلوبة' : code === 'ku' ? 'پێویستە ئەپ ڕیستارت بکرێت' : 'Restart Required',
+        code === 'ar' ? 'يرجى إعادة تشغيل التطبيق لتطبيق تغييرات اللغة.' : code === 'ku' ? 'تکایە ئەپەکە ڕیستارت بکە بۆ جێبەجێکردنی گۆڕانکارییەکانی زمان.' : 'Please restart the app to apply language direction changes.',
+        [{ text: code === 'ar' ? 'حسناً' : code === 'ku' ? 'باشە' : 'OK' }]
       );
     }
   };

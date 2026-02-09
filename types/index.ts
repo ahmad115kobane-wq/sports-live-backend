@@ -3,7 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'operator' | 'admin' | 'guest';
+  role: 'user' | 'operator' | 'admin' | 'guest' | 'publisher';
   avatar?: string;
   isGuest?: boolean;
 }
@@ -15,7 +15,17 @@ export interface Team {
   shortName: string;
   logoUrl?: string;
   primaryColor?: string;
+  category?: string;
   country?: string;
+  city?: string;
+  stadium?: string;
+  coach?: string;
+  founded?: number;
+  wins?: number;
+  draws?: number;
+  losses?: number;
+  goalsFor?: number;
+  goalsAgainst?: number;
   players?: Player[];
 }
 
@@ -28,7 +38,23 @@ export interface Player {
   position?: string;
   imageUrl?: string;
   nationality?: string;
+  dateOfBirth?: string;
+  height?: number;
+  weight?: number;
+  preferredFoot?: string;
   team?: Team;
+  statistics?: {
+    goals: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
+    appearances: number;
+  };
+  recentGoals?: Array<{
+    matchId: string;
+    match?: any;
+    minute: number;
+  }>;
 }
 
 // Competition types
@@ -51,7 +77,7 @@ export interface Competition {
 }
 
 // Match types
-export type MatchStatus = 'scheduled' | 'live' | 'halftime' | 'finished';
+export type MatchStatus = 'scheduled' | 'live' | 'halftime' | 'extra_time' | 'extra_time_halftime' | 'penalties' | 'finished';
 
 export interface LineupPlayer {
   id: string;
@@ -94,6 +120,12 @@ export interface MatchStats {
   awayRedCards?: number;
   homeOffsides?: number;
   awayOffsides?: number;
+  homePasses?: number;
+  awayPasses?: number;
+  homePassAccuracy?: number;
+  awayPassAccuracy?: number;
+  homeSaves?: number;
+  awaySaves?: number;
 }
 
 export interface Match {
@@ -106,6 +138,9 @@ export interface Match {
   homeScore: number;
   awayScore: number;
   currentMinute?: number;
+  liveStartedAt?: string;
+  secondHalfStartedAt?: string;
+  updatedAt?: string;
   isFeatured: boolean;
   venue?: string;
   referee?: string;

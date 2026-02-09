@@ -6,18 +6,18 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  useColorScheme,
-  Alert,
   ActivityIndicator,
-  Modal,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { matchApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
+import AppDialog from '@/components/ui/AppDialog';
+import AppModal from '@/components/ui/AppModal';
 
 interface Match {
   id: string;
@@ -34,8 +34,8 @@ interface Match {
 
 export default function MatchesManagementScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
-  const { isRTL, flexDirection } = useRTL();
+  const colors = Colors[colorScheme];
+  const { t, isRTL, flexDirection } = useRTL();
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,22 @@ export default function MatchesManagementScreen() {
   const [editReferee, setEditReferee] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{ type: 'error' | 'warning' | 'confirm'; title: string; message: string; showCancel?: boolean; onConfirm?: () => void }>({
+    type: 'error', title: '', message: '',
+  });
+
+  const showError = (title: string, message: string) => {
+    setDialogConfig({ type: 'error', title, message });
+    setDialogVisible(true);
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setDialogConfig({ type: 'warning', title, message, showCancel: true, onConfirm });
+    setDialogVisible(true);
+  };
+
   useEffect(() => {
     loadMatches();
   }, []);
@@ -62,7 +78,7 @@ export default function MatchesManagementScreen() {
       setMatches(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading matches:', error);
-      Alert.alert('خطأ', 'فشل في تحميل المباريات');
+      showError(t('admin.error'), t('admin.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,36 +106,28 @@ export default function MatchesManagementScreen() {
         venue: editVenue,
         referee: editReferee,
       });
-      Alert.alert('نجاح', 'تم تحديث المباراة');
       setShowEditModal(false);
       loadMatches();
     } catch (error) {
-      Alert.alert('خطأ', 'فشل في تحديث المباراة');
+      showError(t('admin.error'), t('admin.updateMatchFailed'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteMatch = (match: Match) => {
-    Alert.alert(
-      'حذف المباراة',
-      `هل أنت متأكد من حذف مباراة ${match.homeTeam.shortName} vs ${match.awayTeam.shortName}؟`,
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'حذف',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await matchApi.delete(match.id);
-              Alert.alert('نجاح', 'تم حذف المباراة');
-              loadMatches();
-            } catch (error) {
-              Alert.alert('خطأ', 'فشل في حذف المباراة');
-            }
-          },
-        },
-      ]
+    showConfirm(
+      t('admin.deleteMatchTitle'),
+      t('admin.deleteMatchConfirm'),
+      async () => {
+        setDialogVisible(false);
+        try {
+          await matchApi.delete(match.id);
+          loadMatches();
+        } catch (error) {
+          showError(t('admin.error'), t('admin.deleteMatchFailed'));
+        }
+      }
     );
   };
 
@@ -320,67 +328,65 @@ export default function MatchesManagementScreen() {
       />
 
       {/* Edit Modal */}
-      <Modal
+      <AppModal
         visible={showEditModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowEditModal(false)}
+        onClose={() => setShowEditModal(false)}
+        title="تعديل المباراة"
+        icon="pencil"
+        subtitle={selectedMatch ? `${selectedMatch.homeTeam.name} vs ${selectedMatch.awayTeam.name}` : undefined}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>تعديل المباراة</Text>
-              <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
+        {selectedMatch && (
+          <View style={styles.modalBody}>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>الملعب</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                value={editVenue}
+                onChangeText={setEditVenue}
+                placeholder="اسم الملعب"
+                placeholderTextColor={colors.textTertiary}
+                textAlign={isRTL ? 'right' : 'left'}
+              />
             </View>
 
-            {selectedMatch && (
-              <View style={styles.modalBody}>
-                <Text style={[styles.matchInfo, { color: colors.textSecondary }]}>
-                  {selectedMatch.homeTeam.name} vs {selectedMatch.awayTeam.name}
-                </Text>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>الحكم</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                value={editReferee}
+                onChangeText={setEditReferee}
+                placeholder="اسم الحكم"
+                placeholderTextColor={colors.textTertiary}
+                textAlign={isRTL ? 'right' : 'left'}
+              />
+            </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.text }]}>الملعب</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-                    value={editVenue}
-                    onChangeText={setEditVenue}
-                    placeholder="اسم الملعب"
-                    placeholderTextColor={colors.textTertiary}
-                    textAlign={isRTL ? 'right' : 'left'}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.text }]}>الحكم</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-                    value={editReferee}
-                    onChangeText={setEditReferee}
-                    placeholder="اسم الحكم"
-                    placeholderTextColor={colors.textTertiary}
-                    textAlign={isRTL ? 'right' : 'left'}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.saveButton, { backgroundColor: colors.accent }]}
-                  onPress={handleSaveMatch}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: colors.accent }]}
+              onPress={handleSaveMatch}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
+              )}
+            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        )}
+      </AppModal>
+
+      <AppDialog
+        visible={dialogVisible}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        confirmText={dialogConfig.showCancel ? t('admin.confirm') : t('admin.ok')}
+        cancelText={t('admin.cancel')}
+        showCancel={dialogConfig.showCancel}
+        onConfirm={dialogConfig.onConfirm || (() => setDialogVisible(false))}
+        onCancel={() => setDialogVisible(false)}
+      />
     </View>
   );
 }

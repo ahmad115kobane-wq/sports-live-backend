@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { View, StyleSheet, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import Svg, { Rect, Line, Circle, G, Text as SvgText } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { MatchEvent } from '@/types';
 import { EVENT_TYPES } from '@/constants/config';
 
@@ -21,7 +22,7 @@ export default function FootballFieldOperator({
   selectedPosition,
 }: FootballFieldOperatorProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   const handlePress = (event: any) => {
     const { locationX, locationY } = event.nativeEvent;

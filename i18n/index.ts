@@ -8,29 +8,34 @@ import ar from './locales/ar.json';
 import en from './locales/en.json';
 import ku from './locales/ku.json';
 
+// Flag constants
+const FLAG_IRAQ = String.fromCodePoint(0x1F1EE, 0x1F1F6);
+const FLAG_GB = String.fromCodePoint(0x1F1EC, 0x1F1E7);
+const FLAG_KURDISTAN = String.fromCodePoint(0x2600, 0xFE0F);
+
 export const LANGUAGES = {
   ar: {
     code: 'ar',
     name: 'العربية',
     nativeName: 'العربية',
     isRTL: true,
-    flag: '�🇶',
+    flag: FLAG_IRAQ,
   },
   en: {
     code: 'en',
     name: 'English',
     nativeName: 'English',
     isRTL: false,
-    flag: '🇬🇧',
+    flag: FLAG_GB,
   },
   ku: {
     code: 'ku',
     name: 'Kurdish',
     nativeName: 'کوردی',
     isRTL: true,
-    flag: '🇮🇶',
+    flag: FLAG_KURDISTAN,
   },
-} as const;
+};
 
 export type LanguageCode = keyof typeof LANGUAGES;
 

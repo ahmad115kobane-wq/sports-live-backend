@@ -6,18 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  useColorScheme,
-  Alert,
   ActivityIndicator,
-  Modal,
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS } from '@/constants/Theme';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { competitionApi, teamApi } from '@/services/api';
+import AppDialog from '@/components/ui/AppDialog';
+import AppModal from '@/components/ui/AppModal';
 
 interface Competition {
   id: string;
@@ -42,7 +42,7 @@ interface Team {
 
 export default function CompetitionsManagementScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   const { user, isAuthenticated } = useAuthStore();
 
@@ -57,6 +57,16 @@ export default function CompetitionsManagementScreen() {
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+
+  // Dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{ type: 'error' | 'warning' | 'confirm'; title: string; message: string; showCancel?: boolean; onConfirm?: () => void }>({
+    type: 'error', title: '', message: '',
+  });
+  const showError = (title: string, message: string) => {
+    setDialogConfig({ type: 'error', title, message });
+    setDialogVisible(true);
+  };
 
   // Competition form
   const [compName, setCompName] = useState('');
@@ -109,7 +119,7 @@ export default function CompetitionsManagementScreen() {
       setAllTeams(teamsData);
     } catch (error) {
       console.error('Error loading data:', error);
-      Alert.alert('خطأ', 'فشل في تحميل البيانات');
+      showError(t('admin.error'), t('admin.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -155,7 +165,7 @@ export default function CompetitionsManagementScreen() {
 
   const handleSaveCompetition = async () => {
     if (!compName.trim() || !compShortName.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم البطولة والاسم المختصر');
+      showError(t('admin.error'), t('admin.fillRequired'));
       return;
     }
 
@@ -174,17 +184,15 @@ export default function CompetitionsManagementScreen() {
 
       if (editingCompetition) {
         await competitionApi.update(editingCompetition.id, competitionData);
-        Alert.alert('نجاح', 'تم تحديث البطولة بنجاح');
       } else {
         await competitionApi.create(competitionData);
-        Alert.alert('نجاح', 'تم إنشاء البطولة بنجاح');
       }
 
       setShowCompetitionModal(false);
       loadData();
     } catch (error: any) {
       console.error('Error saving competition:', error);
-      Alert.alert('خطأ', error.response?.data?.message || 'فشل في حفظ البطولة');
+      showError(t('admin.error'), t('admin.saveCompFailed'));
     } finally {
       setSaving(false);
     }
@@ -217,12 +225,11 @@ export default function CompetitionsManagementScreen() {
         await teamApi.removeFromCompetition(teamId, selectedCompetition.id);
       }
       
-      Alert.alert('نجاح', 'تم تحديث الأندية بنجاح');
       setShowTeamsModal(false);
       loadData();
     } catch (error: any) {
       console.error('Error saving teams:', error);
-      Alert.alert('خطأ', error.response?.data?.message || 'فشل في حفظ الأندية');
+      showError(t('admin.error'), t('admin.saveCompFailed'));
     } finally {
       setSaving(false);
     }
@@ -324,24 +331,14 @@ export default function CompetitionsManagementScreen() {
       />
 
       {/* Edit Competition Modal */}
-      <Modal
+      <AppModal
         visible={showCompetitionModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowCompetitionModal(false)}
+        onClose={() => setShowCompetitionModal(false)}
+        title={editingCompetition ? 'تعديل البطولة' : 'إضافة بطولة جديدة'}
+        icon="trophy"
+        maxHeight="85%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {editingCompetition ? 'تعديل البطولة' : 'إضافة بطولة جديدة'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowCompetitionModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* Competition Name */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>اسم البطولة *</Text>
@@ -463,29 +460,18 @@ export default function CompetitionsManagementScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      </AppModal>
 
       {/* Manage Teams Modal */}
-      <Modal
+      <AppModal
         visible={showTeamsModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowTeamsModal(false)}
+        onClose={() => setShowTeamsModal(false)}
+        title="إدارة الأندية"
+        subtitle={selectedCompetition?.name}
+        icon="shield"
+        maxHeight="70%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background, maxHeight: '70%' }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                إدارة الأندية - {selectedCompetition?.name}
-              </Text>
-              <TouchableOpacity onPress={() => setShowTeamsModal(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
                 اختر الأندية المشاركة في هذه البطولة
               </Text>
@@ -544,9 +530,17 @@ export default function CompetitionsManagementScreen() {
                 <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
               )}
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      </AppModal>
+
+      <AppDialog
+        visible={dialogVisible}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        confirmText={t('admin.ok')}
+        showCancel={false}
+        onConfirm={() => setDialogVisible(false)}
+      />
     </View>
   );
 }
@@ -560,34 +554,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topBar: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     flexDirection: 'row',
     justifyContent: 'flex-end',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    gap: SPACING.xs,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 10,
+    borderRadius: RADIUS.full,
+    gap: 6,
+    ...SHADOWS.sm,
   },
   addButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   listContent: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
+    gap: SPACING.md,
   },
   competitionCard: {
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     borderWidth: 1,
-    marginBottom: SPACING.md,
     overflow: 'hidden',
+    ...SHADOWS.sm,
   },
   competitionHeader: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -596,43 +593,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   competitionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: SPACING.sm,
+    ...SHADOWS.sm,
   },
   competitionDetails: {
     flex: 1,
   },
   competitionName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   competitionMeta: {
-    fontSize: 12,
-    marginTop: 2,
+    ...TYPOGRAPHY.bodySmall,
+    marginTop: 3,
+    opacity: 0.7,
   },
   statusBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-    marginTop: 4,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    marginTop: 6,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 0.5,
   },
   competitionActions: {
     flexDirection: 'row',
     gap: SPACING.xs,
   },
   actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -640,27 +642,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     borderTopWidth: 1,
-    gap: SPACING.xs,
+    gap: SPACING.sm,
   },
   manageTeamsText: {
-    fontSize: 14,
+    ...TYPOGRAPHY.labelMedium,
     fontWeight: '600',
     flex: 1,
   },
   teamCount: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
   teamCountText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   emptyContainer: {
     flex: 1,
@@ -674,83 +677,86 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
+    borderTopLeftRadius: RADIUS.xxl,
+    borderTopRightRadius: RADIUS.xxl,
     maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.lg,
+    padding: SPACING.xl,
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...TYPOGRAPHY.titleLarge,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   modalBody: {
-    padding: SPACING.lg,
+    padding: SPACING.xl,
   },
   inputGroup: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '700',
+    marginBottom: SPACING.sm,
+    letterSpacing: 0.3,
   },
   input: {
-    height: 48,
-    borderRadius: RADIUS.md,
+    height: 52,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     fontSize: 16,
   },
   typePicker: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.xs,
+    gap: SPACING.sm,
   },
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    gap: 4,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.5,
+    gap: 6,
   },
   typeOptionText: {
-    fontSize: 13,
-    fontWeight: '500',
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
   },
   iconPicker: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.xs,
+    gap: SPACING.sm,
   },
   iconOption: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    marginTop: SPACING.sm,
   },
   switchLabel: {
-    fontSize: 14,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
   },
   switch: {
@@ -770,16 +776,18 @@ const styles = StyleSheet.create({
     marginLeft: 22,
   },
   saveButton: {
-    margin: SPACING.lg,
-    height: 50,
-    borderRadius: RADIUS.md,
+    margin: SPACING.xl,
+    height: 54,
+    borderRadius: RADIUS.full,
     justifyContent: 'center',
     alignItems: 'center',
+    ...SHADOWS.sm,
   },
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   sectionDescription: {
     fontSize: 14,
@@ -791,8 +799,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1.5,
     marginBottom: SPACING.sm,
   },
   teamItemInfo: {
@@ -803,31 +811,32 @@ const styles = StyleSheet.create({
   teamLogo: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
   },
   teamLogoText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '800',
   },
   teamItemDetails: {
     flex: 1,
   },
   teamItemName: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...TYPOGRAPHY.titleSmall,
+    fontWeight: '700',
   },
   teamItemShort: {
-    fontSize: 12,
+    ...TYPOGRAPHY.bodySmall,
     marginTop: 2,
+    opacity: 0.6,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',

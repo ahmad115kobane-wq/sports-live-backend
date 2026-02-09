@@ -51,17 +51,36 @@ export const useSocket = () => {
         }
       });
 
-      // Global events
+      // Global events — update scores/status across all screens
       socketRef.current.on('global:event', (event: MatchEvent) => {
         console.log('📡 Global event received:', event.type);
+        if (event.match) {
+          const update: any = { id: event.matchId };
+          if (event.match.homeScore !== undefined) update.homeScore = event.match.homeScore;
+          if (event.match.awayScore !== undefined) update.awayScore = event.match.awayScore;
+          if (event.match.status) update.status = event.match.status;
+          if (event.match.currentMinute) update.currentMinute = event.match.currentMinute;
+          updateMatchFromSocket(update);
+        }
       });
 
       socketRef.current.on('global:match:started', (match) => {
         console.log('🏟 Match started:', match.id);
+        updateMatchFromSocket({
+          id: match.id,
+          status: 'live',
+          currentMinute: 1,
+          liveStartedAt: match.liveStartedAt,
+        });
       });
 
       socketRef.current.on('global:match:ended', (match) => {
         console.log('🏁 Match ended:', match.id);
+        updateMatchFromSocket({
+          id: match.id,
+          status: 'finished',
+          currentMinute: 90,
+        });
       });
     }
 
@@ -72,6 +91,12 @@ export const useSocket = () => {
 
   const joinMatch = useCallback((matchId: string) => {
     if (socketRef.current) {
+      // Remove previous listeners to prevent stacking
+      socketRef.current.off('match:event');
+      socketRef.current.off('match:event:deleted');
+      socketRef.current.off('match:status');
+      socketRef.current.off('match:minute');
+
       socketRef.current.emit('match:join', matchId);
       
       // Listen for match-specific events
@@ -114,6 +139,9 @@ export const useSocket = () => {
           id: data.matchId,
           status: data.status,
           currentMinute: data.currentMinute,
+          liveStartedAt: data.liveStartedAt,
+          secondHalfStartedAt: data.secondHalfStartedAt,
+          updatedAt: new Date().toISOString(),
         });
       });
 

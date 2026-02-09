@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, useColorScheme, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Rect, Line, Circle, G, Text as SvgText } from 'react-native-svg';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { MatchEvent } from '@/types';
 import { EVENT_TYPES } from '@/constants/config';
 
@@ -16,7 +17,7 @@ const FIELD_HEIGHT = FIELD_WIDTH * 0.65;
 
 export default function FootballField({ events, onFieldPress }: FootballFieldProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   // Filter events that have positions
   const positionedEvents = events.filter((e) => e.posX !== undefined && e.posY !== undefined);
@@ -84,16 +85,25 @@ export default function FootballField({ events, onFieldPress }: FootballFieldPro
                 fill={color}
                 opacity={0.9}
               />
-              {/* Event icon text */}
-              <SvgText
-                x={event.posX}
-                y={(event.posY || 0) + 1.2}
-                fontSize="4"
-                textAnchor="middle"
-                fill="#fff"
-              >
-                {eventConfig?.icon?.substring(0, 2) || '●'}
-              </SvgText>
+              {/* Event type indicator */}
+              {event.type === 'goal' && (
+                <SvgText x={event.posX} y={(event.posY || 0) + 1.5} fontSize="3.5" textAnchor="middle" fill="#fff" fontWeight="bold">G</SvgText>
+              )}
+              {event.type === 'yellow_card' && (
+                <Rect x={(event.posX || 0) - 1} y={(event.posY || 0) - 1.5} width="2" height="3" fill="#FFEB3B" rx="0.3" />
+              )}
+              {event.type === 'red_card' && (
+                <Rect x={(event.posX || 0) - 1} y={(event.posY || 0) - 1.5} width="2" height="3" fill="#F44336" rx="0.3" />
+              )}
+              {event.type === 'substitution' && (
+                <SvgText x={event.posX} y={(event.posY || 0) + 1.5} fontSize="3.5" textAnchor="middle" fill="#fff" fontWeight="bold">S</SvgText>
+              )}
+              {event.type === 'penalty' && (
+                <SvgText x={event.posX} y={(event.posY || 0) + 1.5} fontSize="3.5" textAnchor="middle" fill="#fff" fontWeight="bold">P</SvgText>
+              )}
+              {!['goal', 'yellow_card', 'red_card', 'substitution', 'penalty'].includes(event.type) && (
+                <Circle cx={event.posX} cy={event.posY} r="1.2" fill="#fff" />
+              )}
             </G>
           );
         })}

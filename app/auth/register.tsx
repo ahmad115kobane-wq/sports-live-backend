@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +18,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
@@ -34,7 +34,8 @@ const CITIES = [
 
 export default function RegisterScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
   
   // Form state - Step 1
@@ -64,7 +65,7 @@ export default function RegisterScreen() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const { register } = useAuthStore();
+  const { register, upgradeGuest, isGuest, user } = useAuthStore();
 
   // Animations removed
 
@@ -105,7 +106,7 @@ export default function RegisterScreen() {
       
       // Filter matches by selected competitions
       const filteredMatches = allMatches.filter(match => 
-        selectedCompetitions.includes(match.competitionId)
+        match.competitionId && selectedCompetitions.includes(match.competitionId)
       );
       
       // Extract unique team IDs from filtered matches
@@ -184,11 +185,16 @@ export default function RegisterScreen() {
     if (step === 1 && validateStep1()) {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
-      // Create account first, then redirect to favorites selection
       setLoading(true);
       try {
         const fullName = `${firstName} ${lastName}`;
-        await register(fullName, email, password);
+        if (isGuest && user?.id) {
+          // Upgrade guest account — keeps all existing data (favorites, notifications, etc.)
+          await upgradeGuest(fullName, email, password);
+        } else {
+          // Create new account
+          await register(fullName, email, password);
+        }
         router.replace('/auth/select-favorites');
       } catch (error: any) {
         Alert.alert(t('auth.registerFailed'), error.message || t('common.error'));
@@ -391,7 +397,7 @@ export default function RegisterScreen() {
         >
           <View style={[styles.buttonContent, { flexDirection }]}>
             <Text style={[styles.buttonText, { color: colors.textInverse }]}>{t('common.next')}</Text>
-            <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={20} color={colors.textInverse} />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={20} color={colors.textInverse} />
           </View>
         </LinearGradient>
       </TouchableOpacity>
@@ -559,7 +565,7 @@ export default function RegisterScreen() {
           onPress={handleBack}
           activeOpacity={0.8}
         >
-          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={20} color={colors.text} />
+          <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={20} color={colors.text} />
           <Text style={[styles.backStepButtonText, { color: colors.text }]}>{t('common.back')}</Text>
         </TouchableOpacity>
 
@@ -697,7 +703,7 @@ export default function RegisterScreen() {
           onPress={handleBack}
           activeOpacity={0.8}
         >
-          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={20} color={colors.text} />
+          <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={20} color={colors.text} />
           <Text style={[styles.backStepButtonText, { color: colors.text }]}>{t('common.back')}</Text>
         </TouchableOpacity>
 
@@ -732,7 +738,7 @@ export default function RegisterScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       
       {/* Full Screen Gradient Background */}
       <LinearGradient
@@ -747,7 +753,7 @@ export default function RegisterScreen() {
         style={[styles.navBackButton, { backgroundColor: colors.surfacePressed }, isRTL && styles.navBackButtonRTL]}
         onPress={() => router.back()}
       >
-        <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={colors.text} />
+        <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={24} color={colors.text} />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -852,9 +858,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 24) + 16,
     left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1171,14 +1177,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectionLogo: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     marginBottom: 6,
   },
   selectionLogoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,

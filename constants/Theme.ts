@@ -13,77 +13,77 @@ export const SCREEN = {
   isTablet: width >= 768,
 };
 
-// 📐 Compact Spacing System
+// 📐 Balanced Spacing System
 export const SPACING = {
   xxs: 2,
-  xs: 3,
+  xs: 4,
   sm: 6,
   md: 10,
   lg: 14,
   xl: 18,
-  xxl: 22,
-  xxxl: 28,
-  huge: 34,
-  massive: 42,
+  xxl: 24,
+  xxxl: 30,
+  huge: 36,
+  massive: 44,
   giant: 56,
 };
 
-// ✍️ Compact Typography Scale
+// ✍️ Balanced Typography Scale
 export const TYPOGRAPHY = {
   // Display - Hero Headlines
   displayLarge: {
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 34,
+    lineHeight: 40,
     fontWeight: '700' as const,
     letterSpacing: -0.5,
   },
   displayMedium: {
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: '700' as const,
     letterSpacing: -0.3,
   },
   displaySmall: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: '600' as const,
     letterSpacing: -0.2,
   },
   // Headlines - Section Titles
   headlineLarge: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: '600' as const,
     letterSpacing: -0.2,
   },
   headlineMedium: {
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: '600' as const,
     letterSpacing: 0,
   },
   headlineSmall: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '600' as const,
     letterSpacing: 0,
   },
   // Titles - Component Headers
   titleLarge: {
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '600' as const,
     letterSpacing: 0,
   },
   titleMedium: {
     fontSize: 13,
-    lineHeight: 17,
+    lineHeight: 18,
     fontWeight: '600' as const,
     letterSpacing: 0.1,
   },
   titleSmall: {
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600' as const,
     letterSpacing: 0.1,
   },
@@ -95,14 +95,14 @@ export const TYPOGRAPHY = {
     letterSpacing: 0.2,
   },
   bodyMedium: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '400' as const,
     letterSpacing: 0.15,
   },
   bodySmall: {
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '400' as const,
     letterSpacing: 0.2,
   },
@@ -114,14 +114,14 @@ export const TYPOGRAPHY = {
     letterSpacing: 0.1,
   },
   labelMedium: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '500' as const,
     letterSpacing: 0.3,
   },
   labelSmall: {
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: 10,
+    lineHeight: 14,
     fontWeight: '500' as const,
     letterSpacing: 0.4,
   },
@@ -149,13 +149,13 @@ export const TYPOGRAPHY = {
 // 🔲 Border Radius System
 export const RADIUS = {
   none: 0,
-  xs: 3,
+  xs: 4,
   sm: 6,
   md: 8,
   lg: 12,
   xl: 16,
   xxl: 20,
-  xxxl: 26,
+  xxxl: 24,
   full: 9999,
 };
 
@@ -265,26 +265,26 @@ export const Z_INDEX = {
   maximum: 9999,
 };
 
-// 📏 Compact Sizes
+// 📏 Balanced Sizes
 export const SIZES = {
   // Icons
   iconXs: 14,
   iconSm: 16,
   iconMd: 20,
-  iconLg: 26,
-  iconXl: 32,
+  iconLg: 24,
+  iconXl: 28,
   
   // Avatars
-  avatarSm: 26,
-  avatarMd: 34,
-  avatarLg: 46,
-  avatarXl: 64,
+  avatarSm: 28,
+  avatarMd: 36,
+  avatarLg: 44,
+  avatarXl: 56,
   
   // Buttons
   buttonSm: 30,
-  buttonMd: 38,
-  buttonLg: 44,
-  buttonXl: 50,
+  buttonMd: 36,
+  buttonLg: 42,
+  buttonXl: 48,
   
   // Inputs
   inputSm: 34,
@@ -292,20 +292,20 @@ export const SIZES = {
   inputLg: 46,
   
   // Cards
-  cardMinHeight: 60,
+  cardMinHeight: 56,
   cardImageHeight: 120,
   
   // Tab Bar
-  tabBarHeight: Platform.OS === 'ios' ? 75 : 56,
+  tabBarHeight: Platform.OS === 'ios' ? 60 : 52,
   
   // Header
-  headerHeight: Platform.OS === 'ios' ? 88 : 68,
+  headerHeight: Platform.OS === 'ios' ? 80 : 60,
   
   // Team Logos
-  teamLogoSm: 22,
+  teamLogoSm: 24,
   teamLogoMd: 32,
-  teamLogoLg: 44,
-  teamLogoXl: 58,
+  teamLogoLg: 42,
+  teamLogoXl: 54,
 };
 
 // 🎨 Common Styles

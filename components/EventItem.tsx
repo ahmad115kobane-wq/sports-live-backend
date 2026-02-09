@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/Theme';
 import { MatchEvent } from '@/types';
 import { EVENT_TYPES } from '@/constants/config';
 import { useRTL } from '@/contexts/RTLContext';
+import EventIcon from '@/components/ui/EventIcon';
 
 interface EventItemProps {
   event: MatchEvent;
@@ -15,7 +17,7 @@ interface EventItemProps {
 
 export default function EventItem({ event, isLastEvent }: EventItemProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   const eventConfig = EVENT_TYPES[event.type] || { icon: 'pin', label: event.type, color: colors.textSecondary };
 
@@ -103,7 +105,7 @@ export default function EventItem({ event, isLastEvent }: EventItemProps) {
 
       {/* Event Icon */}
       <View style={[styles.iconContainer, { backgroundColor: `${eventColors.border}25` }]}>
-        <Text style={styles.icon}>{eventConfig.icon}</Text>
+        <EventIcon type={event.type} size={20} color={eventColors.border} />
       </View>
 
       {/* Content */}
@@ -185,9 +187,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.sm,
-  },
-  icon: {
-    fontSize: 18,
   },
   contentContainer: {
     flex: 1,

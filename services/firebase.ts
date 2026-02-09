@@ -37,7 +37,7 @@ export async function getFCMToken() {
 }
 
 // تسجيل FCM Token في Backend
-export async function registerFCMToken(userId: number) {
+export async function registerFCMToken(userId: string) {
   try {
     const token = await getFCMToken();
     if (!token) {
@@ -60,40 +60,35 @@ export async function registerFCMToken(userId: number) {
 }
 
 // معالجة الإشعارات في الخلفية (Background)
+// FCM مع notification payload يعرض الإشعار تلقائياً مع الصورة — لا حاجة لإشعار محلي
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
   console.log('📬 Background notification received:', remoteMessage);
-  
-  // عرض الإشعار محلياً
-  if (remoteMessage.notification) {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: remoteMessage.notification.title || 'إشعار جديد',
-        body: remoteMessage.notification.body || '',
-        data: remoteMessage.data,
-      },
-      trigger: null, // عرض فوري
-    });
-  }
 });
 
 // معالجة الإشعارات عندما يكون التطبيق مفتوحاً (Foreground)
 export function setupForegroundNotificationHandler() {
+  console.log('🔔 Setting up FCM foreground notification handler...');
+  
   const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-    console.log('📬 Foreground notification received:', remoteMessage);
+    console.log('📬 Foreground FCM message received:', JSON.stringify(remoteMessage, null, 2));
     
-    // عرض الإشعار محلياً
-    if (remoteMessage.notification) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: remoteMessage.notification.title || 'إشعار جديد',
-          body: remoteMessage.notification.body || '',
-          data: remoteMessage.data,
-        },
-        trigger: null, // عرض فوري
-      });
-    }
+    const title = remoteMessage.notification?.title || 'إشعار جديد';
+    const body = remoteMessage.notification?.body || '';
+    
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: remoteMessage.data as { [key: string]: unknown },
+        sound: 'default' as const,
+      },
+      trigger: null,
+    });
+    
+    console.log('✅ Local notification scheduled');
   });
 
+  console.log('✅ FCM foreground handler setup complete');
   return unsubscribe;
 }
 
@@ -119,7 +114,7 @@ export function setupNotificationOpenHandler(callback: (data: any) => void) {
 }
 
 // تحديث Token عند تغييره
-export function setupTokenRefreshHandler(userId: number) {
+export function setupTokenRefreshHandler(userId: string) {
   const unsubscribe = messaging().onTokenRefresh(async (token) => {
     console.log('🔄 FCM token refreshed:', token);
     

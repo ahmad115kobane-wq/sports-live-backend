@@ -6,22 +6,22 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  useColorScheme,
-  Alert,
   ActivityIndicator,
   Platform,
-  Modal,
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { matchApi, teamApi, competitionApi, adminApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
+import AppDialog from '@/components/ui/AppDialog';
+import AppModal from '@/components/ui/AppModal';
 
 interface Team {
   id: string;
@@ -44,7 +44,7 @@ interface Operator {
 
 export default function AdminScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   const { user, isAuthenticated } = useAuthStore();
 
@@ -76,11 +76,20 @@ export default function AdminScreen() {
   const [showCompetitionPicker, setShowCompetitionPicker] = useState(false);
   const [showOperatorPicker, setShowOperatorPicker] = useState(false);
 
+  // Dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState<{ type: 'error' | 'warning' | 'confirm'; title: string; message: string; onConfirm?: () => void }>({
+    type: 'error', title: '', message: '',
+  });
+
+  const showError = (title: string, message: string) => {
+    setDialogConfig({ type: 'error', title, message });
+    setDialogVisible(true);
+  };
+
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'admin') {
-      Alert.alert('غير مصرح', 'يجب أن تكون مديراً للوصول إلى هذه الصفحة', [
-        { text: 'حسناً', onPress: () => router.back() }
-      ]);
+      showError(t('admin.unauthorized'), t('admin.unauthorizedDesc'));
       return;
     }
     loadData();
@@ -101,7 +110,7 @@ export default function AdminScreen() {
       setOperators(operatorsRes.data?.data || operatorsRes.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
-      Alert.alert('خطأ', 'فشل في تحميل البيانات');
+      showError(t('admin.error'), t('admin.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -109,12 +118,12 @@ export default function AdminScreen() {
 
   const handleCreateMatch = async () => {
     if (!selectedCompetition || !homeTeamId || !awayTeamId) {
-      Alert.alert('خطأ', 'يرجى ملء جميع الحقول المطلوبة');
+      showError(t('admin.error'), t('admin.fillRequired'));
       return;
     }
 
     if (homeTeamId === awayTeamId) {
-      Alert.alert('خطأ', 'لا يمكن أن يكون الفريقان متماثلين');
+      showError(t('admin.error'), t('admin.sameTeams'));
       return;
     }
 
@@ -140,12 +149,10 @@ export default function AdminScreen() {
         }
       }
 
-      Alert.alert('نجاح', 'تم إنشاء المباراة بنجاح', [
-        { text: 'حسناً', onPress: resetForm }
-      ]);
+      resetForm();
     } catch (error) {
       console.error('Error creating match:', error);
-      Alert.alert('خطأ', 'فشل في إنشاء المباراة');
+      showError(t('admin.error'), t('admin.createMatchFailed'));
     } finally {
       setCreating(false);
     }
@@ -196,185 +203,206 @@ export default function AdminScreen() {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Competition Selector */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>البطولة *</Text>
-          <TouchableOpacity
-            style={[styles.selector, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => setShowCompetitionPicker(true)}
-          >
-            <Text style={[
-              styles.selectorText,
-              { color: selectedCompetition ? colors.text : colors.textTertiary }
-            ]}>
-              {selectedCompetition ? getCompetitionById(selectedCompetition)?.name : 'اختر البطولة'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Teams Selection */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>الفريقان *</Text>
-          <View style={styles.teamsRow}>
-            {/* Home Team */}
-            <TouchableOpacity
-              style={[styles.teamSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setShowTeamPicker('home')}
-            >
-              {homeTeamId ? (
-                <View style={styles.selectedTeam}>
-                  <TeamLogo team={getTeamById(homeTeamId)!} size="medium" />
-                  <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-                    {getTeamById(homeTeamId)?.shortName}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.emptyTeam}>
-                  <Ionicons name="add-circle-outline" size={32} color={colors.textTertiary} />
-                  <Text style={[styles.emptyTeamText, { color: colors.textTertiary }]}>
-                    الفريق المضيف
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <Text style={[styles.vsText, { color: colors.textSecondary }]}>VS</Text>
-
-            {/* Away Team */}
-            <TouchableOpacity
-              style={[styles.teamSelector, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setShowTeamPicker('away')}
-            >
-              {awayTeamId ? (
-                <View style={styles.selectedTeam}>
-                  <TeamLogo team={getTeamById(awayTeamId)!} size="medium" />
-                  <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
-                    {getTeamById(awayTeamId)?.shortName}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.emptyTeam}>
-                  <Ionicons name="add-circle-outline" size={32} color={colors.textTertiary} />
-                  <Text style={[styles.emptyTeamText, { color: colors.textTertiary }]}>
-                    الفريق الضيف
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Date & Time */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>التاريخ والوقت *</Text>
-          <View style={styles.dateTimeRow}>
-            <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-              <Text style={[styles.dateText, { color: colors.text }]}>{formatDate(matchDate)}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.timeButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Ionicons name="time-outline" size={20} color={colors.accent} />
-              <Text style={[styles.dateText, { color: colors.text }]}>{formatTime(matchDate)}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Venue */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>الملعب</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-            placeholder="مثال: ملعب الشعب الدولي"
-            placeholderTextColor={colors.textTertiary}
-            value={venue}
-            onChangeText={setVenue}
-            textAlign={isRTL ? 'right' : 'left'}
-          />
-        </View>
-
-        {/* Referee */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>الحكم</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-            placeholder="اسم الحكم"
-            placeholderTextColor={colors.textTertiary}
-            value={referee}
-            onChangeText={setReferee}
-            textAlign={isRTL ? 'right' : 'left'}
-          />
-        </View>
-
-        {/* Operator Selector */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>المشغل (اختياري)</Text>
-          <TouchableOpacity
-            style={[styles.selector, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => setShowOperatorPicker(true)}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="person-circle-outline" size={20} color={colors.accent} />
-              <Text style={[
-                styles.selectorText,
-                { color: selectedOperator ? colors.text : colors.textTertiary }
-              ]}>
-                {selectedOperator ? getOperatorById(selectedOperator)?.name : 'اختر مشغل للمباراة'}
-              </Text>
+        {/* ── Dashboard Summary Cards ── */}
+        <View style={styles.dashCards}>
+          <View style={[styles.dashCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.dashIconWrap, { backgroundColor: colors.accent + '15' }]}>
+              <Ionicons name="people" size={20} color={colors.accent} />
             </View>
-            <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-          <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            المشغل سيتمكن من إدارة أحداث المباراة
-          </Text>
+            <Text style={[styles.dashValue, { color: colors.text }]}>{safeTeams.length}</Text>
+            <Text style={[styles.dashLabel, { color: colors.textSecondary }]}>فريق</Text>
+          </View>
+          <View style={[styles.dashCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.dashIconWrap, { backgroundColor: colors.success + '15' }]}>
+              <Ionicons name="trophy" size={20} color={colors.success} />
+            </View>
+            <Text style={[styles.dashValue, { color: colors.text }]}>{safeCompetitions.length}</Text>
+            <Text style={[styles.dashLabel, { color: colors.textSecondary }]}>بطولة</Text>
+          </View>
+          <View style={[styles.dashCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.dashIconWrap, { backgroundColor: colors.warning + '15' }]}>
+              <Ionicons name="person" size={20} color={colors.warning} />
+            </View>
+            <Text style={[styles.dashValue, { color: colors.text }]}>{safeOperators.length}</Text>
+            <Text style={[styles.dashLabel, { color: colors.textSecondary }]}>مشغل</Text>
+          </View>
         </View>
 
-        {/* Featured Toggle */}
-        <TouchableOpacity
-          style={[styles.toggleRow, { backgroundColor: colors.surface }]}
-          onPress={() => setIsFeatured(!isFeatured)}
-        >
-          <View style={styles.toggleInfo}>
-            <Ionicons name="star" size={24} color={isFeatured ? colors.warning : colors.textTertiary} />
-            <View style={styles.toggleTextContainer}>
+        {/* ── Create Match Card ── */}
+        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.formCardHeader, { borderBottomColor: colors.divider }]}>
+            <Ionicons name="add-circle" size={22} color={colors.accent} />
+            <Text style={[styles.formCardTitle, { color: colors.text }]}>إنشاء مباراة جديدة</Text>
+          </View>
+
+          {/* Competition */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>البطولة *</Text>
+            <TouchableOpacity
+              style={[styles.selector, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => setShowCompetitionPicker(true)}
+            >
+              <View style={styles.selectorInner}>
+                <Ionicons name="trophy-outline" size={18} color={selectedCompetition ? colors.accent : colors.textTertiary} />
+                <Text style={[styles.selectorText, { color: selectedCompetition ? colors.text : colors.textTertiary }]}>
+                  {selectedCompetition ? getCompetitionById(selectedCompetition)?.name : 'اختر البطولة'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-down" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Teams */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الفريقان *</Text>
+            <View style={styles.teamsRow}>
+              <TouchableOpacity
+                style={[styles.teamSelector, { backgroundColor: colors.background, borderColor: homeTeamId ? colors.accent : colors.border }]}
+                onPress={() => setShowTeamPicker('home')}
+              >
+                {homeTeamId ? (
+                  <View style={styles.selectedTeam}>
+                    <TeamLogo team={getTeamById(homeTeamId)!} size="medium" />
+                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
+                      {getTeamById(homeTeamId)?.shortName}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.emptyTeam}>
+                    <Ionicons name="shield-outline" size={28} color={colors.textTertiary} />
+                    <Text style={[styles.emptyTeamText, { color: colors.textTertiary }]}>المضيف</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <View style={[styles.vsBadge, { backgroundColor: colors.accent + '15' }]}>
+                <Text style={[styles.vsText, { color: colors.accent }]}>{t('match.vs')}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.teamSelector, { backgroundColor: colors.background, borderColor: awayTeamId ? colors.accent : colors.border }]}
+                onPress={() => setShowTeamPicker('away')}
+              >
+                {awayTeamId ? (
+                  <View style={styles.selectedTeam}>
+                    <TeamLogo team={getTeamById(awayTeamId)!} size="medium" />
+                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
+                      {getTeamById(awayTeamId)?.shortName}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.emptyTeam}>
+                    <Ionicons name="shield-outline" size={28} color={colors.textTertiary} />
+                    <Text style={[styles.emptyTeamText, { color: colors.textTertiary }]}>الضيف</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Date & Time */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>التاريخ والوقت *</Text>
+            <View style={styles.dateTimeRow}>
+              <TouchableOpacity
+                style={[styles.dateButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={18} color={colors.accent} />
+                <Text style={[styles.dateText, { color: colors.text }]}>{formatDate(matchDate)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Ionicons name="time-outline" size={18} color={colors.accent} />
+                <Text style={[styles.dateText, { color: colors.text }]}>{formatTime(matchDate)}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Venue & Referee Row */}
+          <View style={styles.fieldRow}>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الملعب</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                placeholder="ملعب الشعب"
+                placeholderTextColor={colors.textTertiary}
+                value={venue}
+                onChangeText={setVenue}
+                textAlign={isRTL ? 'right' : 'left'}
+              />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الحكم</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                placeholder="اسم الحكم"
+                placeholderTextColor={colors.textTertiary}
+                value={referee}
+                onChangeText={setReferee}
+                textAlign={isRTL ? 'right' : 'left'}
+              />
+            </View>
+          </View>
+
+          {/* Operator */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>المشغل (اختياري)</Text>
+            <TouchableOpacity
+              style={[styles.selector, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => setShowOperatorPicker(true)}
+            >
+              <View style={styles.selectorInner}>
+                <Ionicons name="person-circle-outline" size={18} color={selectedOperator ? colors.accent : colors.textTertiary} />
+                <Text style={[styles.selectorText, { color: selectedOperator ? colors.text : colors.textTertiary }]}>
+                  {selectedOperator ? getOperatorById(selectedOperator)?.name : 'اختر مشغل'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-down" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Featured Toggle */}
+          <TouchableOpacity
+            style={[styles.toggleRow, { backgroundColor: colors.background, borderColor: isFeatured ? colors.accent : colors.border }]}
+            onPress={() => setIsFeatured(!isFeatured)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.toggleInfo}>
+              <Ionicons name="star" size={20} color={isFeatured ? '#F59E0B' : colors.textTertiary} />
               <Text style={[styles.toggleTitle, { color: colors.text }]}>مباراة مميزة</Text>
-              <Text style={[styles.toggleSubtitle, { color: colors.textSecondary }]}>
-                ستظهر في القسم المميز
-              </Text>
             </View>
-          </View>
-          <View style={[styles.toggle, isFeatured && styles.toggleActive, { backgroundColor: isFeatured ? colors.accent : colors.border }]}>
-            <View style={[styles.toggleDot, isFeatured && styles.toggleDotActive]} />
-          </View>
-        </TouchableOpacity>
+            <View style={[styles.toggle, { backgroundColor: isFeatured ? colors.accent : colors.border }]}>
+              <View style={[styles.toggleDot, isFeatured && styles.toggleDotActive]} />
+            </View>
+          </TouchableOpacity>
 
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={[styles.submitButton, creating && styles.submitButtonDisabled]}
-          onPress={handleCreateMatch}
-          disabled={creating}
-        >
-          <LinearGradient
-            colors={colors.gradients.accent}
-            style={styles.submitGradient}
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitButton, creating && { opacity: 0.6 }]}
+            onPress={handleCreateMatch}
+            disabled={creating}
+            activeOpacity={0.8}
           >
-            {creating ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="add-circle" size={24} color="#fff" />
-                <Text style={styles.submitText}>إنشاء المباراة</Text>
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={colors.gradients.accent}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.submitGradient}
+            >
+              {creating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="football-outline" size={20} color="#fff" />
+                  <Text style={styles.submitText}>إنشاء المباراة</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -414,151 +442,133 @@ export default function AdminScreen() {
       )}
 
       {/* Team Picker Modal */}
-      <Modal
+      <AppModal
         visible={showTeamPicker !== null}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowTeamPicker(null)}
+        onClose={() => setShowTeamPicker(null)}
+        title={showTeamPicker === 'home' ? 'اختر الفريق المضيف' : 'اختر الفريق الضيف'}
+        icon="shield"
+        maxHeight="70%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {showTeamPicker === 'home' ? 'اختر الفريق المضيف' : 'اختر الفريق الضيف'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowTeamPicker(null)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList}>
-              {safeTeams.map((team) => (
-                <TouchableOpacity
-                  key={team.id}
-                  style={[
-                    styles.modalItem,
-                    { borderBottomColor: colors.border },
-                    (showTeamPicker === 'home' ? homeTeamId : awayTeamId) === team.id && 
-                      { backgroundColor: colors.accent + '20' }
-                  ]}
-                  onPress={() => {
-                    if (showTeamPicker === 'home') {
-                      setHomeTeamId(team.id);
-                    } else {
-                      setAwayTeamId(team.id);
-                    }
-                    setShowTeamPicker(null);
-                  }}
-                >
-                  <TeamLogo team={team} size="small" />
-                  <Text style={[styles.modalItemText, { color: colors.text }]}>{team.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        <ScrollView style={styles.modalList}>
+          {safeTeams.map((team) => (
+            <TouchableOpacity
+              key={team.id}
+              style={[
+                styles.modalItem,
+                { borderBottomColor: colors.border },
+                (showTeamPicker === 'home' ? homeTeamId : awayTeamId) === team.id && 
+                  { backgroundColor: colors.accent + '20' }
+              ]}
+              onPress={() => {
+                if (showTeamPicker === 'home') {
+                  setHomeTeamId(team.id);
+                } else {
+                  setAwayTeamId(team.id);
+                }
+                setShowTeamPicker(null);
+              }}
+            >
+              <TeamLogo team={team} size="small" />
+              <Text style={[styles.modalItemText, { color: colors.text }]}>{team.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </AppModal>
 
       {/* Competition Picker Modal */}
-      <Modal
+      <AppModal
         visible={showCompetitionPicker}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowCompetitionPicker(false)}
+        onClose={() => setShowCompetitionPicker(false)}
+        title="اختر البطولة"
+        icon="trophy"
+        maxHeight="70%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>اختر البطولة</Text>
-              <TouchableOpacity onPress={() => setShowCompetitionPicker(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList}>
-              {safeCompetitions.map((comp) => (
-                <TouchableOpacity
-                  key={comp.id}
-                  style={[
-                    styles.modalItem,
-                    { borderBottomColor: colors.border },
-                    selectedCompetition === comp.id && { backgroundColor: colors.accent + '20' }
-                  ]}
-                  onPress={() => {
-                    setSelectedCompetition(comp.id);
-                    setShowCompetitionPicker(false);
-                  }}
-                >
-                  <Ionicons name="trophy" size={24} color={colors.accent} />
-                  <Text style={[styles.modalItemText, { color: colors.text }]}>{comp.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        <ScrollView style={styles.modalList}>
+          {safeCompetitions.map((comp) => (
+            <TouchableOpacity
+              key={comp.id}
+              style={[
+                styles.modalItem,
+                { borderBottomColor: colors.border },
+                selectedCompetition === comp.id && { backgroundColor: colors.accent + '20' }
+              ]}
+              onPress={() => {
+                setSelectedCompetition(comp.id);
+                setShowCompetitionPicker(false);
+              }}
+            >
+              <Ionicons name="trophy" size={24} color={colors.accent} />
+              <Text style={[styles.modalItemText, { color: colors.text }]}>{comp.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </AppModal>
 
       {/* Operator Picker Modal */}
-      <Modal
+      <AppModal
         visible={showOperatorPicker}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowOperatorPicker(false)}
+        onClose={() => setShowOperatorPicker(false)}
+        title="اختر المشغل"
+        icon="person-circle"
+        maxHeight="70%"
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>اختر المشغل</Text>
-              <TouchableOpacity onPress={() => setShowOperatorPicker(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
+        <ScrollView style={styles.modalList}>
+          {/* Option to not assign operator */}
+          <TouchableOpacity
+            style={[
+              styles.modalItem,
+              { borderBottomColor: colors.border },
+              !selectedOperator && { backgroundColor: colors.accent + '20' }
+            ]}
+            onPress={() => {
+              setSelectedOperator('');
+              setShowOperatorPicker(false);
+            }}
+          >
+            <Ionicons name="close-circle-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.modalItemText, { color: colors.textSecondary }]}>بدون مشغل</Text>
+          </TouchableOpacity>
+          {safeOperators.map((op) => (
+            <TouchableOpacity
+              key={op.id}
+              style={[
+                styles.modalItem,
+                { borderBottomColor: colors.border },
+                selectedOperator === op.id && { backgroundColor: colors.accent + '20' }
+              ]}
+              onPress={() => {
+                setSelectedOperator(op.id);
+                setShowOperatorPicker(false);
+              }}
+            >
+              <Ionicons name="person-circle" size={24} color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalItemText, { color: colors.text }]}>{op.name}</Text>
+                <Text style={[{ fontSize: 12, color: colors.textSecondary }]}>{op.email}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {safeOperators.length === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                لا يوجد مشغلين{'\n'}قم بترقية مستخدم إلى مشغل من صفحة المستخدمين
+              </Text>
             </View>
-            <ScrollView style={styles.modalList}>
-              {/* Option to not assign operator */}
-              <TouchableOpacity
-                style={[
-                  styles.modalItem,
-                  { borderBottomColor: colors.border },
-                  !selectedOperator && { backgroundColor: colors.accent + '20' }
-                ]}
-                onPress={() => {
-                  setSelectedOperator('');
-                  setShowOperatorPicker(false);
-                }}
-              >
-                <Ionicons name="close-circle-outline" size={24} color={colors.textSecondary} />
-                <Text style={[styles.modalItemText, { color: colors.textSecondary }]}>بدون مشغل</Text>
-              </TouchableOpacity>
-              {safeOperators.map((op) => (
-                <TouchableOpacity
-                  key={op.id}
-                  style={[
-                    styles.modalItem,
-                    { borderBottomColor: colors.border },
-                    selectedOperator === op.id && { backgroundColor: colors.accent + '20' }
-                  ]}
-                  onPress={() => {
-                    setSelectedOperator(op.id);
-                    setShowOperatorPicker(false);
-                  }}
-                >
-                  <Ionicons name="person-circle" size={24} color={colors.accent} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.modalItemText, { color: colors.text }]}>{op.name}</Text>
-                    <Text style={[{ fontSize: 12, color: colors.textSecondary }]}>{op.email}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {safeOperators.length === 0 && (
-                <View style={styles.emptyState}>
-                  <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                    لا يوجد مشغلين{'\n'}قم بترقية مستخدم إلى مشغل من صفحة المستخدمين
-                  </Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+          )}
+        </ScrollView>
+      </AppModal>
+
+      {/* Error/Info Dialog */}
+      <AppDialog
+        visible={dialogVisible}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        confirmText={t('admin.ok')}
+        showCancel={false}
+        onConfirm={() => setDialogVisible(false)}
+      />
     </View>
   );
 }
@@ -567,76 +577,88 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight || 24) + 12,
-    paddingBottom: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.titleLarge,
-    color: '#fff',
-    fontWeight: '700',
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: SPACING.lg,
   },
-  quickNav: {
+  // ── Dashboard Cards ──
+  dashCards: {
     flexDirection: 'row',
-    marginBottom: SPACING.xl,
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
   },
-  quickNavButton: {
+  dashCard: {
     flex: 1,
-    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.lg,
+    gap: SPACING.xs,
+  },
+  dashIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.sm,
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
+    marginBottom: 2,
+  },
+  dashValue: {
+    ...TYPOGRAPHY.titleLarge,
+    fontWeight: '800',
+  },
+  dashLabel: {
+    ...TYPOGRAPHY.labelSmall,
+  },
+  // ── Form Card ──
+  formCard: {
+    borderRadius: RADIUS.xl,
     borderWidth: 1,
+    overflow: 'hidden',
   },
-  quickNavText: {
-    ...TYPOGRAPHY.bodyMedium,
+  formCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+  },
+  formCardTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+  },
+  // ── Fields ──
+  field: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+  },
+  fieldLabel: {
+    ...TYPOGRAPHY.labelSmall,
     fontWeight: '600',
+    marginBottom: SPACING.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '600',
-    marginBottom: SPACING.sm,
+  fieldRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
   },
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
+  },
+  selectorInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flex: 1,
   },
   selectorText: {
     ...TYPOGRAPHY.bodyMedium,
@@ -644,20 +666,20 @@ const styles = StyleSheet.create({
   teamsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   teamSelector: {
     flex: 1,
     borderRadius: RADIUS.lg,
-    borderWidth: 1,
+    borderWidth: 1.5,
     padding: SPACING.md,
-    minHeight: 100,
+    minHeight: 90,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedTeam: {
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.xs,
   },
   teamName: {
     ...TYPOGRAPHY.labelMedium,
@@ -670,20 +692,28 @@ const styles = StyleSheet.create({
   emptyTeamText: {
     ...TYPOGRAPHY.labelSmall,
   },
+  vsBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   vsText: {
-    ...TYPOGRAPHY.titleMedium,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
   },
   dateTimeRow: {
     flexDirection: 'row',
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   dateButton: {
     flex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    padding: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
   },
@@ -692,80 +722,76 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    padding: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
   },
   dateText: {
-    ...TYPOGRAPHY.bodyMedium,
+    ...TYPOGRAPHY.bodySmall,
   },
   input: {
-    padding: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    ...TYPOGRAPHY.bodyMedium,
+    ...TYPOGRAPHY.bodySmall,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.lg,
-    marginBottom: SPACING.xl,
+    borderWidth: 1,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
   },
   toggleInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
-  },
-  toggleTextContainer: {
-    gap: 2,
+    gap: SPACING.sm,
   },
   toggleTitle: {
-    ...TYPOGRAPHY.bodyMedium,
+    ...TYPOGRAPHY.bodySmall,
     fontWeight: '600',
   },
-  toggleSubtitle: {
-    ...TYPOGRAPHY.labelSmall,
-  },
   toggle: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
-    padding: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#10B981',
-  },
-  toggleDot: {
-    width: 24,
+    width: 44,
     height: 24,
     borderRadius: 12,
+    padding: 2,
+  },
+  toggleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#fff',
   },
   toggleDotActive: {
-    transform: [{ translateX: 22 }],
+    transform: [{ translateX: 20 }],
   },
   submitButton: {
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.md,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
   },
   submitGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
+    paddingVertical: 14,
   },
   submitText: {
-    ...TYPOGRAPHY.bodyLarge,
+    ...TYPOGRAPHY.bodyMedium,
     color: '#fff',
     fontWeight: '700',
   },
+  // ── Modals ──
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -802,11 +828,6 @@ const styles = StyleSheet.create({
   modalItemText: {
     ...TYPOGRAPHY.bodyMedium,
     fontWeight: '500',
-  },
-  helperText: {
-    ...TYPOGRAPHY.labelSmall,
-    marginTop: SPACING.xs,
-    marginHorizontal: SPACING.xs,
   },
   emptyState: {
     alignItems: 'center',

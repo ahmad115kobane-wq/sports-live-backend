@@ -15,7 +15,7 @@ const api = axios.create({
 // Request interceptor - Add auth token
 api.interceptors.request.use(
   async (config) => {
-    console.log('📤 Request:', config.method?.toUpperCase(), config.baseURL + config.url);
+    console.log('📤 Request:', config.method?.toUpperCase(), `${config.baseURL ?? ''}${config.url ?? ''}`);
     
     // Add auth token if available
     try {
@@ -41,10 +41,22 @@ api.interceptors.response.use(
     console.log('📥 Response:', response.status, response.config.url);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.log('📥 Response Error:', error.code, error.message);
-    if (error.response?.status === 401) {
-      console.log('Unauthorized request');
+    if (error.response?.status === 401 && !error.config?.url?.includes('/users/me')) {
+      console.log('⚠️ Unauthorized - session expired or invalid token');
+      try {
+        const { getForceLogout } = require('@/store/authStore');
+        const forceLogout = getForceLogout();
+        if (forceLogout) {
+          forceLogout();
+        } else {
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+        }
+      } catch (e) {
+        console.log('Error clearing auth data:', e);
+      }
     }
     return Promise.reject(error);
   }
@@ -73,7 +85,7 @@ export const matchApi = {
   update: (id: string, data: any) => api.put(`/matches/${id}`, data),
   delete: (id: string) => api.delete(`/matches/${id}`),
   assignOperator: (matchId: string, operatorId: string) => 
-    api.post(`/admin/matches/${matchId}/assign`, { operatorId }),
+    api.post(`/admin/matches/${matchId}/operators`, { operatorId }),
 };
 
 export const adminApi = {
@@ -82,6 +94,7 @@ export const adminApi = {
 
 export const teamApi = {
   getAll: () => api.get('/teams'),
+  getAllWithPlayers: (category?: string) => api.get(`/teams?includePlayers=true${category ? `&category=${category}` : ''}`),
   getById: (id: string) => api.get(`/teams/${id}`),
   getByCompetition: (competitionId: string) => {
     // Create a request without auth token for public access during onboarding
@@ -132,14 +145,19 @@ export const playerApi = {
 
 export const userApi = {
   getProfile: () => api.get('/users/me'),
+  updateProfile: (data: { name?: string; currentPassword?: string; newPassword?: string }) =>
+    api.put('/users/profile', data),
+  uploadAvatar: (formData: FormData) => api.post('/users/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   getFavorites: () => api.get('/users/favorites'),
   addFavorite: (matchId: string) => api.post(`/users/favorites/${matchId}`),
   removeFavorite: (matchId: string) => api.delete(`/users/favorites/${matchId}`),
   savePreferences: (data: { favoriteTeams: string[]; favoriteCompetitions: string[] }) => 
-    api.post('/users/preferences', data),
+    api.put('/users/preferences', data),
   getPreferences: () => api.get('/users/preferences'),
   // Admin endpoints
-  getAll: () => api.get('/admin/users'),
+  getAll: (page = 1, limit = 10) => api.get('/admin/users', { params: { page, limit } }),
   getById: (id: string) => api.get(`/admin/users/${id}`),
   toggleBan: (id: string) => api.post(`/admin/users/${id}/toggle-ban`),
   updateRole: (id: string, role: string) => api.patch(`/admin/users/${id}/role`, { role }),
@@ -152,14 +170,101 @@ export const operatorApi = {
   startMatch: (id: string) => api.post(`/operator/matches/${id}/start`),
   setHalftime: (id: string) => api.post(`/operator/matches/${id}/halftime`),
   startSecondHalf: (id: string) => api.post(`/operator/matches/${id}/second-half`),
+  setStoppageTime: (id: string, stoppageMinutes: number) =>
+    api.post(`/operator/matches/${id}/stoppage-time`, { stoppageMinutes }),
+  startExtraTime: (id: string) => api.post(`/operator/matches/${id}/extra-time-start`),
+  setExtraTimeHalftime: (id: string) => api.post(`/operator/matches/${id}/extra-time-halftime`),
+  startExtraTimeSecond: (id: string) => api.post(`/operator/matches/${id}/extra-time-second`),
+  startPenalties: (id: string) => api.post(`/operator/matches/${id}/penalties`),
   endMatch: (id: string) => api.post(`/operator/matches/${id}/end`),
   updateMinute: (id: string, minute: number) =>
     api.patch(`/operator/matches/${id}/minute`, { currentMinute: minute }),
+  makeSubstitution: (matchId: string, data: { playerOutId: string; playerInId: string; minute: number; teamId: string }) =>
+    api.post(`/matches/${matchId}/substitution`, data),
+  getFormations: () => api.get('/matches/formations/list'),
+  saveLineup: (matchId: string, teamId: string, data: { formation: string; coach?: string; players: any[] }) =>
+    api.post(`/matches/${matchId}/lineup/${teamId}`, data),
+  updateReferee: (matchId: string, referee: string) =>
+    api.patch(`/operator/matches/${matchId}/referee`, { referee }),
 };
 
 export const eventApi = {
   create: (data: any) => api.post('/events', data),
   delete: (id: string) => api.delete(`/events/${id}`),
+};
+
+export const newsApi = {
+  getAll: (page = 1, limit = 20) => api.get(`/news?page=${page}&limit=${limit}`),
+  getById: (id: string) => api.get(`/news/${id}`),
+  create: (formData: FormData) => api.post('/news', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update: (id: string, formData: FormData) => api.put(`/news/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  delete: (id: string) => api.delete(`/news/${id}`),
+  getMyArticles: () => api.get('/news/my/articles'),
+};
+
+export const statsApi = {
+  getMatchStats: (matchId: string) => api.get(`/stats/match/${matchId}`),
+  togglePossession: (matchId: string, team: 'home' | 'away') =>
+    api.post(`/stats/match/${matchId}/possession`, { team }),
+  resetPossession: (matchId: string) =>
+    api.post(`/stats/match/${matchId}/possession/reset`),
+};
+
+export const storeApi = {
+  // Public
+  getCategories: () => api.get('/store/categories'),
+  getProducts: (params?: { categoryId?: string; search?: string; featured?: boolean; badge?: string; page?: number; limit?: number }) =>
+    api.get('/store/products', { params }),
+  getProduct: (id: string) => api.get(`/store/products/${id}`),
+  // Admin
+  adminGetCategories: () => api.get('/store/admin/categories'),
+  adminCreateCategory: (data: { name: string; nameAr: string; nameKu: string; icon?: string; sortOrder?: number; isActive?: boolean }) =>
+    api.post('/store/admin/categories', data),
+  adminUpdateCategory: (id: string, data: any) => api.put(`/store/admin/categories/${id}`, data),
+  adminDeleteCategory: (id: string) => api.delete(`/store/admin/categories/${id}`),
+  adminGetProducts: () => api.get('/store/admin/products'),
+  adminCreateProduct: (data: any) => api.post('/store/admin/products', data),
+  adminUpdateProduct: (id: string, data: any) => api.put(`/store/admin/products/${id}`, data),
+  adminDeleteProduct: (id: string) => api.delete(`/store/admin/products/${id}`),
+  // Banners
+  getBanners: () => api.get('/store/banners'),
+  adminGetBanners: () => api.get('/store/admin/banners'),
+  adminCreateBanner: (data: any) => api.post('/store/admin/banners', data),
+  adminUpdateBanner: (id: string, data: any) => api.put(`/store/admin/banners/${id}`, data),
+  adminDeleteBanner: (id: string) => api.delete(`/store/admin/banners/${id}`),
+  // Image Upload
+  adminUploadImage: (formData: FormData) => api.post('/store/admin/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+};
+
+export const sliderApi = {
+  getActive: () => api.get('/sliders'),
+  adminGetAll: () => api.get('/sliders/admin'),
+  adminCreate: (formData: FormData) => api.post('/sliders/admin', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  adminUpdate: (id: string, formData: FormData) => api.put(`/sliders/admin/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  adminDelete: (id: string) => api.delete(`/sliders/admin/${id}`),
+};
+
+export const orderApi = {
+  // User
+  createOrder: (data: { customerName: string; customerPhone: string; customerAddress: string; items: any[]; deliveryFee?: number }) =>
+    api.post('/orders', data),
+  getMyOrders: () => api.get('/orders/my-orders'),
+  // Admin
+  adminGetAllOrders: (status?: string) =>
+    api.get('/orders/admin/all', { params: status ? { status } : {} }),
+  adminUpdateOrderStatus: (id: string, data: { status: string; adminNote?: string; estimatedDelivery?: string; deliveryFee?: number }) =>
+    api.put(`/orders/admin/${id}/status`, data),
+  adminGetOrderCounts: () => api.get('/orders/admin/counts'),
 };
 
 export const competitionApi = {
@@ -197,4 +302,13 @@ export const competitionApi = {
     logoUrl?: string;
   }) => api.put(`/competitions/${id}`, data),
   delete: (id: string) => api.delete(`/competitions/${id}`),
+};
+
+export const legalApi = {
+  getAll: () => api.get('/legal'),
+  getBySlug: (slug: string) => api.get(`/legal/${slug}`),
+  adminGetAll: () => api.get('/legal/admin/all'),
+  adminCreate: (data: any) => api.post('/legal/admin', data),
+  adminUpdate: (id: string, data: any) => api.put(`/legal/admin/${id}`, data),
+  adminDelete: (id: string) => api.delete(`/legal/admin/${id}`),
 };

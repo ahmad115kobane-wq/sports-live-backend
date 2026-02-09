@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
   StatusBar,
   Platform,
   RefreshControl,
@@ -16,6 +15,7 @@ import {
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import {
@@ -24,6 +24,7 @@ import {
   markAllAsRead,
   deleteNotification,
 } from '@/services/notifications';
+import EventIcon from '@/components/ui/EventIcon';
 
 interface Notification {
   id: string;
@@ -38,7 +39,7 @@ interface Notification {
 
 export default function NotificationsScreen() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,12 @@ export default function NotificationsScreen() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    loadNotifications();
+    loadNotifications().then(() => {
+      // Auto-mark all as read when page opens
+      markAllAsRead().then(() => {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      });
+    });
   }, []);
 
   async function loadNotifications() {
@@ -87,12 +93,12 @@ export default function NotificationsScreen() {
 
   async function handleDelete(id: string) {
     Alert.alert(
-      isRTL ? 'حذف الإشعار' : 'Delete Notification',
-      isRTL ? 'هل تريد حذف هذا الإشعار؟' : 'Are you sure you want to delete this notification?',
+      t('notifications.deleteNotification'),
+      t('notifications.deleteConfirm'),
       [
-        { text: isRTL ? 'إلغاء' : 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: isRTL ? 'حذف' : 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             const success = await deleteNotification(id);
@@ -110,35 +116,35 @@ export default function NotificationsScreen() {
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (seconds < 60) return isRTL ? 'الآن' : 'now';
+    if (seconds < 60) return t('time.justNow');
     if (seconds < 3600) {
       const minutes = Math.floor(seconds / 60);
-      return isRTL ? `منذ ${minutes} دقيقة` : `${minutes} min ago`;
+      return t('time.minutesAgo', { count: minutes });
     }
     if (seconds < 86400) {
       const hours = Math.floor(seconds / 3600);
-      return isRTL ? `منذ ${hours} ساعة` : `${hours} hour ago`;
+      return t('time.hoursAgo', { count: hours });
     }
     const days = Math.floor(seconds / 86400);
-    return isRTL ? `منذ ${days} يوم` : `${days} day ago`;
+    return t('time.daysAgo', { count: days });
   }
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationEventType = (type: Notification['type']): { eventType: string; color: string } => {
     switch (type) {
       case 'goal':
-        return { name: 'football-outline' as const, color: colors.success };
+        return { eventType: 'goal', color: '#4CAF50' };
       case 'match_start':
-        return { name: 'play-circle-outline' as const, color: colors.live };
+        return { eventType: 'start_half', color: '#4CAF50' };
       case 'match_end':
-        return { name: 'flag-outline' as const, color: colors.textSecondary };
+        return { eventType: 'end_match', color: '#9E9E9E' };
       case 'pre_match':
-        return { name: 'time-outline' as const, color: colors.warning };
+        return { eventType: 'start_half', color: '#FF9800' };
       case 'red_card':
-        return { name: 'square-outline' as const, color: '#FF3B30' };
+        return { eventType: 'red_card', color: '#F44336' };
       case 'penalty':
-        return { name: 'flag-outline' as const, color: colors.warning };
+        return { eventType: 'penalty', color: '#E91E63' };
       default:
-        return { name: 'notifications-outline' as const, color: colors.accent };
+        return { eventType: 'goal', color: colors.accent };
     }
   };
 
@@ -152,11 +158,11 @@ export default function NotificationsScreen() {
             headerShown: true,
             headerTitle: t('settings.notifications'),
             headerStyle: { backgroundColor: colors.primary },
-            headerTintColor: '#fff',
+            headerTintColor: colors.text,
           }}
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </View>
     );
@@ -169,45 +175,38 @@ export default function NotificationsScreen() {
           headerShown: true,
           headerTitle: t('settings.notifications'),
           headerStyle: { backgroundColor: colors.primary },
-          headerTintColor: '#fff',
+          headerTintColor: colors.text,
           headerLeft: () => (
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => router.back()}
             >
               <Ionicons
-                name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
                 size={24}
-                color="#fff"
+                color={colors.text}
               />
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {unreadCount > 0 && (
-                <TouchableOpacity
-                  style={styles.headerButton}
-                  onPress={handleMarkAllAsRead}
-                >
-                  <Ionicons name="checkmark-done-outline" size={24} color="#fff" />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={() => router.push('/notification-settings' as any)}
-              >
-                <Ionicons name="settings-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => router.push('/notification-settings' as any)}
+            >
+              <Ionicons name="settings-outline" size={24} color={colors.text} />
+            </TouchableOpacity>
           ),
         }}
       />
 
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          notifications.length === 0 && { flex: 1 }
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -225,7 +224,7 @@ export default function NotificationsScreen() {
         {/* Notifications List */}
         {notifications.length > 0 ? (
           notifications.map(notification => {
-            const icon = getNotificationIcon(notification.type);
+            const eventInfo = getNotificationEventType(notification.type);
             return (
               <TouchableOpacity
                 key={notification.id}
@@ -238,6 +237,7 @@ export default function NotificationsScreen() {
                     borderColor: notification.isRead
                       ? colors.cardBorder
                       : colors.accent,
+                    flexDirection: isRTL ? 'row-reverse' : 'row',
                   },
                 ]}
                 onPress={() => {
@@ -252,10 +252,10 @@ export default function NotificationsScreen() {
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: `${icon.color}15` },
+                    { backgroundColor: `${eventInfo.color}15` },
                   ]}
                 >
-                  <Ionicons name={icon.name} size={22} color={icon.color} />
+                  <EventIcon type={eventInfo.eventType} size={26} color={eventInfo.color} />
                 </View>
 
                 <View style={[styles.notificationContent, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0 }]}>
@@ -286,21 +286,21 @@ export default function NotificationsScreen() {
                 </View>
 
                 <Ionicons
-                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                  size={18}
+                  name={isRTL ? 'chevron-forward' : 'chevron-back'}
+                  size={20}
                   color={colors.textTertiary}
                 />
               </TouchableOpacity>
             );
           })
         ) : (
-          <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
-            <Ionicons name="notifications-off-outline" size={64} color={colors.textTertiary} />
+          <View style={styles.emptyState}>
+            <Ionicons name="notifications-off-outline" size={48} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
               {t('common.noResults')}
             </Text>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {t('settings.notifications')}
+              لا يوجد إشعارات
             </Text>
           </View>
         )}
@@ -332,27 +332,29 @@ const styles = StyleSheet.create({
   unreadBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
-    gap: SPACING.xs,
+    padding: SPACING.md,
+    borderRadius: RADIUS.xl,
+    marginBottom: SPACING.lg,
+    gap: SPACING.sm,
   },
   unreadText: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '600',
+    ...TYPOGRAPHY.bodyMedium,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.xs,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.xl,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
+    ...SHADOWS.xs,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -366,11 +368,12 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     ...TYPOGRAPHY.titleSmall,
-    fontWeight: '600',
+    fontWeight: '700',
     flex: 1,
+    letterSpacing: -0.2,
   },
   unreadTitle: {
-    fontWeight: '700',
+    fontWeight: '800',
   },
   unreadDot: {
     width: 8,
@@ -380,26 +383,31 @@ const styles = StyleSheet.create({
   },
   notificationMessage: {
     ...TYPOGRAPHY.bodySmall,
-    marginTop: 2,
+    marginTop: 4,
+    lineHeight: 18,
+    opacity: 0.75,
   },
   notificationTime: {
     ...TYPOGRAPHY.labelSmall,
-    marginTop: 4,
+    marginTop: 6,
+    opacity: 0.5,
   },
   emptyState: {
-    padding: SPACING.xl,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: RADIUS.lg,
-    marginTop: SPACING.xl,
+    paddingVertical: SPACING.xl * 4,
   },
   emptyTitle: {
-    ...TYPOGRAPHY.titleSmall,
-    fontWeight: '700',
-    marginTop: SPACING.md,
-    marginBottom: SPACING.xxs,
+    ...TYPOGRAPHY.titleLarge,
+    fontWeight: '800',
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.xs,
+    letterSpacing: -0.3,
   },
   emptyText: {
-    ...TYPOGRAPHY.bodySmall,
+    ...TYPOGRAPHY.bodyMedium,
     textAlign: 'center',
+    opacity: 0.6,
   },
 });

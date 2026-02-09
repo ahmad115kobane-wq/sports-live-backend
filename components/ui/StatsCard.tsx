@@ -4,10 +4,10 @@ import {
   View,
   Text,
   StyleSheet,
-  useColorScheme,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/Theme';
 import AnimatedNumber from './AnimatedNumber';
 
@@ -26,7 +26,7 @@ interface StatsCardProps {
 
 export default function StatsCard({ stats, title, variant = 'horizontal' }: StatsCardProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>

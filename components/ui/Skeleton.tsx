@@ -4,11 +4,11 @@ import {
   Animated,
   StyleSheet,
   ViewStyle,
-  useColorScheme,
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { RADIUS, SPACING, SHADOWS } from '@/constants/Theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -29,7 +29,7 @@ export function Skeleton({
   variant = 'wave'
 }: SkeletonProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0.4)).current;
@@ -119,7 +119,7 @@ export function Skeleton({
 // Match Card Skeleton - Premium Design
 export function MatchCardSkeleton() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   return (
     <View style={[styles.matchCardSkeleton, { backgroundColor: colors.surface }]}>
@@ -136,20 +136,20 @@ export function MatchCardSkeleton() {
       <View style={styles.matchCardBody}>
         {/* Home Team */}
         <View style={styles.matchCardTeam}>
-          <Skeleton width={48} height={48} borderRadius={24} />
-          <Skeleton width={80} height={14} style={{ marginTop: SPACING.sm }} />
+          <Skeleton width={40} height={40} borderRadius={20} />
+          <Skeleton width={70} height={12} style={{ marginTop: SPACING.sm }} />
         </View>
         
         {/* Score */}
         <View style={styles.matchCardCenter}>
-          <Skeleton width={70} height={36} borderRadius={RADIUS.lg} />
-          <Skeleton width={50} height={12} borderRadius={RADIUS.sm} style={{ marginTop: SPACING.sm }} />
+          <Skeleton width={64} height={32} borderRadius={RADIUS.lg} />
+          <Skeleton width={44} height={10} borderRadius={RADIUS.sm} style={{ marginTop: SPACING.sm }} />
         </View>
         
         {/* Away Team */}
         <View style={styles.matchCardTeam}>
-          <Skeleton width={48} height={48} borderRadius={24} />
-          <Skeleton width={80} height={14} style={{ marginTop: SPACING.sm }} />
+          <Skeleton width={40} height={40} borderRadius={20} />
+          <Skeleton width={70} height={12} style={{ marginTop: SPACING.sm }} />
         </View>
       </View>
 
@@ -165,7 +165,7 @@ export function MatchCardSkeleton() {
 // Featured Match Skeleton - Premium Design
 export function FeaturedMatchSkeleton() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   return (
     <View style={[styles.featuredSkeleton, { backgroundColor: colors.primaryLight }]}>
@@ -181,18 +181,18 @@ export function FeaturedMatchSkeleton() {
       {/* Teams & Score */}
       <View style={styles.featuredBody}>
         <View style={styles.featuredTeam}>
-          <Skeleton width={68} height={68} borderRadius={34} />
-          <Skeleton width={90} height={16} style={{ marginTop: SPACING.md }} />
+          <Skeleton width={56} height={56} borderRadius={28} />
+          <Skeleton width={80} height={14} style={{ marginTop: SPACING.md }} />
         </View>
         
         <View style={styles.featuredCenter}>
-          <Skeleton width={100} height={52} borderRadius={RADIUS.xl} />
-          <Skeleton width={60} height={12} style={{ marginTop: SPACING.sm }} />
+          <Skeleton width={90} height={44} borderRadius={RADIUS.xl} />
+          <Skeleton width={50} height={10} style={{ marginTop: SPACING.sm }} />
         </View>
         
         <View style={styles.featuredTeam}>
-          <Skeleton width={68} height={68} borderRadius={34} />
-          <Skeleton width={90} height={16} style={{ marginTop: SPACING.md }} />
+          <Skeleton width={56} height={56} borderRadius={28} />
+          <Skeleton width={80} height={14} style={{ marginTop: SPACING.md }} />
         </View>
       </View>
 
@@ -209,11 +209,11 @@ export function FeaturedMatchSkeleton() {
 // Event Item Skeleton
 export function EventItemSkeleton() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   return (
     <View style={[styles.eventSkeleton, { backgroundColor: colors.surface }]}>
-      <Skeleton width={40} height={40} borderRadius={20} />
+      <Skeleton width={36} height={36} borderRadius={18} />
       <View style={styles.eventContent}>
         <Skeleton width={140} height={15} />
         <Skeleton width={100} height={12} style={{ marginTop: SPACING.xs }} />
@@ -226,15 +226,82 @@ export function EventItemSkeleton() {
 // Profile Header Skeleton
 export function ProfileHeaderSkeleton() {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  const colors = Colors[colorScheme];
 
   return (
     <View style={[styles.profileHeader, { backgroundColor: colors.primaryLight }]}>
-      <Skeleton width={88} height={88} borderRadius={44} />
+      <Skeleton width={72} height={72} borderRadius={36} />
       <Skeleton width={140} height={20} style={{ marginTop: SPACING.md }} />
       <Skeleton width={180} height={14} style={{ marginTop: SPACING.sm }} />
       <Skeleton width={80} height={28} borderRadius={RADIUS.full} style={{ marginTop: SPACING.md }} />
     </View>
+  );
+}
+
+// Product Card Skeleton (Store)
+export function ProductCardSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <View style={[styles.productCardSkeleton, { backgroundColor: colors.surface }]}>
+      <Skeleton width={'100%' as any} height={140} borderRadius={RADIUS.md} />
+      <View style={styles.productSkeletonInfo}>
+        <Skeleton width={'80%' as any} height={13} />
+        <Skeleton width={'50%' as any} height={10} style={{ marginTop: SPACING.sm }} />
+        <Skeleton width={'40%' as any} height={15} style={{ marginTop: SPACING.sm }} />
+      </View>
+    </View>
+  );
+}
+
+// Product Grid Skeleton (2 columns × 3 rows)
+export function ProductGridSkeleton() {
+  return (
+    <View style={styles.productGridSkeleton}>
+      {[0, 1, 2].map((row) => (
+        <View key={row} style={styles.productGridRow}>
+          <ProductCardSkeleton />
+          <ProductCardSkeleton />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Horizontal Product Section Skeleton (for "All" view)
+export function HorizontalSectionSkeleton({ count = 3 }: { count?: number }) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <View key={i} style={{ marginBottom: SPACING.xl }}>
+          {/* Section header skeleton */}
+          <View style={styles.hSectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+              <Skeleton width={32} height={32} borderRadius={10} />
+              <Skeleton width={100} height={16} />
+            </View>
+            <Skeleton width={70} height={28} borderRadius={RADIUS.full} />
+          </View>
+          {/* Horizontal cards skeleton */}
+          <View style={styles.hSectionCards}>
+            {[0, 1, 2, 3].map((j) => (
+              <View key={j} style={[styles.hCardSkeleton, { backgroundColor: colors.surface }]}>
+                <Skeleton width={'100%' as any} height={100} borderRadius={RADIUS.md} />
+                <View style={{ padding: SPACING.sm }}>
+                  <Skeleton width={'75%' as any} height={12} />
+                  <Skeleton width={'50%' as any} height={10} style={{ marginTop: SPACING.xs }} />
+                  <Skeleton width={'40%' as any} height={14} style={{ marginTop: SPACING.xs }} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      ))}
+    </>
   );
 }
 
@@ -245,6 +312,47 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }).map((_, index) => (
         <MatchCardSkeleton key={index} />
       ))}
+    </View>
+  );
+}
+
+// News Article Skeleton
+export function NewsSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <View style={[styles.newsCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+      {/* Author Section */}
+      <View style={styles.newsAuthorSection}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Skeleton width={42} height={42} borderRadius={21} />
+          <View style={{ flex: 1 }}>
+            <Skeleton width="40%" height={16} borderRadius={4} />
+            <View style={{ height: 4 }} />
+            <Skeleton width="30%" height={12} borderRadius={4} />
+          </View>
+        </View>
+      </View>
+
+      {/* Title */}
+      <View style={{ paddingHorizontal: 16 }}>
+        <Skeleton width="90%" height={20} borderRadius={4} />
+        <View style={{ height: 8 }} />
+        <Skeleton width="70%" height={20} borderRadius={4} />
+      </View>
+
+      {/* Content Preview */}
+      <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+        <Skeleton width="100%" height={14} borderRadius={4} />
+        <View style={{ height: 6 }} />
+        <Skeleton width="85%" height={14} borderRadius={4} />
+      </View>
+
+      {/* Image */}
+      <View style={{ marginTop: 16, marginHorizontal: 16, marginBottom: 16 }}>
+        <Skeleton width="100%" height={200} borderRadius={12} />
+      </View>
     </View>
   );
 }
@@ -347,9 +455,62 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xxxl,
     paddingHorizontal: SPACING.lg,
   },
+  // Product Card Skeleton
+  productCardSkeleton: {
+    flex: 1,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...SHADOWS.sm,
+  },
+  productSkeletonInfo: {
+    padding: SPACING.sm + 2,
+    gap: 2,
+  },
+  // Product Grid Skeleton
+  productGridSkeleton: {
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
+  },
+  productGridRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  // Horizontal Section Skeleton
+  hSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.sm,
+  },
+  hSectionCards: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
+    paddingTop: SPACING.sm,
+  },
+  hCardSkeleton: {
+    width: 140,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...SHADOWS.sm,
+  },
   // List
   listContainer: {
     gap: SPACING.md,
+  },
+  // News Card Skeleton
+  newsCard: {
+    borderRadius: RADIUS.xl,
+    overflow: 'hidden',
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    ...SHADOWS.sm,
+  },
+  newsAuthorSection: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
   },
 });
 
