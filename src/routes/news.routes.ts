@@ -214,8 +214,13 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
                 },
               },
             };
-            await admin.messaging().sendEachForMulticast(message)
-              .catch((err: any) => console.error('FCM batch error:', err));
+            const result = await admin.messaging().sendEachForMulticast(message);
+            console.log(`📊 FCM batch result: ${result.successCount} success, ${result.failureCount} failed`);
+            result.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                console.error(`❌ FCM error for token[${idx}]:`, resp.error?.code, resp.error?.message);
+              }
+            });
           }
           console.log(`📢 News notification sent to ${tokens.length} devices (image: ${fullImageUrl || 'none'})`);
         }

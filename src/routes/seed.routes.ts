@@ -369,4 +369,83 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/seed/check-tokens — فحص حالة push tokens
+router.get('/check-tokens', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, email: true, pushToken: true, role: true },
+    });
+    
+    const withToken = users.filter(u => u.pushToken);
+    const withoutToken = users.filter(u => !u.pushToken);
+    
+    res.json({
+      success: true,
+      total: users.length,
+      withPushToken: withToken.length,
+      withoutPushToken: withoutToken.length,
+      users: users.map(u => ({
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        hasToken: !!u.pushToken,
+        tokenPreview: u.pushToken ? u.pushToken.substring(0, 20) + '...' : null,
+      })),
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/seed/test-notification — إرسال إشعار تجريبي
+router.post('/test-notification', async (req, res) => {
+  try {
+    const admin = await import('firebase-admin');
+    
+    const users = await prisma.user.findMany({
+      where: { pushToken: { not: null } },
+      select: { id: true, name: true, pushToken: true },
+    });
+
+    if (users.length === 0) {
+      return res.json({ success: false, message: 'No users with push tokens found' });
+    }
+
+    const results: any[] = [];
+    
+    for (const user of users) {
+      try {
+        const message = {
+          token: user.pushToken!,
+          notification: {
+            title: '🔔 إشعار تجريبي',
+            body: `مرحباً ${user.name}! هذا إشعار تجريبي من السيرفر.`,
+          },
+          data: {
+            type: 'test',
+          },
+          android: {
+            priority: 'high' as const,
+            notification: {
+              channelId: 'match-notifications',
+              sound: 'default',
+            },
+          },
+        };
+        
+        const response = await admin.default.messaging().send(message);
+        results.push({ user: user.name, status: 'success', response });
+        console.log(`✅ Test notification sent to ${user.name}: ${response}`);
+      } catch (err: any) {
+        results.push({ user: user.name, status: 'failed', error: err.code || err.message });
+        console.error(`❌ Test notification failed for ${user.name}:`, err.code, err.message);
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 export default router;
