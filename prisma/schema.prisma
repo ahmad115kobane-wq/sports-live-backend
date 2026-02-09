@@ -1,0 +1,496 @@
+// Prisma Schema for Sports Live Application
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== MODELS ====================
+
+// Users table - includes normal users, operators, and admins
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          String    @default("user") // user, operator, admin
+  avatar        String?
+  isBanned      Boolean   @default(false) @map("is_banned")
+  pushToken     String?   @map("push_token")
+  preferences   String?   // JSON string: Store favorite teams and competitions
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  operatorMatches MatchOperator[]
+  favorites       Favorite[]
+  createdEvents   Event[]         @relation("EventCreator")
+  notifications   Notification[]
+  newsArticles    NewsArticle[]   @relation("NewsAuthor")
+  orders          StoreOrder[]    @relation("UserOrders")
+
+  @@index([pushToken])
+  @@map("users")
+}
+
+// Teams table
+model Team {
+  id           String   @id @default(uuid())
+  name         String
+  shortName    String   @map("short_name")
+  category     String   @default("FOOTBALL") // FOOTBALL, HANDBALL, BASKETBALL, FUTSAL, NATIONAL
+  logoUrl      String?  @map("logo_url")
+  primaryColor String?  @map("primary_color")
+  country      String?
+  city         String?
+  stadium      String?
+  coach        String?
+  founded      Int?
+  wins         Int      @default(0)
+  draws        Int      @default(0)
+  losses       Int      @default(0)
+  goalsFor     Int      @default(0) @map("goals_for")
+  goalsAgainst Int      @default(0) @map("goals_against")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  players      Player[]
+  homeMatches  Match[]  @relation("HomeTeam")
+  awayMatches  Match[]  @relation("AwayTeam")
+  events       Event[]
+  lineups      MatchLineup[]
+  competitions TeamCompetition[]
+
+  @@map("teams")
+}
+
+// Team-Competition relationship (many-to-many)
+model TeamCompetition {
+  id            String   @id @default(uuid())
+  teamId        String   @map("team_id")
+  competitionId String   @map("competition_id")
+  season        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, competitionId])
+  @@map("team_competitions")
+}
+
+// Players table
+model Player {
+  id          String   @id @default(uuid())
+  teamId      String   @map("team_id")
+  name        String
+  shirtNumber Int?     @map("shirt_number")
+  position    String?  // GK, DEF, MID, FWD
+  imageUrl    String?  @map("image_url")
+  nationality String?
+  dateOfBirth DateTime? @map("date_of_birth")
+  height      Int?     // in cm
+  weight      Int?     // in kg
+  preferredFoot String? @map("preferred_foot") // left, right, both
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  team              Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  primaryEvents     Event[] @relation("PrimaryPlayer")
+  secondaryEvents   Event[] @relation("SecondaryPlayer")
+  lineupPlayers     LineupPlayer[]
+
+  @@map("players")
+}
+
+// Competitions/Leagues table
+model Competition {
+  id          String   @id @default(uuid())
+  name        String
+  shortName   String?  @map("short_name")
+  logoUrl     String?  @map("logo_url")
+  country     String?
+  season      String?
+  type        String   @default("football") // football, basketball, futsal, national, women
+  icon        String?  // icon name for display
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  matches Match[]
+  teams   TeamCompetition[]
+
+  @@map("competitions")
+}
+
+// Matches table
+model Match {
+  id            String   @id @default(uuid())
+  competitionId String?  @map("competition_id")
+  homeTeamId    String   @map("home_team_id")
+  awayTeamId    String   @map("away_team_id")
+  startTime     DateTime @map("start_time")
+  status        String   @default("scheduled") // scheduled, live, halftime, finished
+  homeScore     Int      @default(0) @map("home_score")
+  awayScore     Int      @default(0) @map("away_score")
+  currentMinute Int?     @map("current_minute")
+  liveStartedAt DateTime? @map("live_started_at")
+  secondHalfStartedAt DateTime? @map("second_half_started_at")
+  isFeatured    Boolean  @default(false) @map("is_featured")
+  venue         String?
+  referee       String?
+  attendance    Int?
+  weather       String?
+  matchday      Int?     // round/matchday number
+  season        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  competition Competition?    @relation(fields: [competitionId], references: [id])
+  homeTeam    Team            @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team            @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  operators   MatchOperator[]
+  events      Event[]
+  favorites   Favorite[]
+  lineups     MatchLineup[]
+  stats       MatchStats?
+  notifications Notification[]
+
+  @@map("matches")
+}
+
+// Match Operators - which operator is assigned to which match
+model MatchOperator {
+  id         String   @id @default(uuid())
+  matchId    String   @map("match_id")
+  operatorId String   @map("operator_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  // Relations
+  match    Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  operator User  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, operatorId])
+  @@map("match_operators")
+}
+
+// Events table - live match events
+model Event {
+  id                String   @id @default(uuid())
+  matchId           String   @map("match_id")
+  minute            Int
+  extraTime         Int?     @map("extra_time")
+  type              String   // goal, foul, yellow_card, red_card, substitution, etc.
+  teamId            String?  @map("team_id")
+  playerId          String?  @map("player_id")
+  secondaryPlayerId String?  @map("secondary_player_id")
+  posX              Float?   @map("pos_x")
+  posY              Float?   @map("pos_y")
+  description       String?
+  createdById       String   @map("created_by_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Relations
+  match           Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team            Team?   @relation(fields: [teamId], references: [id])
+  player          Player? @relation("PrimaryPlayer", fields: [playerId], references: [id])
+  secondaryPlayer Player? @relation("SecondaryPlayer", fields: [secondaryPlayerId], references: [id])
+  createdBy       User    @relation("EventCreator", fields: [createdById], references: [id])
+
+  @@map("events")
+}
+
+// Favorites - user's favorite matches
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  matchId   String   @map("match_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchId])
+  @@map("favorites")
+}
+
+// Match Lineup - stores the lineup and formation for each team
+model MatchLineup {
+  id            String   @id @default(uuid())
+  matchId       String   @map("match_id")
+  teamId        String   @map("team_id")
+  formation     String?  // e.g., "4-3-3", "4-4-2"
+  coach         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  match        Match          @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team         Team           @relation(fields: [teamId], references: [id])
+  players      LineupPlayer[]
+
+  @@unique([matchId, teamId])
+  @@map("match_lineups")
+}
+
+// Lineup Player - individual player in a lineup
+model LineupPlayer {
+  id            String   @id @default(uuid())
+  lineupId      String   @map("lineup_id")
+  playerId      String   @map("player_id")
+  position      String?  // GK, DEF, MID, FWD or specific like LB, RB, CM
+  positionX     Float?   @map("position_x") // 0-100 for field position
+  positionY     Float?   @map("position_y") // 0-100 for field position
+  isStarter     Boolean  @default(true) @map("is_starter")
+  isCaptain     Boolean  @default(false) @map("is_captain")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  lineup  MatchLineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+  player  Player      @relation(fields: [playerId], references: [id])
+
+  @@unique([lineupId, playerId])
+  @@map("lineup_players")
+}
+
+// Notifications - push notification history
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  matchId     String?  @map("match_id")
+  type        String   // pre_match, match_start, goal, red_card, penalty, match_end
+  title       String
+  body        String
+  data        String?  // JSON string with additional data
+  isRead      Boolean  @default(false) @map("is_read")
+  sentAt      DateTime @default(now()) @map("sent_at")
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match? @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sentAt])
+  @@map("notifications")
+}
+
+// Match Statistics - detailed stats for each match
+model MatchStats {
+  id              String   @id @default(uuid())
+  matchId         String   @unique @map("match_id")
+  
+  // Home team stats
+  homePossession  Int?     @map("home_possession") // percentage
+  homeShots       Int?     @map("home_shots")
+  homeShotsOnTarget Int?   @map("home_shots_on_target")
+  homeCorners     Int?     @map("home_corners")
+  homeFouls       Int?     @map("home_fouls")
+  homeOffsides    Int?     @map("home_offsides")
+  homeYellowCards Int?     @map("home_yellow_cards")
+  homeRedCards    Int?     @map("home_red_cards")
+  homePasses      Int?     @map("home_passes")
+  homePassAccuracy Int?    @map("home_pass_accuracy") // percentage
+  homeSaves       Int?     @map("home_saves")
+  
+  // Away team stats
+  awayPossession  Int?     @map("away_possession")
+  awayShots       Int?     @map("away_shots")
+  awayShotsOnTarget Int?   @map("away_shots_on_target")
+  awayCorners     Int?     @map("away_corners")
+  awayFouls       Int?     @map("away_fouls")
+  awayOffsides    Int?     @map("away_offsides")
+  awayYellowCards Int?     @map("away_yellow_cards")
+  awayRedCards    Int?     @map("away_red_cards")
+  awayPasses      Int?     @map("away_passes")
+  awayPassAccuracy Int?    @map("away_pass_accuracy")
+  awaySaves       Int?     @map("away_saves")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@map("match_stats")
+}
+
+// Store Categories
+model StoreCategory {
+  id          String   @id @default(uuid())
+  name        String
+  nameAr      String   @map("name_ar")
+  nameKu      String   @map("name_ku")
+  icon        String   @default("grid")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  products StoreProduct[]
+
+  @@map("store_categories")
+}
+
+// Store Products
+model StoreProduct {
+  id             String   @id @default(uuid())
+  categoryId     String   @map("category_id")
+  name           String
+  nameAr         String   @map("name_ar")
+  nameKu         String   @map("name_ku")
+  description    String?
+  descriptionAr  String?  @map("description_ar")
+  descriptionKu  String?  @map("description_ku")
+  price          Float
+  originalPrice  Float?   @map("original_price")
+  discount       Int?     // percentage
+  imageUrl       String?  @map("image_url")
+  emoji          String?  @default("📦")
+  badge          String?  // new, hot, sale
+  rating         Float    @default(0)
+  reviewsCount   Int      @default(0) @map("reviews_count")
+  colors         String?  // JSON array of hex colors
+  sizes          String?  // JSON array of sizes
+  inStock        Boolean  @default(true) @map("in_stock")
+  isFeatured     Boolean  @default(false) @map("is_featured")
+  isActive       Boolean  @default(true) @map("is_active")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  category   StoreCategory    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems StoreOrderItem[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("store_products")
+}
+
+// Store Banners - rotating promotional banners on store homepage
+model StoreBanner {
+  id            String   @id @default(uuid())
+  title         String
+  titleAr       String   @map("title_ar")
+  titleKu       String   @map("title_ku")
+  subtitle      String?
+  subtitleAr    String?  @map("subtitle_ar")
+  subtitleKu    String?  @map("subtitle_ku")
+  imageUrl      String?  @map("image_url")
+  gradientStart String?  @map("gradient_start") // hex color
+  gradientEnd   String?  @map("gradient_end")   // hex color
+  linkType      String?  @map("link_type")      // product, category, url
+  linkValue     String?  @map("link_value")     // id or url
+  discount      String?  // e.g. "50%"
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("store_banners")
+}
+
+// Store Orders
+model StoreOrder {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  customerName    String   @map("customer_name")
+  customerPhone   String   @map("customer_phone")
+  customerAddress String   @map("customer_address")
+  totalAmount     Float    @map("total_amount")
+  deliveryFee     Float    @default(0) @map("delivery_fee")
+  status          String   @default("pending") // pending, approved, rejected, delivered
+  adminNote       String?  @map("admin_note")
+  estimatedDelivery String? @map("estimated_delivery")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user  User             @relation("UserOrders", fields: [userId], references: [id], onDelete: Cascade)
+  items StoreOrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("store_orders")
+}
+
+// Store Order Items
+model StoreOrderItem {
+  id            String  @id @default(uuid())
+  orderId       String  @map("order_id")
+  productId     String  @map("product_id")
+  productName   String  @map("product_name")
+  productNameAr String  @map("product_name_ar")
+  productNameKu String  @map("product_name_ku")
+  price         Float
+  quantity      Int
+  selectedSize  String? @map("selected_size")
+  selectedColor String? @map("selected_color")
+  imageUrl      String? @map("image_url")
+
+  // Relations
+  order   StoreOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product StoreProduct @relation(fields: [productId], references: [id])
+
+  @@map("store_order_items")
+}
+
+// Home Slider - independent ads/banners managed by admin
+model HomeSlider {
+  id        String   @id @default(uuid())
+  title     String?
+  imageUrl  String   @map("image_url")
+  linkUrl   String?  @map("link_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("home_sliders")
+}
+
+// Legal Pages - privacy policy, terms of service, etc.
+model LegalPage {
+  id        String   @id @default(uuid())
+  slug      String   @unique // e.g. "privacy-policy", "terms-of-service"
+  title     String
+  titleAr   String   @map("title_ar")
+  titleKu   String   @map("title_ku")
+  content   String   // HTML or plain text
+  contentAr String   @map("content_ar")
+  contentKu String   @map("content_ku")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("legal_pages")
+}
+
+// News Articles - published by publishers
+model NewsArticle {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  imageUrl    String?  @map("image_url")
+  authorId    String   @map("author_id")
+  isPublished Boolean  @default(true) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  author User @relation("NewsAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("news_articles")
+}
