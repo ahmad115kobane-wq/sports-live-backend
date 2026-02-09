@@ -23,6 +23,7 @@ import storeRoutes from './routes/store.routes';
 import orderRoutes from './routes/order.routes';
 import sliderRoutes from './routes/slider.routes';
 import legalRoutes from './routes/legal.routes';
+import seedRoutes from './routes/seed.routes';
 
 // Import Socket handler
 import { setupSocketHandlers } from './socket/socketHandler';
@@ -78,6 +79,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/legal', legalRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Serve news images
 app.use('/news', express.static(path.join(__dirname, '../public/news')));
