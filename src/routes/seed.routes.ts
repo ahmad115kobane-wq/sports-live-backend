@@ -4,13 +4,67 @@ import bcrypt from 'bcryptjs';
 
 const router = Router();
 
+// DELETE /api/seed — مسح جميع البيانات
+router.delete('/', async (req, res) => {
+  try {
+    await prisma.event.deleteMany();
+    await prisma.matchOperator.deleteMany();
+    await prisma.favorite.deleteMany();
+    await prisma.lineupPlayer.deleteMany();
+    await prisma.matchLineup.deleteMany();
+    await prisma.match.deleteMany();
+    await prisma.player.deleteMany();
+    await prisma.teamCompetition.deleteMany();
+    await prisma.team.deleteMany();
+    await prisma.competition.deleteMany();
+    await prisma.storeOrderItem.deleteMany();
+    await prisma.storeOrder.deleteMany();
+    await prisma.storeProduct.deleteMany();
+    await prisma.storeCategory.deleteMany();
+    await prisma.storeBanner.deleteMany();
+    await prisma.newsArticle.deleteMany();
+    await prisma.homeSlider.deleteMany();
+    await prisma.legalPage.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.user.deleteMany();
+    res.json({ success: true, message: 'All data deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete error:', error);
+    res.status(500).json({ success: false, message: 'Delete failed: ' + error.message });
+  }
+});
+
 // POST /api/seed — إضافة البيانات الافتراضية (مرة واحدة)
 router.post('/', async (req, res) => {
   try {
     // تحقق إذا البيانات موجودة مسبقاً
     const existingUsers = await prisma.user.count();
+    if (existingUsers > 0 && req.query.force !== 'true') {
+      return res.json({ success: false, message: 'Database already seeded. Use ?force=true to re-seed (will delete existing data first).' });
+    }
+
+    // إذا force=true، امسح البيانات أولاً
     if (existingUsers > 0) {
-      return res.json({ success: false, message: 'Database already seeded. Delete data first if you want to re-seed.' });
+      await prisma.event.deleteMany();
+      await prisma.matchOperator.deleteMany();
+      await prisma.favorite.deleteMany();
+      await prisma.lineupPlayer.deleteMany();
+      await prisma.matchLineup.deleteMany();
+      await prisma.match.deleteMany();
+      await prisma.player.deleteMany();
+      await prisma.teamCompetition.deleteMany();
+      await prisma.team.deleteMany();
+      await prisma.competition.deleteMany();
+      await prisma.storeOrderItem.deleteMany();
+      await prisma.storeOrder.deleteMany();
+      await prisma.storeProduct.deleteMany();
+      await prisma.storeCategory.deleteMany();
+      await prisma.storeBanner.deleteMany();
+      await prisma.newsArticle.deleteMany();
+      await prisma.homeSlider.deleteMany();
+      await prisma.legalPage.deleteMany();
+      await prisma.notification.deleteMany();
+      await prisma.user.deleteMany();
     }
 
     console.log('🌱 Starting database seed via API...');
