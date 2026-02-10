@@ -21,6 +21,11 @@ model User {
   isBanned      Boolean   @default(false) @map("is_banned")
   pushToken     String?   @map("push_token")
   preferences   String?   // JSON string: Store favorite teams and competitions
+  emailVerified Boolean   @default(false) @map("email_verified")
+  verificationCode String? @map("verification_code")
+  verificationCodeExpiry DateTime? @map("verification_code_expiry")
+  resetCode     String?   @map("reset_code")
+  resetCodeExpiry DateTime? @map("reset_code_expiry")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 

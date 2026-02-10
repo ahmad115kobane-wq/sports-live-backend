@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import prisma from '../utils/prisma';
+import { generateCode, sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
 
 const router = Router();
 
@@ -43,6 +44,10 @@ router.post(
       // Hash password
       const passwordHash = await bcrypt.hash(password, 10);
 
+      // Generate verification code
+      const verificationCode = generateCode();
+      const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
       // Create user
       const user = await prisma.user.create({
         data: {
@@ -50,15 +55,22 @@ router.post(
           email,
           passwordHash,
           role: 'user',
+          emailVerified: false,
+          verificationCode,
+          verificationCodeExpiry,
         },
         select: {
           id: true,
           name: true,
           email: true,
           role: true,
+          emailVerified: true,
           createdAt: true,
         },
       });
+
+      // Send verification email
+      await sendVerificationEmail(email, verificationCode, name);
 
       // Generate token
       const token = jwt.sign(
@@ -69,10 +81,11 @@ router.post(
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful',
+        message: 'Registration successful. Please verify your email.',
         data: {
           user,
           token,
+          requiresVerification: true,
         },
       });
     } catch (error) {
@@ -134,6 +147,35 @@ router.post(
         { expiresIn: '7d' }
       );
 
+      // Check if email is verified
+      if (!user.emailVerified) {
+        // Resend verification code
+        const verificationCode = generateCode();
+        const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await prisma.user.update({
+          where: { email },
+          data: { verificationCode, verificationCodeExpiry },
+        });
+        await sendVerificationEmail(email, verificationCode, user.name);
+
+        return res.json({
+          success: true,
+          message: 'Email not verified. Verification code sent.',
+          data: {
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              avatar: user.avatar,
+              emailVerified: false,
+            },
+            token,
+            requiresVerification: true,
+          },
+        });
+      }
+
       res.json({
         success: true,
         message: 'Login successful',
@@ -144,6 +186,7 @@ router.post(
             email: user.email,
             role: user.role,
             avatar: user.avatar,
+            emailVerified: user.emailVerified,
           },
           token,
         },
@@ -313,5 +356,249 @@ router.delete('/delete-account', async (req: any, res: any) => {
     });
   }
 });
+
+// Verify Email
+router.post(
+  '/verify-email',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('code').notEmpty().withMessage('Verification code is required'),
+  ],
+  async (req: any, res: any) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { email, code } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ success: false, message: 'Email already verified' });
+      }
+
+      if (!user.verificationCode || !user.verificationCodeExpiry) {
+        return res.status(400).json({ success: false, message: 'No verification code found. Please request a new one.' });
+      }
+
+      if (new Date() > user.verificationCodeExpiry) {
+        return res.status(400).json({ success: false, message: 'Verification code expired. Please request a new one.' });
+      }
+
+      if (user.verificationCode !== code) {
+        return res.status(400).json({ success: false, message: 'Invalid verification code' });
+      }
+
+      // Mark email as verified
+      const updatedUser = await prisma.user.update({
+        where: { email },
+        data: {
+          emailVerified: true,
+          verificationCode: null,
+          verificationCodeExpiry: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      // Generate fresh token
+      const token = jwt.sign(
+        { id: updatedUser.id, email: updatedUser.email, role: updatedUser.role },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
+
+      res.json({
+        success: true,
+        message: 'Email verified successfully',
+        data: { user: updatedUser, token },
+      });
+    } catch (error) {
+      console.error('Verify email error:', error);
+      res.status(500).json({ success: false, message: 'Verification failed' });
+    }
+  }
+);
+
+// Resend Verification Code
+router.post(
+  '/resend-verification',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+  ],
+  async (req: any, res: any) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { email } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ success: false, message: 'Email already verified' });
+      }
+
+      const verificationCode = generateCode();
+      const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+      await prisma.user.update({
+        where: { email },
+        data: { verificationCode, verificationCodeExpiry },
+      });
+
+      const sent = await sendVerificationEmail(email, verificationCode, user.name);
+      if (!sent) {
+        return res.status(500).json({ success: false, message: 'Failed to send verification email' });
+      }
+
+      res.json({ success: true, message: 'Verification code sent' });
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({ success: false, message: 'Failed to resend code' });
+    }
+  }
+);
+
+// Forgot Password - Send Reset Code
+router.post(
+  '/forgot-password',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+  ],
+  async (req: any, res: any) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { email } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        // Don't reveal whether user exists
+        return res.json({ success: true, message: 'If this email exists, a reset code has been sent.' });
+      }
+
+      const resetCode = generateCode();
+      const resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+      await prisma.user.update({
+        where: { email },
+        data: { resetCode, resetCodeExpiry },
+      });
+
+      await sendPasswordResetEmail(email, resetCode, user.name);
+
+      res.json({ success: true, message: 'If this email exists, a reset code has been sent.' });
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      res.status(500).json({ success: false, message: 'Failed to process request' });
+    }
+  }
+);
+
+// Verify Reset Code
+router.post(
+  '/verify-reset-code',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('code').notEmpty().withMessage('Reset code is required'),
+  ],
+  async (req: any, res: any) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { email, code } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || !user.resetCode || !user.resetCodeExpiry) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired reset code' });
+      }
+
+      if (new Date() > user.resetCodeExpiry) {
+        return res.status(400).json({ success: false, message: 'Reset code expired' });
+      }
+
+      if (user.resetCode !== code) {
+        return res.status(400).json({ success: false, message: 'Invalid reset code' });
+      }
+
+      res.json({ success: true, message: 'Code verified successfully' });
+    } catch (error) {
+      console.error('Verify reset code error:', error);
+      res.status(500).json({ success: false, message: 'Verification failed' });
+    }
+  }
+);
+
+// Reset Password
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('code').notEmpty().withMessage('Reset code is required'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  async (req: any, res: any) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { email, code, newPassword } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || !user.resetCode || !user.resetCodeExpiry) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired reset code' });
+      }
+
+      if (new Date() > user.resetCodeExpiry) {
+        return res.status(400).json({ success: false, message: 'Reset code expired' });
+      }
+
+      if (user.resetCode !== code) {
+        return res.status(400).json({ success: false, message: 'Invalid reset code' });
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      await prisma.user.update({
+        where: { email },
+        data: {
+          passwordHash,
+          resetCode: null,
+          resetCodeExpiry: null,
+        },
+      });
+
+      res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({ success: false, message: 'Password reset failed' });
+    }
+  }
+);
 
 export default router;

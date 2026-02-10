@@ -28,6 +28,7 @@
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
     "prisma": "^5.10.0",
+    "resend": "^6.9.1",
     "socket.io": "^4.7.4",
     "uuid": "^9.0.1"
   },
