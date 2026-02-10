@@ -560,6 +560,7 @@ export async function sendMatchEndNotification(match: Match): Promise<void> {
 
 /**
  * فحص وإرسال إشعارات المباريات التي ستبدأ خلال 15 دقيقة
+ * يتحقق من عدم إرسال إشعار مكرر لنفس المباراة
  */
 export async function sendPreMatchNotifications(): Promise<void> {
   try {
@@ -576,9 +577,24 @@ export async function sendPreMatchNotifications(): Promise<void> {
       },
     });
 
-    console.log(`🔍 Found ${matches.length} matches starting in 15 minutes`);
+    if (matches.length === 0) return;
 
-    for (const match of matches) {
+    // فحص أي مباريات تم إرسال إشعار pre_match لها مسبقاً
+    const alreadyNotified = await prisma.notification.findMany({
+      where: {
+        type: 'pre_match',
+        matchId: { in: matches.map(m => m.id) },
+      },
+      select: { matchId: true },
+      distinct: ['matchId'],
+    });
+
+    const notifiedMatchIds = new Set(alreadyNotified.map(n => n.matchId).filter(Boolean));
+    const newMatches = matches.filter(m => !notifiedMatchIds.has(m.id));
+
+    console.log(`🔍 Found ${matches.length} matches in 15min window, ${newMatches.length} need notifications (${notifiedMatchIds.size} already sent)`);
+
+    for (const match of newMatches) {
       await sendPreMatchNotification(match);
     }
   } catch (error) {
