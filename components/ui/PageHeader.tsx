@@ -19,6 +19,7 @@ interface PageHeaderProps {
   subtitle?: string;
   icon?: string;
   iconColor?: string;
+  leftContent?: React.ReactNode;
   rightContent?: React.ReactNode;
   children?: React.ReactNode;
   compact?: boolean;
@@ -28,6 +29,7 @@ interface PageHeaderProps {
 export default function PageHeader({
   title,
   subtitle,
+  leftContent,
   rightContent,
   children,
   compact = false,
@@ -62,6 +64,9 @@ export default function PageHeader({
           { flexDirection, opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
+        {/* Left actions (back button) */}
+        {leftContent}
+
         {/* Title / Logo */}
         <View style={[styles.titleBlock, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
           {logo ? (
@@ -72,7 +77,7 @@ export default function PageHeader({
                 {title}
               </Text>
               {subtitle ? (
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={2}>
                   {subtitle}
                 </Text>
               ) : null}

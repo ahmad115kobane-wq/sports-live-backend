@@ -8,7 +8,8 @@ interface MatchState {
   liveMatches: Match[];
   featuredMatch: Match | null;
   currentMatch: Match | null;
-  isLoading: boolean;
+  isLoadingMatches: boolean;
+  isLoadingMatch: boolean;
   error: string | null;
 
   // Actions
@@ -27,17 +28,18 @@ export const useMatchStore = create<MatchState>((set, get) => ({
   liveMatches: [],
   featuredMatch: null,
   currentMatch: null,
-  isLoading: false,
+  isLoadingMatches: false,
+  isLoadingMatch: false,
   error: null,
 
   fetchMatches: async (date?: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingMatches: true, error: null });
     try {
       const params = date ? { date } : {};
       const response = await api.get('/matches', { params });
-      set({ matches: response.data.data, isLoading: false });
+      set({ matches: response.data.data, isLoadingMatches: false });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoadingMatches: false });
     }
   },
 
@@ -60,47 +62,47 @@ export const useMatchStore = create<MatchState>((set, get) => ({
   },
 
   fetchMatchById: async (id: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoadingMatch: true, error: null });
     try {
       const response = await api.get(`/matches/${id}`);
       const match = response.data.data;
-      set({ currentMatch: match, isLoading: false });
+      set({ currentMatch: match, isLoadingMatch: false });
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message, isLoadingMatch: false });
     }
   },
 
   updateMatchFromSocket: (updatedMatch) => {
     const { matches, liveMatches, currentMatch, featuredMatch } = get();
+    const patch: Partial<MatchState> = {};
 
-    // Update in matches list
-    const updatedMatches = matches.map((m) =>
-      m.id === updatedMatch.id ? { ...m, ...updatedMatch } : m
-    );
+    // Only update arrays that actually contain this match
+    const inMatches = matches.some(m => m.id === updatedMatch.id);
+    if (inMatches) {
+      patch.matches = matches.map(m =>
+        m.id === updatedMatch.id ? { ...m, ...updatedMatch } : m
+      );
+    }
 
-    // Update in live matches
-    const updatedLiveMatches = liveMatches.map((m) =>
-      m.id === updatedMatch.id ? { ...m, ...updatedMatch } : m
-    );
+    const inLive = liveMatches.some(m => m.id === updatedMatch.id);
+    if (inLive) {
+      patch.liveMatches = liveMatches.map(m =>
+        m.id === updatedMatch.id ? { ...m, ...updatedMatch } : m
+      );
+    }
 
-    // Update current match if it's the same
-    let updatedCurrentMatch = currentMatch;
     if (currentMatch?.id === updatedMatch.id) {
-      updatedCurrentMatch = { ...currentMatch, ...updatedMatch };
+      patch.currentMatch = { ...currentMatch, ...updatedMatch };
     }
 
-    // Update featured match if it's the same
-    let updatedFeaturedMatch = featuredMatch;
     if (featuredMatch?.id === updatedMatch.id) {
-      updatedFeaturedMatch = { ...featuredMatch, ...updatedMatch };
+      patch.featuredMatch = { ...featuredMatch, ...updatedMatch };
     }
 
-    set({
-      matches: updatedMatches,
-      liveMatches: updatedLiveMatches,
-      currentMatch: updatedCurrentMatch,
-      featuredMatch: updatedFeaturedMatch,
-    });
+    // Only call set() if something actually changed
+    if (Object.keys(patch).length > 0) {
+      set(patch);
+    }
 
     // Notify local state listeners (home page, favorites, etc.)
     matchUpdateEmitter.emit(updatedMatch);

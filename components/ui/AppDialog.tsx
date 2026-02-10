@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,51 +7,126 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   Platform,
+  Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 
-type DialogType = 'confirm' | 'error' | 'warning';
+export type DialogType = 'success' | 'error' | 'warning' | 'info' | 'confirm';
 
-interface AppDialogProps {
+export interface DialogButton {
+  text: string;
+  onPress?: () => void;
+  style?: 'default' | 'cancel' | 'destructive';
+}
+
+export interface AppDialogProps {
   visible: boolean;
   type?: DialogType;
   title: string;
-  message: string;
+  message?: string;
+  buttons?: DialogButton[];
+  onDismiss?: () => void;
+  loading?: boolean;
+  // Legacy props for backwards compatibility
   confirmText?: string;
   cancelText?: string;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   onCancel?: () => void;
   showCancel?: boolean;
-  loading?: boolean;
 }
 
-const ICON_MAP: Record<DialogType, { name: string; color: string }> = {
-  confirm: { name: 'help-circle', color: '#3B82F6' },
-  error: { name: 'close-circle', color: '#EF4444' },
-  warning: { name: 'warning', color: '#F59E0B' },
+const ICON_CONFIG: Record<DialogType, { name: string; lightColor: string; darkColor: string }> = {
+  success: { name: 'checkmark-circle', lightColor: '#16A34A', darkColor: '#4ADE80' },
+  error: { name: 'close-circle', lightColor: '#DC2626', darkColor: '#F87171' },
+  warning: { name: 'alert-circle', lightColor: '#D97706', darkColor: '#FBBF24' },
+  info: { name: 'information-circle', lightColor: '#2563EB', darkColor: '#60A5FA' },
+  confirm: { name: 'help-circle', lightColor: '#5C5C5C', darkColor: '#9A9A9A' },
 };
 
 export default function AppDialog({
   visible,
-  type = 'confirm',
+  type = 'info',
   title,
   message,
+  buttons: buttonsProp,
+  onDismiss,
+  loading = false,
+  // Legacy props
   confirmText,
   cancelText,
   onConfirm,
   onCancel,
-  showCancel = true,
-  loading = false,
+  showCancel,
 }: AppDialogProps) {
+  // Build buttons from legacy props if no buttons array provided
+  const buttons: DialogButton[] = buttonsProp || (() => {
+    const btns: DialogButton[] = [];
+    if (showCancel && (onCancel || cancelText)) {
+      btns.push({ text: cancelText || 'Cancel', style: 'cancel', onPress: onCancel });
+    }
+    btns.push({ text: confirmText || 'OK', style: 'default', onPress: onConfirm });
+    return btns;
+  })();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
 
-  const iconInfo = ICON_MAP[type];
-  const handleClose = onCancel || onConfirm;
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 65,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.85);
+      opacityAnim.setValue(0);
+    }
+  }, [visible]);
+
+  const iconConfig = ICON_CONFIG[type];
+  const iconColor = isDark ? iconConfig.darkColor : iconConfig.lightColor;
+
+  const getButtonBg = (style?: string) => {
+    if (style === 'destructive') return isDark ? 'rgba(239,68,68,0.15)' : 'rgba(220,38,38,0.08)';
+    if (style === 'cancel') return isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+    // default
+    if (type === 'error') return colors.error;
+    if (type === 'success') return colors.success;
+    if (type === 'warning') return isDark ? '#D97706' : '#D97706';
+    return colors.accent;
+  };
+
+  const getButtonTextColor = (style?: string) => {
+    if (style === 'destructive') return isDark ? '#F87171' : '#DC2626';
+    if (style === 'cancel') return colors.textSecondary;
+    return '#fff';
+  };
+
+  const handleDismiss = () => {
+    if (onDismiss) onDismiss();
+    else if (onCancel) onCancel();
+    else {
+      const cancelBtn = buttons.find(b => b.style === 'cancel');
+      const defaultBtn = buttons[0];
+      (cancelBtn?.onPress || defaultBtn?.onPress)?.();
+    }
+  };
 
   return (
     <Modal
@@ -59,48 +134,79 @@ export default function AppDialog({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={handleClose}
+      onRequestClose={handleDismiss}
     >
-      <TouchableWithoutFeedback onPress={handleClose}>
+      <TouchableWithoutFeedback onPress={handleDismiss}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={[styles.dialog, { backgroundColor: colors.surface }]}>
+            <Animated.View
+              style={[
+                styles.dialog,
+                {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  transform: [{ scale: scaleAnim }],
+                  opacity: opacityAnim,
+                },
+              ]}
+            >
+              {/* Top accent line */}
+              <View style={[styles.accentLine, { backgroundColor: iconColor }]} />
+
               {/* Icon */}
-              <View style={[styles.iconWrap, { backgroundColor: iconInfo.color + '15' }]}>
-                <Ionicons name={iconInfo.name as any} size={32} color={iconInfo.color} />
+              <View style={[styles.iconWrap, { backgroundColor: iconColor + '12' }]}>
+                <Ionicons name={iconConfig.name as any} size={28} color={iconColor} />
               </View>
 
               {/* Title */}
-              <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+              {title ? (
+                <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+              ) : null}
 
               {/* Message */}
-              <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
-
-              {/* Divider */}
-              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+              {message ? (
+                <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
+              ) : null}
 
               {/* Buttons */}
-              <View style={styles.buttons}>
-                {showCancel && onCancel && (
-                  <TouchableOpacity
-                    style={[styles.btn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
-                    onPress={onCancel}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.cancelText, { color: colors.textSecondary }]}>{cancelText}</Text>
-                  </TouchableOpacity>
-                )}
+              {loading ? (
+                <View style={styles.loadingWrap}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                </View>
+              ) : (
+                <View style={[styles.buttons, buttons.length === 1 && styles.buttonsSingle]}>
+                  {buttons.map((btn, index) => {
+                    const isDefault = btn.style !== 'cancel' && btn.style !== 'destructive';
+                    const bg = getButtonBg(btn.style);
+                    const textColor = getButtonTextColor(btn.style);
 
-                <TouchableOpacity
-                  style={[styles.btn, { backgroundColor: type === 'error' ? '#EF4444' : type === 'warning' ? '#F59E0B' : colors.accent }]}
-                  onPress={onConfirm}
-                  activeOpacity={0.7}
-                  disabled={loading}
-                >
-                  <Text style={styles.confirmText}>{confirmText}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.btn,
+                          { backgroundColor: bg },
+                          buttons.length === 1 && styles.btnFull,
+                          isDefault && type !== 'confirm' && styles.btnElevated,
+                        ]}
+                        onPress={() => btn.onPress?.()}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.btnText,
+                            { color: textColor },
+                            isDefault && styles.btnTextBold,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {btn.text}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </Animated.View>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
@@ -111,76 +217,102 @@ export default function AppDialog({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 30,
   },
   dialog: {
     width: '100%',
-    borderRadius: RADIUS.xl,
-    paddingTop: 28,
+    maxWidth: 340,
+    borderRadius: RADIUS.xxl,
+    paddingTop: 0,
     paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingBottom: 22,
     alignItems: 'center',
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.2,
+        shadowRadius: 30,
       },
       android: {
-        elevation: 12,
+        elevation: 16,
       },
     }),
   },
+  accentLine: {
+    width: '120%',
+    height: 3,
+    marginBottom: 22,
+  },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   title: {
-    ...TYPOGRAPHY.titleMedium,
+    fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   message: {
-    ...TYPOGRAPHY.bodyMedium,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
+    lineHeight: 21,
+    marginBottom: 22,
+    paddingHorizontal: 4,
+    opacity: 0.8,
   },
-  divider: {
-    height: 1,
-    width: '100%',
-    marginBottom: 16,
+  loadingWrap: {
+    paddingVertical: 16,
   },
   buttons: {
     flexDirection: 'row',
     gap: 10,
     width: '100%',
   },
+  buttonsSingle: {
+    justifyContent: 'center',
+  },
   btn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 46,
   },
-  cancelBtn: {},
-  confirmBtn: {},
-  cancelText: {
-    ...TYPOGRAPHY.bodyMedium,
+  btnFull: {
+    flex: 0,
+    paddingHorizontal: 36,
+  },
+  btnElevated: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  btnText: {
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: -0.1,
   },
-  confirmText: {
-    ...TYPOGRAPHY.bodyMedium,
+  btnTextBold: {
     fontWeight: '700',
-    color: '#fff',
   },
 });

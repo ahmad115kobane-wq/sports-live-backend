@@ -12,6 +12,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  InteractionManager,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { teamApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
+import { ClubsGridSkeleton } from '@/components/ui/Skeleton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -75,14 +77,17 @@ export default function ClubsScreen() {
   const waveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    loadTeams();
-    Animated.loop(
-      Animated.timing(waveAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    ).start();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadTeams();
+      Animated.loop(
+        Animated.timing(waveAnim, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        })
+      ).start();
+    });
+    return () => task.cancel();
   }, []);
 
   useEffect(() => {
@@ -163,7 +168,7 @@ export default function ClubsScreen() {
 
           {/* Info */}
           <View style={[styles.teamInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
               {team.name}
             </Text>
             <View style={[styles.teamMetaRow, { flexDirection }]}>
@@ -183,7 +188,7 @@ export default function ClubsScreen() {
               {team.coach && (
                 <View style={[styles.detailItem, { flexDirection }]}>
                   <Ionicons name="person-outline" size={11} color={colors.textTertiary} />
-                  <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
+                  <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={2}>
                     {team.coach}
                   </Text>
                 </View>
@@ -191,7 +196,7 @@ export default function ClubsScreen() {
               {team.stadium && (
                 <View style={[styles.detailItem, { flexDirection }]}>
                   <Ionicons name="location-outline" size={11} color={colors.textTertiary} />
-                  <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>
+                  <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={2}>
                     {team.stadium}
                   </Text>
                 </View>
@@ -298,9 +303,7 @@ export default function ClubsScreen() {
 
       {/* Teams List */}
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
+        <ClubsGridSkeleton count={6} />
       ) : (
         <FlatList
           data={teams}

@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   RefreshControl,
   StatusBar,
   Platform,
@@ -12,8 +13,9 @@ import {
   Dimensions,
   Modal,
   ActivityIndicator,
-  Image,
+  InteractionManager,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from '@/components/ui/BlurView';
 import { router } from 'expo-router';
@@ -28,6 +30,7 @@ import MatchCard from '@/components/MatchCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { MatchCardSkeleton } from '@/components/ui/Skeleton';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useCountdowns } from '@/hooks/useLiveMinute';
 import Button from '@/components/ui/Button';
 import { useRTL } from '@/contexts/RTLContext';
 import PageHeader from '@/components/ui/PageHeader';
@@ -45,6 +48,7 @@ export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<Match[]>([]);
   const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'all' | 'live' | 'upcoming' | 'finished'>('all');
+  const countdownsMap = useCountdowns(favorites);
 
   // Favorite teams and competitions
   const [favoriteTeamIds, setFavoriteTeamIds] = useState<string[]>([]);
@@ -72,30 +76,48 @@ export default function FavoritesScreen() {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadFavoritePreferences();
-    } else {
-      setLoading(false);
-    }
+  const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
+  const shimmerRef = useRef<Animated.CompositeAnimation | null>(null);
 
-    // Animations
+  useEffect(() => {
+    // Animations start immediately (lightweight, native driver)
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 8, useNativeDriver: true }),
     ]).start();
 
-    Animated.loop(
+    pulseRef.current = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.1, duration: 1200, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    pulseRef.current.start();
 
-    Animated.loop(
+    shimmerRef.current = Animated.loop(
       Animated.timing(shimmerAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
-    ).start();
+    );
+    shimmerRef.current.start();
+
+    // Defer data loading after transition completes
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (isAuthenticated) {
+        loadFavoritePreferences();
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => { task.cancel(); pulseRef.current?.stop(); shimmerRef.current?.stop(); };
   }, [isAuthenticated]);
+
+  // Stop looping animations once loading finishes
+  useEffect(() => {
+    if (!loading) {
+      pulseRef.current?.stop();
+      shimmerRef.current?.stop();
+    }
+  }, [loading]);
 
   const loadFavoritePreferences = async () => {
     try {
@@ -469,71 +491,63 @@ export default function FavoritesScreen() {
         ))}
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, !loading && favorites.length === 0 && { flexGrow: 1 }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-          />
-        }
-      >
-        {loading ? (
-          <View style={styles.matchList}>
-            <MatchCardSkeleton />
-            <MatchCardSkeleton />
-            <MatchCardSkeleton />
-          </View>
-        ) : sortedMatches.length > 0 ? (
-          <View style={styles.matchList}>
-            {sortedMatches.map((match, index) => (
-              <Animated.View 
-                key={match.id}
-                style={{
-                  opacity: fadeAnim,
-                  transform: [{ 
-                    translateY: slideAnim.interpolate({
-                      inputRange: [0, 30],
-                      outputRange: [0, 30 * (index + 1) * 0.1],
-                    })
-                  }],
-                }}
-              >
-                <MatchCard
-                  match={match}
-                  onPress={() => router.push(`/match/${match.id}`)}
-                  showLiveIndicator={match.status === 'live' || match.status === 'halftime'}
+      {loading ? (
+        <View style={[styles.scrollContent, styles.matchList]}>
+          <MatchCardSkeleton />
+          <MatchCardSkeleton />
+          <MatchCardSkeleton />
+        </View>
+      ) : (
+        <FlatList
+          data={sortedMatches}
+          keyExtractor={(item) => item.id}
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, sortedMatches.length === 0 && { flexGrow: 1 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+            />
+          }
+          renderItem={({ item: match }) => (
+            <MatchCard
+              match={match}
+              onPress={() => router.push(`/match/${match.id}`)}
+              showLiveIndicator={match.status === 'live' || match.status === 'halftime'}
+              countdown={countdownsMap.get(match.id)}
+            />
+          )}
+          ListEmptyComponent={
+            favorites.length > 0 ? (
+              <View style={{ flex: 1, justifyContent: 'center', paddingVertical: SPACING.xxl }}>
+                <EmptyState
+                  icon={activeTab === 'live' ? 'radio-outline' : activeTab === 'upcoming' ? 'time-outline' : 'flag-outline'}
+                  title={activeTab === 'live' ? (t('favorites.noLive') || 'لا توجد مباريات مباشرة') : activeTab === 'upcoming' ? (t('favorites.noUpcoming') || 'لا توجد مباريات قادمة') : (t('favorites.noFinished') || 'لا توجد مباريات منتهية')}
+                  subtitle={''}
                 />
-              </Animated.View>
-            ))}
-          </View>
-        ) : favorites.length > 0 ? (
-          <View style={{ flex: 1, justifyContent: 'center', paddingVertical: SPACING.xxl }}>
-            <EmptyState
-              icon={activeTab === 'live' ? 'radio-outline' : activeTab === 'upcoming' ? 'time-outline' : 'flag-outline'}
-              title={activeTab === 'live' ? (t('favorites.noLive') || 'لا توجد مباريات مباشرة') : activeTab === 'upcoming' ? (t('favorites.noUpcoming') || 'لا توجد مباريات قادمة') : (t('favorites.noFinished') || 'لا توجد مباريات منتهية')}
-              subtitle={''}
-            />
-          </View>
-        ) : (
-          <View style={{ flex: 1, justifyContent: 'center' }}>
-            <EmptyState
-              icon="heart-outline"
-              title={t('favorites.noFavorites')}
-              subtitle={t('favorites.tapHeartIcon')}
-              actionLabel={t('favorites.editFavorites')}
-              actionIcon="add-circle-outline"
-              onAction={openEditModal}
-            />
-          </View>
-        )}
-        
-        <View style={{ height: 120 }} />
-      </ScrollView>
+              </View>
+            ) : (
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <EmptyState
+                  icon="heart-outline"
+                  title={t('favorites.noFavorites')}
+                  subtitle={t('favorites.tapHeartIcon')}
+                  actionLabel={t('favorites.editFavorites')}
+                  actionIcon="add-circle-outline"
+                  onAction={openEditModal}
+                />
+              </View>
+            )
+          }
+          ListFooterComponent={<View style={{ height: 120 }} />}
+          initialNumToRender={6}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+        />
+      )}
 
       {/* Edit Favorites Modal */}
       <Modal
@@ -580,13 +594,13 @@ export default function FavoritesScreen() {
                       activeOpacity={0.7}
                     >
                       {comp.logoUrl ? (
-                        <Image source={{ uri: comp.logoUrl }} style={styles.selectionLogo} resizeMode="contain" />
+                        <Image source={{ uri: comp.logoUrl }} style={styles.selectionLogo} contentFit="contain" cachePolicy="memory-disk" />
                       ) : (
                         <View style={[styles.selectionLogoPlaceholder, { backgroundColor: colors.surface }]}>
                           <Ionicons name="trophy" size={24} color={colors.textTertiary} />
                         </View>
                       )}
-                      <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+                      <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                         {comp.name}
                       </Text>
                       {selectedCompetitions.includes(comp.id) && (
@@ -615,13 +629,13 @@ export default function FavoritesScreen() {
                       activeOpacity={0.7}
                     >
                       {team.logoUrl ? (
-                        <Image source={{ uri: team.logoUrl }} style={styles.selectionLogo} resizeMode="contain" />
+                        <Image source={{ uri: team.logoUrl }} style={styles.selectionLogo} contentFit="contain" cachePolicy="memory-disk" />
                       ) : (
                         <View style={[styles.selectionLogoPlaceholder, { backgroundColor: team.primaryColor || colors.surface }]}>
                           <Ionicons name="shield" size={24} color="#fff" />
                         </View>
                       )}
-                      <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+                      <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                         {team.name}
                       </Text>
                       {selectedTeams.includes(team.id) && (

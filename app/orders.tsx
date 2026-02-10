@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
+  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -19,6 +20,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { orderApi } from '@/services/api';
 import { router } from 'expo-router';
 import { formatPrice } from '@/utils/currency';
+import { OrdersListSkeleton } from '@/components/ui/Skeleton';
 
 interface OrderItem {
   id: string;
@@ -90,7 +92,10 @@ export default function OrdersScreen() {
   }, []);
 
   useEffect(() => {
-    loadOrders();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadOrders();
+    });
+    return () => task.cancel();
   }, [loadOrders]);
 
   const onRefresh = () => {
@@ -123,9 +128,7 @@ export default function OrdersScreen() {
             <View style={{ width: 40 }} />
           </View>
         </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
+        <OrdersListSkeleton count={4} />
       </View>
     );
   }
@@ -230,7 +233,7 @@ export default function OrdersScreen() {
                           )}
                         </View>
                         <View style={[styles.orderItemInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                          <Text style={[styles.orderItemName, { color: colors.text }]} numberOfLines={1}>
+                          <Text style={[styles.orderItemName, { color: colors.text }]} numberOfLines={2}>
                             {getLocalizedProductName(item, language)}
                           </Text>
                           <View style={[styles.orderItemMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>

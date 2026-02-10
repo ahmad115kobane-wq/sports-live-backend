@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Sports Live"
+    "name": "Mini Football"
   },
   "welcome": {
     "tagline": "Follow your favorite matches in real-time",
@@ -10,6 +10,9 @@
     "loginOrRegister": "Login or Create Account",
     "continueAsGuest": "Continue as Guest",
     "termsNotice": "By continuing, you agree to our Terms of Service",
+    "agreeToTerms": "I agree to",
+    "andText": "and",
+    "mustAgree": "You must agree to the terms and privacy policy to continue",
     "upgradeAccount": "Upgrade Account",
     "upgradeDescription": "You're using a guest account. Upgrade to access all features",
     "guestAccount": "Guest Account"
@@ -100,7 +103,10 @@
     "vs": "VS",
     "keyEvents": "Key Events",
     "allEvents": "All Events",
-    "noEvents": "No Events Yet",
+    "noEvents": "No Events",
+    "noEventsYet": "No Events Yet",
+    "matchNotStarted": "Match hasn't started yet",
+    "noEventsDesc": "Events will appear as they happen",
     "eventsWillAppear": "Events will appear as they happen",
     "eventsHere": "Match events will appear here",
     "watchLive": "Watch Live",
@@ -256,6 +262,8 @@
     "rate": "Rate App",
     "share": "Share App",
     "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "attention": "Attention",
     "login": "Login",
     "register": "Register",
     "version": "Version",
@@ -267,7 +275,26 @@
     "goalNotifications": "Goal Notifications",
     "newsNotifications": "News Notifications",
     "soundEnabled": "Sound Enabled",
-    "vibrationEnabled": "Vibration Enabled"
+    "vibrationEnabled": "Vibration Enabled",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently delete your account and all data",
+    "deleteAccountConfirm": "Are you sure you want to delete your account?",
+    "deleteAccountWarning": "This action cannot be undone. All your data, orders, and favorites will be permanently deleted.",
+    "deleteAccountSuccess": "Account deleted successfully",
+    "deleteAccountFailed": "Failed to delete account",
+    "legalPages": "Legal & Privacy"
+  },
+  "about": {
+    "appInfo": "App Information",
+    "version": "Version",
+    "platform": "Platform",
+    "developer": "Developer",
+    "contact": "Contact Us",
+    "email": "Email",
+    "socialMedia": "Social Media",
+    "readOur": "Read our",
+    "allRightsReserved": "All rights reserved",
+    "madeWithLove": ""
   },
   "profile": {
     "watched": "Watched",
@@ -334,7 +361,7 @@
     "user": "User",
     "fillAllFields": "Please fill in all fields",
     "createAccount": "Create Account",
-    "joinToday": "Join Sports Live today",
+    "joinToday": "Join Mini Football today",
     "fullName": "Full Name",
     "enterName": "Enter your full name",
     "createPassword": "Create a password",
@@ -363,7 +390,34 @@
     "invalidAge": "Age must be between 13 and 100",
     "cityRequired": "City is required",
     "personalInfo": "Personal Info",
-    "accountInfo": "Account Info"
+    "accountInfo": "Account Info",
+    "verifyEmail": "Verify Email",
+    "verifyEmailSubtitle": "Enter the code sent to your email",
+    "verificationCode": "Verification Code",
+    "enterCode": "Enter 6-digit code",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "resendCode": "Resend Code",
+    "resendIn": "Resend in",
+    "seconds": "seconds",
+    "codeSent": "Code sent successfully",
+    "codeRequired": "Code is required",
+    "invalidCode": "Invalid code",
+    "emailVerified": "Email verified successfully",
+    "forgotPasswordTitle": "Forgot Password",
+    "forgotPasswordSubtitle": "Enter your email to receive a reset code",
+    "sendResetCode": "Send Reset Code",
+    "sending": "Sending...",
+    "resetCodeSent": "Reset code sent",
+    "resetPassword": "Reset Password",
+    "resetPasswordSubtitle": "Enter the code and your new password",
+    "newPassword": "New Password",
+    "enterNewPassword": "Enter new password",
+    "confirmNewPassword": "Confirm New Password",
+    "confirmNewPasswordPlaceholder": "Re-enter new password",
+    "resetting": "Resetting...",
+    "passwordResetSuccess": "Password reset successfully",
+    "backToLogin": "Back to Login"
   },
   "errors": {
     "networkError": "Network connection error",
@@ -671,7 +725,11 @@
     "itemsCount": "items",
     "storeManagement": "Store Management",
     "productsOffersCategories": "Products, offers & categories",
-    "viewMore": "View More"
+    "viewMore": "View More",
+    "featuredProducts": "Featured Products",
+    "newlyAdded": "Newly Added",
+    "discounts": "Discounts",
+    "viewAll": "View All"
   },
   "checkout": {
     "title": "Checkout",

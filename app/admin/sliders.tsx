@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
   Switch,
   RefreshControl,
   Image,
@@ -17,6 +16,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { sliderApi } from '@/services/api';
 import AppModal from '@/components/ui/AppModal';
 import AppDialog from '@/components/ui/AppDialog';
@@ -38,6 +38,7 @@ export default function AdminSlidersScreen() {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
 
   const [sliders, setSliders] = useState<Slider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +114,7 @@ export default function AdminSlidersScreen() {
 
   const handleSave = async () => {
     if (!editingSlider && !selectedImage) {
-      Alert.alert('خطأ', 'يجب اختيار صورة');
+      alert('خطأ', 'يجب اختيار صورة');
       return;
     }
 
@@ -146,7 +147,7 @@ export default function AdminSlidersScreen() {
       await loadSliders();
     } catch (error) {
       console.error('Error saving slider:', error);
-      Alert.alert('خطأ', 'فشل حفظ الإعلان');
+      alert('خطأ', 'فشل حفظ الإعلان');
     } finally {
       setSaving(false);
     }
@@ -160,7 +161,7 @@ export default function AdminSlidersScreen() {
       await loadSliders();
     } catch (error) {
       console.error('Error deleting slider:', error);
-      Alert.alert('خطأ', 'فشل حذف الإعلان');
+      alert('خطأ', 'فشل حذف الإعلان');
     }
   };
 
@@ -226,7 +227,7 @@ export default function AdminSlidersScreen() {
               {/* Info */}
               <View style={styles.cardInfo}>
                 <View style={[styles.cardRow, { flexDirection }]}>
-                  <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
                     {slider.title || '(بدون عنوان)'}
                   </Text>
                   <View
@@ -253,7 +254,7 @@ export default function AdminSlidersScreen() {
                 </View>
 
                 {slider.linkUrl ? (
-                  <Text style={[styles.cardLink, { color: colors.textTertiary }]} numberOfLines={1}>
+                  <Text style={[styles.cardLink, { color: colors.textTertiary }]} numberOfLines={2}>
                     🔗 {slider.linkUrl}
                   </Text>
                 ) : null}
@@ -372,12 +373,14 @@ export default function AdminSlidersScreen() {
       {/* Delete Confirmation */}
       <AppDialog
         visible={!!deleteId}
+        type="warning"
         title="حذف الإعلان"
         message="هل أنت متأكد من حذف هذا الإعلان؟"
-        confirmText="حذف"
-        cancelText="إلغاء"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
+        buttons={[
+          { text: 'إلغاء', style: 'cancel', onPress: () => setDeleteId(null) },
+          { text: 'حذف', style: 'destructive', onPress: handleDelete },
+        ]}
+        onDismiss={() => setDeleteId(null)}
       />
     </View>
   );

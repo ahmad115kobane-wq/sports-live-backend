@@ -250,6 +250,8 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary },
             ]}
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
           >
             {homeTeam.shortName || homeTeam.name}
           </Text>
@@ -279,6 +281,8 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary },
             ]}
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
           >
             {awayTeam.shortName || awayTeam.name}
           </Text>
@@ -417,7 +421,9 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                     <View style={styles.playerNameContainer}>
                       <Text
                         style={[styles.playerNameText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                        numberOfLines={1}
+                        numberOfLines={2}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.8}
                       >
                         {getPlayerLastName(player.player?.name)}
                       </Text>
@@ -451,7 +457,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                     </View>
                     <Text
                       style={[styles.substituteName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {player.player?.name}
                     </Text>
@@ -489,7 +495,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                     </View>
                     <Text
                       style={[styles.noLineupName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {player.name}
                     </Text>
@@ -693,7 +699,7 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     paddingTop: SPACING.md,
     borderRadius: RADIUS.lg,
-    width: 85,
+    width: 100,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
   },
@@ -769,10 +775,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   noLineupName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 2,
+    lineHeight: 16,
   },
   noLineupPosition: {
     fontSize: 10,

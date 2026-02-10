@@ -12,10 +12,10 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Image,
   FlatList,
   InteractionManager,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
@@ -25,24 +25,11 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Product, Category } from '@/constants/storeData';
 import { storeApi } from '@/services/api';
 import { useCartStore } from '@/store/cartStore';
+import { useStoreStore, mapApiProduct, Banner } from '@/store/storeStore';
 import { formatPrice } from '@/utils/currency';
 import { ProductGridSkeleton, HorizontalSectionSkeleton } from '@/components/ui/Skeleton';
 import { router } from 'expo-router';
 
-interface Banner {
-  id: string;
-  title: string;
-  titleAr: string;
-  titleKu: string;
-  subtitle?: string;
-  subtitleAr?: string;
-  subtitleKu?: string;
-  imageUrl?: string;
-  gradientStart?: string;
-  gradientEnd?: string;
-  discount?: string;
-  isActive: boolean;
-}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - SPACING.xl * 2 - SPACING.md) / 2;
@@ -89,7 +76,7 @@ function StarRating({ rating, size = 10 }: { rating: number; size?: number }) {
 }
 
 // ─── Product Card ───
-function ProductCard({
+const ProductCard = React.memo(function ProductCard({
   product,
   colors,
   isDark,
@@ -140,7 +127,7 @@ function ProductCard({
         )}
         <View style={[styles.productImageContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }]}>
           {product.imageUrl ? (
-            <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <Text style={styles.productEmoji}>{product.image}</Text>
           )}
@@ -167,10 +154,10 @@ function ProductCard({
       </TouchableOpacity>
     </Animated.View>
   );
-}
+});
 
 // ─── Horizontal Product Card (for "All" view) ───
-function HorizontalProductCard({
+const HorizontalProductCard = React.memo(function HorizontalProductCard({
   product,
   colors,
   isDark,
@@ -208,7 +195,7 @@ function HorizontalProductCard({
       )}
       <View style={[styles.hProductImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc' }]}>
         {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+          <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" />
         ) : (
           <Text style={{ fontSize: 36 }}>{product.image}</Text>
         )}
@@ -233,13 +220,13 @@ function HorizontalProductCard({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 // ─── Rotating Banners ───
 const BANNER_WIDTH = SCREEN_WIDTH - SPACING.xl * 2;
 const BANNER_HEIGHT = 180;
 
-function RotatingBanners({ banners, colors, isDark, t, language }: { banners: Banner[]; colors: any; isDark: boolean; t: any; language: string }) {
+const RotatingBanners = React.memo(function RotatingBanners({ banners, colors, isDark, t, language }: { banners: Banner[]; colors: any; isDark: boolean; t: any; language: string }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const timerRef = useRef<any>(null);
@@ -299,7 +286,7 @@ function RotatingBanners({ banners, colors, isDark, t, language }: { banners: Ba
           return (
             <View key={banner.id} style={[styles.bannerSlide, { width: BANNER_WIDTH }]}>
               {banner.imageUrl ? (
-                <Image source={{ uri: banner.imageUrl }} style={styles.bannerFullImage} resizeMode="cover" />
+                <Image source={{ uri: banner.imageUrl }} style={styles.bannerFullImage} contentFit="cover" cachePolicy="memory-disk" />
               ) : (
                 <LinearGradient
                   colors={[banner.gradientStart || (isDark ? '#1a1a2e' : '#667eea'), banner.gradientEnd || (isDark ? '#0f3460' : '#764ba2')]}
@@ -323,7 +310,7 @@ function RotatingBanners({ banners, colors, isDark, t, language }: { banners: Ba
                     </View>
                   )}
                   {!!title && <Text style={styles.bannerTitle} numberOfLines={2}>{title}</Text>}
-                  {!!subtitle && <Text style={styles.bannerSubtitle} numberOfLines={1}>{subtitle}</Text>}
+                  {!!subtitle && <Text style={styles.bannerSubtitle} numberOfLines={2}>{subtitle}</Text>}
                 </View>
               )}
             </View>
@@ -347,24 +334,7 @@ function RotatingBanners({ banners, colors, isDark, t, language }: { banners: Ba
       )}
     </View>
   );
-}
-
-// ─── Map API data to local types ───
-function mapApiCategory(c: any): Category {
-  return { id: c.id, name: c.name, nameAr: c.nameAr, nameKu: c.nameKu, icon: c.icon || 'grid' };
-}
-
-function mapApiProduct(p: any): Product {
-  return {
-    id: p.id, name: p.name, nameAr: p.nameAr, nameKu: p.nameKu,
-    price: p.price, originalPrice: p.originalPrice || undefined,
-    discount: p.discount || undefined, image: p.emoji || '📦', imageUrl: p.imageUrl || undefined,
-    category: p.categoryId, rating: p.rating || 0, reviews: p.reviewsCount || 0,
-    badge: p.badge || undefined, inStock: p.inStock !== false,
-    colors: p.colors ? (typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors) : undefined,
-    sizes: p.sizes ? (typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes) : undefined,
-  };
-}
+});
 
 // ─── Main Store Screen ───
 export default function StoreScreen() {
@@ -382,50 +352,37 @@ export default function StoreScreen() {
   const { addItem, getItemCount } = useCartStore();
   const cartCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
 
-  const [categories, setCategories] = useState<Category[]>([{ id: 'all', name: 'All', nameAr: 'الكل', nameKu: 'هەموو', icon: 'grid' }]);
-  const [overviewProducts, setOverviewProducts] = useState<Product[]>([]);
+  // ── Zustand store (cached data) ──
+  const categories = useStoreStore(s => s.categories);
+  const overviewProducts = useStoreStore(s => s.overviewProducts);
+  const featuredProducts = useStoreStore(s => s.featuredProducts);
+  const newProducts = useStoreStore(s => s.newProducts);
+  const saleProducts = useStoreStore(s => s.saleProducts);
+  const banners = useStoreStore(s => s.banners);
+  const hasCache = useStoreStore(s => s.hasCache);
+  const shellLoading = useStoreStore(s => s.shellLoading);
+  const overviewLoading = useStoreStore(s => s.overviewLoading);
+  const fetchAll = useStoreStore(s => s.fetchAll);
+
+  // ── Local state (grid pagination + UI) ──
   const [gridProducts, setGridProducts] = useState<Product[]>([]);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
+  const loading = !hasCache && (shellLoading || overviewLoading);
+  const [loadingOverview, setLoadingOverview] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingGrid, setLoadingGrid] = useState(false);
-  const [loadingOverview, setLoadingOverview] = useState(false);
   const [gridPage, setGridPage] = useState(1);
   const [gridHasMore, setGridHasMore] = useState(true);
   const [gridTotal, setGridTotal] = useState(0);
+  const [filterType, setFilterType] = useState<'featured' | 'new' | 'sale' | null>(null);
   const PAGE_SIZE = 10;
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCategoryRef = useRef('all');
   const prevSearchRef = useRef('');
+  const prevFilterRef = useRef<string | null>(null);
 
-  // ── Load categories + banners (shell) ──
-  const loadShellData = useCallback(async () => {
-    try {
-      const [catRes, bannerRes] = await Promise.all([
-        storeApi.getCategories(),
-        storeApi.getBanners(),
-      ]);
-      const apiCats = (catRes.data.data || []).map(mapApiCategory);
-      setCategories([{ id: 'all', name: 'All', nameAr: 'الكل', nameKu: 'هەموو', icon: 'grid' }, ...apiCats]);
-      setBanners(bannerRes.data.data || []);
-    } catch (error) {
-      console.log('Store: failed to load shell data', error);
-    }
-  }, []);
-
-  // ── Load overview products (for "All" horizontal sections — small batch) ──
-  const loadOverviewProducts = useCallback(async () => {
-    try {
-      const res = await storeApi.getProducts({ page: 1, limit: 30 });
-      setOverviewProducts((res.data.data || []).map(mapApiProduct));
-    } catch (error) {
-      console.log('Store: failed to load overview products', error);
-    }
-  }, []);
-
-  // ── Load paginated grid products (for category/search view) ──
-  const loadGridPage = useCallback(async (params: { categoryId?: string; search?: string; page: number; reset: boolean }) => {
+  // ── Load paginated grid products (for category/search/filter view) ──
+  const loadGridPage = useCallback(async (params: { categoryId?: string; search?: string; filter?: 'featured' | 'new' | 'sale' | null; page: number; reset: boolean }) => {
     if (params.reset) {
       setLoadingGrid(true);
       setGridProducts([]);
@@ -436,6 +393,9 @@ export default function StoreScreen() {
       const apiParams: any = { page: params.page, limit: PAGE_SIZE };
       if (params.categoryId && params.categoryId !== 'all') apiParams.categoryId = params.categoryId;
       if (params.search) apiParams.search = params.search;
+      if (params.filter === 'featured') apiParams.featured = true;
+      if (params.filter === 'sale') apiParams.badge = 'sale';
+      if (params.filter === 'new') apiParams.badge = 'new';
       const res = await storeApi.getProducts(apiParams);
       const newProducts = (res.data.data || []).map(mapApiProduct);
       const pagination = res.data.pagination;
@@ -444,66 +404,85 @@ export default function StoreScreen() {
       setGridHasMore(pagination?.hasMore ?? newProducts.length >= PAGE_SIZE);
       setGridTotal(pagination?.total ?? 0);
     } catch (error) {
-      console.log('Store: failed to load grid products', error);
+      if (__DEV__) console.log('Store: failed to load grid products', error);
     } finally {
       setLoadingMore(false);
       setLoadingGrid(false);
     }
   }, []);
 
-  // ── Initial load ──
+  // ── Initial load — stale-while-revalidate via InteractionManager ──
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await loadShellData();
-      await loadOverviewProducts();
-      setLoading(false);
-    };
-    init();
-  }, [loadShellData, loadOverviewProducts]);
+    const task = InteractionManager.runAfterInteractions(() => {
+      fetchAll();
+    });
+    return () => task.cancel();
+  }, [fetchAll]);
 
-  // ── React to category/search changes ──
+  // ── React to category/search/filter changes ──
   useEffect(() => {
-    const isGrid = selectedCategory !== 'all' || !!searchQuery;
+    const isGrid = selectedCategory !== 'all' || !!searchQuery || !!filterType;
     const catChanged = prevCategoryRef.current !== selectedCategory;
     const searchChanged = prevSearchRef.current !== searchQuery;
+    const filterChanged = prevFilterRef.current !== filterType;
     prevCategoryRef.current = selectedCategory;
     prevSearchRef.current = searchQuery;
+    prevFilterRef.current = filterType;
 
-    if (!catChanged && !searchChanged) return;
+    if (!catChanged && !searchChanged && !filterChanged) return;
 
     if (isGrid) {
-      if (searchChanged && !catChanged) {
+      if (searchChanged && !catChanged && !filterChanged) {
         if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
         searchTimerRef.current = setTimeout(() => {
-          loadGridPage({ categoryId: selectedCategory, search: searchQuery, page: 1, reset: true });
+          loadGridPage({ categoryId: selectedCategory, search: searchQuery, filter: filterType, page: 1, reset: true });
         }, 400);
       } else {
-        loadGridPage({ categoryId: selectedCategory, search: searchQuery, page: 1, reset: true });
+        loadGridPage({ categoryId: selectedCategory, search: searchQuery, filter: filterType, page: 1, reset: true });
       }
     }
-  }, [selectedCategory, searchQuery, loadGridPage]);
+  }, [selectedCategory, searchQuery, filterType, loadGridPage]);
 
   // ── Refresh ──
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadShellData();
-    if (selectedCategory === 'all' && !searchQuery) {
-      await loadOverviewProducts();
+    if (selectedCategory === 'all' && !searchQuery && !filterType) {
+      await fetchAll(true);
     } else {
-      await loadGridPage({ categoryId: selectedCategory, search: searchQuery, page: 1, reset: true });
+      await Promise.all([
+        fetchAll(true),
+        loadGridPage({ categoryId: selectedCategory, search: searchQuery, filter: filterType, page: 1, reset: true }),
+      ]);
     }
     setRefreshing(false);
-  }, [selectedCategory, searchQuery, loadShellData, loadOverviewProducts, loadGridPage]);
+  }, [selectedCategory, searchQuery, filterType, fetchAll, loadGridPage]);
 
   // ── Load more (infinite scroll) ──
   const handleLoadMore = useCallback(() => {
     if (loadingMore || !gridHasMore) return;
-    loadGridPage({ categoryId: selectedCategory, search: searchQuery, page: gridPage + 1, reset: false });
-  }, [loadingMore, gridHasMore, gridPage, selectedCategory, searchQuery, loadGridPage]);
+    loadGridPage({ categoryId: selectedCategory, search: searchQuery, filter: filterType, page: gridPage + 1, reset: false });
+  }, [loadingMore, gridHasMore, gridPage, selectedCategory, searchQuery, filterType, loadGridPage]);
 
   // ── Current view ──
-  const isGridView = selectedCategory !== 'all' || !!searchQuery;
+  const isGridView = selectedCategory !== 'all' || !!searchQuery || !!filterType;
+
+  // ── Get grid title based on filter type ──
+  const getGridTitle = useCallback(() => {
+    if (filterType === 'featured') return t('store.featuredProducts');
+    if (filterType === 'new') return t('store.newlyAdded');
+    if (filterType === 'sale') return t('store.discounts');
+    if (selectedCategory !== 'all') {
+      const cat = categories.find((c: Category) => c.id === selectedCategory);
+      return cat ? getLocalizedName(cat, language) : t('store.allProducts');
+    }
+    return t('store.allProducts');
+  }, [filterType, selectedCategory, categories, language, t]);
+
+  // ── Handle "View More" for filter sections ──
+  const handleViewMore = useCallback((type: 'featured' | 'new' | 'sale') => {
+    setSelectedCategory('all');
+    setFilterType(type);
+  }, []);
 
   // ── Scroll category strip to selected category ──
   const scrollCategoryIntoView = useCallback((categoryId: string) => {
@@ -516,19 +495,20 @@ export default function StoreScreen() {
 
   // ── Select category handler ──
   const handleSelectCategory = useCallback((categoryId: string) => {
-    if (categoryId === 'all' && selectedCategory !== 'all') {
+    if (categoryId === 'all' && (selectedCategory !== 'all' || filterType)) {
       setLoadingOverview(true);
       setSelectedCategory('all');
+      setFilterType(null);
       setTimeout(() => scrollCategoryIntoView('all'), 50);
-      // Reveal products after interactions complete (skeleton already visible)
       InteractionManager.runAfterInteractions(() => {
         setLoadingOverview(false);
       });
       return;
     }
+    setFilterType(null);
     setSelectedCategory(categoryId);
     setTimeout(() => scrollCategoryIntoView(categoryId), 50);
-  }, [scrollCategoryIntoView, selectedCategory]);
+  }, [scrollCategoryIntoView, selectedCategory, filterType]);
 
   const renderCategoryItem = useCallback(
     ({ item }: { item: Category }) => {
@@ -585,7 +565,7 @@ export default function StoreScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
-          <Image source={isDark ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')} style={{ width: 130, height: 32 }} resizeMode="contain" />
+          <Image source={isDark ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')} style={{ width: 130, height: 32 }} contentFit="contain" />
           <TouchableOpacity
             style={[styles.cartBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}
             onPress={() => router.push('/cart' as any)}
@@ -630,91 +610,85 @@ export default function StoreScreen() {
 
       {/* ── Content ── */}
       {isGridView ? (
-        /* ── Grid view: paginated FlatList ── */
-        <ScrollView
+        /* ── Grid view: single FlatList with header for true virtualization ── */
+        <FlatList
+          data={loadingGrid ? [] : gridProducts}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={gridProducts.length > 0 ? { gap: SPACING.md, paddingHorizontal: SPACING.xl } : undefined}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          onScroll={({ nativeEvent }) => {
-            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-            if (contentSize.height - layoutMeasurement.height - contentOffset.y < 300) {
-              handleLoadMore();
-            }
-          }}
-          scrollEventThrottle={400}
-        >
-          {/* Banner */}
-          <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.md }}>
-            <RotatingBanners banners={banners} colors={colors} isDark={isDark} t={t} language={language} />
-          </View>
-          {/* Categories */}
-          <View style={{ paddingTop: SPACING.lg }}>
-            <View style={[styles.sectionHeader, { paddingHorizontal: SPACING.xl }]}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('store.categories')}</Text>
-            </View>
-            <ScrollView
-              ref={categoryScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.sm }}
-              style={{ marginTop: SPACING.sm }}
-            >
-              {categories.map((item) => renderCategoryItem({ item }))}
-            </ScrollView>
-          </View>
-          {/* Section title */}
-          <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.sm }}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {selectedCategory === 'all' ? t('store.allProducts') : getLocalizedName(categories.find((c: Category) => c.id === selectedCategory)!, language)}
-              </Text>
-              {!loadingGrid && (
-                <Text style={[styles.productCount, { color: colors.textTertiary }]}>
-                  {gridTotal > 0 ? `${gridTotal} ${t('store.items')}` : `${gridProducts.length} ${t('store.items')}`}
-                </Text>
-              )}
-            </View>
-          </View>
-          {/* Skeleton or Products */}
-          {loadingGrid ? (
-            <ProductGridSkeleton />
-          ) : gridProducts.length > 0 ? (
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.4}
+          initialNumToRender={6}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          ListHeaderComponent={
             <>
-              <FlatList
-                data={gridProducts}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                columnWrapperStyle={{ gap: SPACING.md, paddingHorizontal: SPACING.xl }}
-                scrollEnabled={false}
-                initialNumToRender={6}
-                maxToRenderPerBatch={6}
-                windowSize={5}
-                renderItem={({ item }) => (
-                  <ProductCard
-                    product={item}
-                    colors={colors}
-                    isDark={isDark}
-                    language={language}
-                    onPress={() => openProductDetail(item)}
-                  />
-                )}
-              />
-              {loadingMore && (
-                <View style={{ paddingVertical: SPACING.xl, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" color={colors.accent} />
-                </View>
-              )}
-            </>
-          ) : (
-            <View style={styles.emptyState}>
-              <View style={[styles.emptyIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <Ionicons name="bag-outline" size={40} color={colors.textTertiary} />
+              {/* Banner */}
+              <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.md }}>
+                <RotatingBanners banners={banners} colors={colors} isDark={isDark} t={t} language={language} />
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('store.noProducts')}</Text>
-              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('store.searchProducts')}</Text>
-            </View>
+              {/* Categories */}
+              <View style={{ paddingTop: SPACING.lg }}>
+                <View style={[styles.sectionHeader, { paddingHorizontal: SPACING.xl }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('store.categories')}</Text>
+                </View>
+                <ScrollView
+                  ref={categoryScrollRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.sm }}
+                  style={{ marginTop: SPACING.sm }}
+                >
+                  {categories.map((item) => renderCategoryItem({ item }))}
+                </ScrollView>
+              </View>
+              {/* Section title */}
+              <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.sm }}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {getGridTitle()}
+                  </Text>
+                  {!loadingGrid && (
+                    <Text style={[styles.productCount, { color: colors.textTertiary }]}>
+                      {gridTotal > 0 ? `${gridTotal} ${t('store.items')}` : `${gridProducts.length} ${t('store.items')}`}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              {loadingGrid && <ProductGridSkeleton />}
+            </>
+          }
+          renderItem={({ item }) => (
+            <ProductCard
+              product={item}
+              colors={colors}
+              isDark={isDark}
+              language={language}
+              onPress={() => openProductDetail(item)}
+            />
           )}
-        </ScrollView>
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={{ paddingVertical: SPACING.xl, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.accent} />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !loadingGrid ? (
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                  <Ionicons name="bag-outline" size={40} color={colors.textTertiary} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('store.noProducts')}</Text>
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{t('store.searchProducts')}</Text>
+              </View>
+            ) : null
+          }
+        />
       ) : (
         /* ── "All" view: horizontal sections (few items each) ── */
         <ScrollView
@@ -725,53 +699,51 @@ export default function StoreScreen() {
           <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.md }}>
             <RotatingBanners banners={banners} colors={colors} isDark={isDark} t={t} language={language} />
           </View>
+          {/* Category Strip */}
           <View style={{ paddingTop: SPACING.lg }}>
-            <View style={[styles.sectionHeader, { paddingHorizontal: SPACING.xl }]}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('store.categories')}</Text>
-            </View>
             <ScrollView
               ref={categoryScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.sm }}
-              style={{ marginTop: SPACING.sm }}
             >
               {categories.map((item) => renderCategoryItem({ item }))}
             </ScrollView>
           </View>
           <View style={{ paddingTop: SPACING.lg }}>
-            {loading || loadingOverview || overviewProducts.length === 0 ? (
+            {loading || loadingOverview ? (
               <HorizontalSectionSkeleton count={3} />
             ) : (
-              categories.filter(c => c.id !== 'all').map((cat) => {
-                const catProducts = overviewProducts.filter((p: Product) => p.category === cat.id);
-                if (catProducts.length === 0) return null;
-                return (
-                  <View key={cat.id} style={{ marginBottom: SPACING.xl }}>
+              <>
+                {/* Featured Products */}
+                {featuredProducts.length > 0 && (
+                  <View style={{ marginBottom: SPACING.xl }}>
                     <View style={[styles.catSectionHeader, { paddingHorizontal: SPACING.xl }]}>
                       <View style={[styles.catSectionLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         <View style={[styles.catIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                          <Ionicons name={(cat.icon || 'grid') as any} size={16} color={colors.accent} />
+                          <Ionicons name="star" size={16} color="#f59e0b" />
                         </View>
                         <Text style={[styles.catSectionTitle, { color: colors.text }]}>
-                          {getLocalizedName(cat, language)}
+                          {t('store.featuredProducts')}
                         </Text>
                       </View>
-                      <TouchableOpacity
-                        style={[styles.viewMoreBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-                        onPress={() => handleSelectCategory(cat.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.viewMoreText, { color: colors.accent }]}>{t('store.viewMore')}</Text>
-                        <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={14} color={colors.accent} />
-                      </TouchableOpacity>
+                      {featuredProducts.length > 4 && (
+                        <TouchableOpacity
+                          style={[styles.viewMoreBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
+                          onPress={() => handleViewMore('featured')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.viewMoreText, { color: colors.accent }]}>{t('store.viewMore')}</Text>
+                          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={14} color={colors.accent} />
+                        </TouchableOpacity>
+                      )}
                     </View>
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.md, paddingTop: SPACING.sm }}
                     >
-                      {catProducts.slice(0, 4).map((product: Product) => (
+                      {featuredProducts.slice(0, 4).map((product: Product) => (
                         <HorizontalProductCard
                           key={product.id}
                           product={product}
@@ -783,8 +755,92 @@ export default function StoreScreen() {
                       ))}
                     </ScrollView>
                   </View>
-                );
-              })
+                )}
+
+                {/* Newly Added */}
+                {newProducts.length > 0 && (
+                  <View style={{ marginBottom: SPACING.xl }}>
+                    <View style={[styles.catSectionHeader, { paddingHorizontal: SPACING.xl }]}>
+                      <View style={[styles.catSectionLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <View style={[styles.catIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                          <Ionicons name="sparkles" size={16} color="#10b981" />
+                        </View>
+                        <Text style={[styles.catSectionTitle, { color: colors.text }]}>
+                          {t('store.newlyAdded')}
+                        </Text>
+                      </View>
+                      {newProducts.length > 4 && (
+                        <TouchableOpacity
+                          style={[styles.viewMoreBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
+                          onPress={() => handleViewMore('new')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.viewMoreText, { color: colors.accent }]}>{t('store.viewMore')}</Text>
+                          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={14} color={colors.accent} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.md, paddingTop: SPACING.sm }}
+                    >
+                      {newProducts.slice(0, 4).map((product: Product) => (
+                        <HorizontalProductCard
+                          key={product.id}
+                          product={product}
+                          colors={colors}
+                          isDark={isDark}
+                          language={language}
+                          onPress={() => openProductDetail(product)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* Discounts */}
+                {saleProducts.length > 0 && (
+                  <View style={{ marginBottom: SPACING.xl }}>
+                    <View style={[styles.catSectionHeader, { paddingHorizontal: SPACING.xl }]}>
+                      <View style={[styles.catSectionLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <View style={[styles.catIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                          <Ionicons name="pricetag" size={16} color="#e94560" />
+                        </View>
+                        <Text style={[styles.catSectionTitle, { color: colors.text }]}>
+                          {t('store.discounts')}
+                        </Text>
+                      </View>
+                      {saleProducts.length > 4 && (
+                        <TouchableOpacity
+                          style={[styles.viewMoreBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
+                          onPress={() => handleViewMore('sale')}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.viewMoreText, { color: colors.accent }]}>{t('store.viewMore')}</Text>
+                          <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={14} color={colors.accent} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.md, paddingTop: SPACING.sm }}
+                    >
+                      {saleProducts.slice(0, 4).map((product: Product) => (
+                        <HorizontalProductCard
+                          key={product.id}
+                          product={product}
+                          colors={colors}
+                          isDark={isDark}
+                          language={language}
+                          onPress={() => openProductDetail(product)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </>
             )}
           </View>
         </ScrollView>
@@ -854,7 +910,7 @@ function ProductDetailModal({
           <Ionicons name="close" size={22} color={colors.text} />
         </TouchableOpacity>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
           {/* Product Image */}
           <View style={[styles.modalImageContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f5f7fa' }]}>
             {product.badge && <ProductBadge badge={product.badge} isDark={isDark} language={language} />}
@@ -864,18 +920,18 @@ function ProductDetailModal({
               </View>
             )}
             {product.imageUrl ? (
-              <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" />
             ) : (
               <Text style={styles.modalEmoji}>{product.image}</Text>
             )}
           </View>
 
-          <View style={{ padding: SPACING.xl }}>
+          <View style={{ padding: SPACING.lg }}>
             {/* Name & Rating */}
             <Text style={[styles.modalProductName, { color: colors.text }]}>
               {getLocalizedName(product, language)}
             </Text>
-            <View style={[styles.ratingRow, { marginTop: SPACING.sm }]}>
+            <View style={[styles.ratingRow, { marginTop: SPACING.xs }]}>
               <StarRating rating={product.rating} size={14} />
               <Text style={[styles.modalReviews, { color: colors.textSecondary }]}>
                 {product.rating} ({product.reviews} {t('store.reviews')})
@@ -883,7 +939,7 @@ function ProductDetailModal({
             </View>
 
             {/* Price */}
-            <View style={[styles.modalPriceRow, { marginTop: SPACING.lg, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
+            <View style={[styles.modalPriceRow, { marginTop: SPACING.md, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SPACING.sm }}>
                 <Text style={[styles.modalPrice, { color: colors.text }]}>{formatPrice(product.price)}</Text>
                 {product.originalPrice && (
@@ -902,7 +958,7 @@ function ProductDetailModal({
 
             {/* Colors */}
             {product.colors && product.colors.length > 0 && (
-              <View style={{ marginTop: SPACING.xl }}>
+              <View style={{ marginTop: SPACING.md }}>
                 <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>{t('store.color')}</Text>
                 <View style={styles.colorsRow}>
                   {product.colors.map((color) => (
@@ -926,7 +982,7 @@ function ProductDetailModal({
 
             {/* Sizes */}
             {product.sizes && product.sizes.length > 0 && (
-              <View style={{ marginTop: SPACING.xl }}>
+              <View style={{ marginTop: SPACING.md }}>
                 <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>{t('store.size')}</Text>
                 <View style={styles.sizesRow}>
                   {product.sizes.map((size) => (
@@ -953,7 +1009,7 @@ function ProductDetailModal({
             )}
 
             {/* Quantity & Stock */}
-            <View style={[styles.quantityStockRow, { marginTop: SPACING.xl }]}>
+            <View style={[styles.quantityStockRow, { marginTop: SPACING.md }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.optionLabel, { color: colors.textSecondary }]}>{t('store.quantity')}</Text>
                 <View style={styles.quantityRow}>
@@ -1320,87 +1376,87 @@ const styles = StyleSheet.create({
   },
   modalImageContainer: {
     width: '100%',
-    height: 260,
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   modalDiscountBadge: {
     position: 'absolute',
-    top: SPACING.md,
-    right: SPACING.md,
+    top: SPACING.sm,
+    right: SPACING.sm,
     zIndex: 10,
     backgroundColor: '#e94560',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RADIUS.sm,
   },
   modalDiscountText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
   },
   modalPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
+    padding: SPACING.sm,
+    borderRadius: RADIUS.md,
   },
   modalDiscountTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     backgroundColor: '#e94560',
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
     borderRadius: RADIUS.full,
   },
   modalDiscountTagText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   modalEmoji: {
-    fontSize: 80,
+    fontSize: 60,
   },
   modalProductName: {
-    ...TYPOGRAPHY.headlineMedium,
+    ...TYPOGRAPHY.titleLarge,
     fontWeight: '700',
   },
   modalReviews: {
-    fontSize: 13,
+    fontSize: 11,
     marginLeft: 4,
   },
   modalPrice: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
   },
   modalOriginalPrice: {
-    fontSize: 16,
+    fontSize: 13,
     textDecorationLine: 'line-through',
   },
   optionLabel: {
-    ...TYPOGRAPHY.labelLarge,
+    fontSize: 11,
     fontWeight: '600',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   colorsRow: {
     flexDirection: 'row',
-    gap: SPACING.md,
+    gap: SPACING.sm,
   },
   colorCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   colorCircleActive: {
-    borderWidth: 3,
+    borderWidth: 2.5,
   },
   sizesRow: {
     flexDirection: 'row',
@@ -1408,34 +1464,34 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   sizeChip: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.sm,
     borderWidth: 1,
-    minWidth: 44,
+    minWidth: 38,
     alignItems: 'center',
   },
   sizeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   quantityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.lg,
+    gap: SPACING.md,
   },
   quantityBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   quantityText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    minWidth: 30,
+    minWidth: 26,
     textAlign: 'center',
   },
   quantityStockRow: {
@@ -1447,29 +1503,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
   },
   stockText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   modalBottom: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: Platform.OS === 'ios' ? 90 : 80,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: Platform.OS === 'ios' ? 80 : 70,
     borderTopWidth: 0.5,
   },
   totalLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
   },
   totalPrice: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800',
   },
   addToCartBtn: {
@@ -1479,13 +1535,13 @@ const styles = StyleSheet.create({
   addToCartGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm + 2,
+    gap: SPACING.xs,
   },
   addToCartText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   // ── Horizontal Product Card styles ──

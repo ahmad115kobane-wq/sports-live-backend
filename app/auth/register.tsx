@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,6 +21,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { competitionApi, teamApi, matchApi } from '@/services/api';
 import { Competition, Team, Match } from '@/types';
 
@@ -37,6 +37,7 @@ export default function RegisterScreen() {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
   
   // Form state - Step 1
   const [firstName, setFirstName] = useState('');
@@ -143,19 +144,19 @@ export default function RegisterScreen() {
 
   const validateStep1 = () => {
     if (!firstName.trim()) {
-      Alert.alert(t('common.error'), t('auth.firstNameRequired'));
+      alert(t('common.error'), t('auth.firstNameRequired'));
       return false;
     }
     if (!lastName.trim()) {
-      Alert.alert(t('common.error'), t('auth.lastNameRequired'));
+      alert(t('common.error'), t('auth.lastNameRequired'));
       return false;
     }
     if (!age || parseInt(age) < 13 || parseInt(age) > 100) {
-      Alert.alert(t('common.error'), t('auth.invalidAge'));
+      alert(t('common.error'), t('auth.invalidAge'));
       return false;
     }
     if (!city) {
-      Alert.alert(t('common.error'), t('auth.cityRequired'));
+      alert(t('common.error'), t('auth.cityRequired'));
       return false;
     }
     return true;
@@ -163,19 +164,19 @@ export default function RegisterScreen() {
 
   const validateStep2 = () => {
     if (!email.trim()) {
-      Alert.alert(t('common.error'), t('auth.emailRequired'));
+      alert(t('common.error'), t('auth.emailRequired'));
       return false;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      Alert.alert(t('common.error'), t('auth.invalidEmail'));
+      alert(t('common.error'), t('auth.invalidEmail'));
       return false;
     }
     if (password.length < 6) {
-      Alert.alert(t('common.error'), t('auth.passwordMinLength'));
+      alert(t('common.error'), t('auth.passwordMinLength'));
       return false;
     }
     if (password !== confirmPassword) {
-      Alert.alert(t('common.error'), t('auth.passwordsNotMatch'));
+      alert(t('common.error'), t('auth.passwordsNotMatch'));
       return false;
     }
     return true;
@@ -197,7 +198,11 @@ export default function RegisterScreen() {
         }
         router.replace('/auth/select-favorites');
       } catch (error: any) {
-        Alert.alert(t('auth.registerFailed'), error.message || t('common.error'));
+        if (error?.requiresVerification) {
+          router.replace({ pathname: '/auth/verify-email', params: { email } });
+          return;
+        }
+        alert(t('auth.registerFailed'), error.message || t('common.error'));
       } finally {
         setLoading(false);
       }
@@ -223,7 +228,7 @@ export default function RegisterScreen() {
       
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.message || t('common.error'));
+      alert(t('common.error'), error.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -634,7 +639,7 @@ export default function RegisterScreen() {
                   <Ionicons name="trophy" size={24} color={colors.textTertiary} />
                 </View>
               )}
-              <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+              <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                 {comp.name}
               </Text>
               {selectedCompetitions.includes(comp.id) && (
@@ -681,7 +686,7 @@ export default function RegisterScreen() {
                       <Ionicons name="shield" size={24} color={colors.textInverse} />
                     </View>
                   )}
-                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                     {team.name}
                   </Text>
                   {selectedTeams.includes(team.id) && (
@@ -888,9 +893,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366F1',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 6,
   },
@@ -918,7 +923,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6366F1',
+    backgroundColor: '#A8A8A8',
     borderRadius: 2,
   },
   stepsIndicator: {
@@ -936,7 +941,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   stepDotActive: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#A8A8A8',
   },
   stepLabel: {
     fontSize: 10,
@@ -970,8 +975,8 @@ const styles = StyleSheet.create({
     height: 48,
   },
   inputWrapperFocused: {
-    borderColor: '#6366F1',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderColor: '#A8A8A8',
+    backgroundColor: 'rgba(168, 168, 168, 0.1)',
   },
   inputWrapperError: {
     borderColor: '#EF4444',
@@ -1032,7 +1037,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
   },
   cityOptionTextSelected: {
-    color: '#6366F1',
+    color: '#A8A8A8',
     fontWeight: '600',
   },
   strengthContainer: {
@@ -1067,15 +1072,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   termsLink: {
-    color: '#6366F1',
+    color: '#A8A8A8',
     fontWeight: '600',
   },
   primaryButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
   },
@@ -1120,9 +1125,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 5,
   },
@@ -1143,7 +1148,7 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6366F1',
+    color: '#A8A8A8',
   },
   // Step 3 - Favorites styles
   favoritesTitle: {

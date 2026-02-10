@@ -183,14 +183,16 @@ export default function AppModal({
                 <View style={styles.titleBlock}>
                   <Text
                     style={[styles.title, { color: colors.text }]}
-                    numberOfLines={1}
+                    numberOfLines={2}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
                   >
                     {title}
                   </Text>
                   {subtitle && (
                     <Text
                       style={[styles.subtitle, { color: colors.textSecondary }]}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {subtitle}
                     </Text>

@@ -94,7 +94,7 @@ export default function LegalPageScreen() {
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surface }]} onPress={() => router.back()}>
           <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {loading ? '' : getLocalizedTitle()}
         </Text>
         <View style={{ width: 40 }} />
@@ -120,20 +120,11 @@ export default function LegalPageScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {/* Title Card */}
-          <View style={[styles.titleCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.titleIcon, { backgroundColor: colors.accent + '15' }]}>
-              <Ionicons name="document-text" size={24} color={colors.accent} />
-            </View>
-            <Text style={[styles.pageTitle, { color: colors.text }]}>
-              {getLocalizedTitle()}
+          {page.updatedAt && (
+            <Text style={[styles.updatedAt, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('common.lastUpdated') || 'آخر تحديث'}: {formatDate(page.updatedAt)}
             </Text>
-            {page.updatedAt && (
-              <Text style={[styles.updatedAt, { color: colors.textTertiary }]}>
-                {t('common.lastUpdated') || 'آخر تحديث'}: {formatDate(page.updatedAt)}
-              </Text>
-            )}
-          </View>
+          )}
 
           {/* Content */}
           <View style={[styles.contentCard, { backgroundColor: colors.surface }]}>
@@ -197,29 +188,10 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.md,
   },
-  titleCard: {
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  titleIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: SPACING.xs,
-  },
   updatedAt: {
     fontSize: 12,
     fontWeight: '500',
+    marginBottom: SPACING.sm,
   },
   contentCard: {
     borderRadius: RADIUS.lg,

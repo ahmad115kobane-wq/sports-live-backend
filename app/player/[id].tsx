@@ -9,6 +9,7 @@ import {
   StatusBar,
   Platform,
   RefreshControl,
+  InteractionManager,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +21,7 @@ import { playerApi } from '@/services/api';
 import { Player } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { useRTL } from '@/contexts/RTLContext';
+import { PlayerProfileSkeleton } from '@/components/ui/Skeleton';
 
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 24);
 
@@ -35,7 +37,10 @@ export default function PlayerProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadPlayerData();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadPlayerData();
+    });
+    return () => task.cancel();
   }, [id]);
 
   const loadPlayerData = async () => {
@@ -76,7 +81,17 @@ export default function PlayerProfileScreen() {
     }
   };
 
-  if (!player && !isLoading) {
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar barStyle="light-content" />
+        <PlayerProfileSkeleton />
+      </View>
+    );
+  }
+
+  if (!player) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -113,7 +128,7 @@ export default function PlayerProfileScreen() {
           <TouchableOpacity style={styles.navBtn} onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.navTitle} numberOfLines={1}>
+          <Text style={styles.navTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
             {t('player.profile')}
           </Text>
           <View style={{ width: 36 }} />
@@ -129,7 +144,7 @@ export default function PlayerProfileScreen() {
           </View>
 
           {/* Player Name */}
-          <Text style={styles.playerName} numberOfLines={2}>
+          <Text style={styles.playerName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
             {player?.name}
           </Text>
 
@@ -219,11 +234,11 @@ export default function PlayerProfileScreen() {
                     <Text style={[styles.goalMinuteText, { color: colors.success }]}>{goal.minute}'</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.goalMatchText, { color: colors.text }]} numberOfLines={1}>
+                    <Text style={[styles.goalMatchText, { color: colors.text }]} numberOfLines={2}>
                       {goal.match?.homeTeam?.shortName || goal.match?.homeTeam?.name} - {goal.match?.awayTeam?.shortName || goal.match?.awayTeam?.name}
                     </Text>
                     {goal.match?.competition && (
-                      <Text style={[styles.goalCompText, { color: colors.textSecondary }]} numberOfLines={1}>
+                      <Text style={[styles.goalCompText, { color: colors.textSecondary }]} numberOfLines={2}>
                         {goal.match.competition.name}
                       </Text>
                     )}

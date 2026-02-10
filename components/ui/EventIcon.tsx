@@ -41,10 +41,10 @@ export default function EventIcon({ type, size = 20, color }: EventIconProps) {
     case 'substitution':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-          <Path d="M7 4L3 8L7 12" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <Line x1="3" y1="8" x2="16" y2="8" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round" />
-          <Path d="M17 12L21 16L17 20" stroke="#F44336" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <Line x1="21" y1="16" x2="8" y2="16" stroke="#F44336" strokeWidth="2" strokeLinecap="round" />
+          <Path d="M7 4L3 8L7 12" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <Line x1="3" y1="8" x2="16" y2="8" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" />
+          <Path d="M17 12L21 16L17 20" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <Line x1="21" y1="16" x2="8" y2="16" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
         </Svg>
       );
 
@@ -156,20 +156,20 @@ export default function EventIcon({ type, size = 20, color }: EventIconProps) {
 
 function getDefaultColor(type: string): string {
   switch (type) {
-    case 'goal': return '#4CAF50';
-    case 'yellow_card': return '#FFEB3B';
-    case 'red_card': return '#F44336';
-    case 'substitution': return '#2196F3';
-    case 'penalty': return '#E91E63';
-    case 'var_review': return '#9C27B0';
-    case 'corner': return '#00BCD4';
-    case 'offside': return '#607D8B';
-    case 'foul': return '#FF9800';
-    case 'injury': return '#FF5722';
-    case 'stop': return '#795548';
-    case 'start_half': return '#4CAF50';
-    case 'end_half': return '#FF9800';
-    case 'end_match': return '#9E9E9E';
-    default: return '#607D8B';
+    case 'goal': return '#22C55E';
+    case 'yellow_card': return '#EAB308';
+    case 'red_card': return '#EF4444';
+    case 'substitution': return '#3B82F6';
+    case 'penalty': return '#EC4899';
+    case 'var_review': return '#A855F7';
+    case 'corner': return '#06B6D4';
+    case 'offside': return '#64748B';
+    case 'foul': return '#F59E0B';
+    case 'injury': return '#F97316';
+    case 'stop': return '#78716C';
+    case 'start_half': return '#22C55E';
+    case 'end_half': return '#F59E0B';
+    case 'end_match': return '#6B7280';
+    default: return '#64748B';
   }
 }

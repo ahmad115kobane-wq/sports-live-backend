@@ -54,8 +54,8 @@ export default function CartScreen() {
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={() => router.push('/orders' as any)} style={[styles.trackBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
-            <Ionicons name="receipt-outline" size={18} color="#6366f1" />
+          <TouchableOpacity onPress={() => router.push('/orders' as any)} style={[styles.trackBtn, { backgroundColor: isDark ? 'rgba(168,168,168,0.12)' : 'rgba(92,92,92,0.08)' }]}>
+            <Ionicons name="receipt-outline" size={18} color={colors.accent} />
           </TouchableOpacity>
         </View>
       </View>

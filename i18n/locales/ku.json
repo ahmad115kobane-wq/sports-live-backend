@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "سپۆرتس لایڤ"
+    "name": "مینی فوتبۆڵ"
   },
   "welcome": {
     "tagline": "یارییە دڵخوازەکانت بەدواداگرە کات بە کات",
@@ -10,6 +10,9 @@
     "loginOrRegister": "چوونەژوورەوە یان دروستکردنی هەژمار",
     "continueAsGuest": "بەردەوامبوون وەک میوان",
     "termsNotice": "بە بەردەوامبوون، ڕازی دەبیت بە مەرجەکانی بەکارهێنان",
+    "agreeToTerms": "ڕازیم لەگەڵ",
+    "andText": "و",
+    "mustAgree": "دەبێت ڕازی بیت لە مەرجەکان و تایبەتمەندی بۆ بەردەوامبوون",
     "upgradeAccount": "بەرزکردنەوەی هەژمار",
     "upgradeDescription": "تۆ هەژماری میوان بەکاردەهێنیت. بەرزی بکەرەوە بۆ دەستگەیشتن بە هەموو تایبەتمەندییەکان",
     "guestAccount": "هەژماری میوان"
@@ -99,7 +102,10 @@
     "match": "یاری",
     "keyEvents": "ڕووداوە گرنگەکان",
     "allEvents": "هەموو ڕووداوەکان",
-    "noEvents": "هێشتا هیچ ڕووداوێک نییە",
+    "noEvents": "هیچ ڕووداوێک نییە",
+    "noEventsYet": "هێشتا هیچ ڕووداوێک نییە",
+    "matchNotStarted": "یاریەکە هێشتا دەستپێنەکردووە",
+    "noEventsDesc": "ڕووداوەکان دەردەکەون کاتێک ڕوودەدەن",
     "eventsWillAppear": "ڕووداوەکان دەردەکەون کاتێک ڕوودەدەن",
     "eventsHere": "ڕووداوەکانی یاری لێرە دەردەکەون",
     "watchLive": "ڕاستەوخۆ ببینە",
@@ -257,6 +263,8 @@
     "rate": "هەڵسەنگاندنی ئەپ",
     "share": "هاوبەشکردنی ئەپ",
     "logout": "چوونەدەرەوە",
+    "logoutConfirm": "دڵنیایت لە چوونەدەرەوە؟",
+    "attention": "ئاگاداری",
     "login": "چوونەژوورەوە",
     "register": "تۆمارکردن",
     "version": "وەشان",
@@ -268,7 +276,26 @@
     "goalNotifications": "ئاگادارکردنەوەی گۆڵەکان",
     "newsNotifications": "ئاگادارکردنەوەی هەواڵەکان",
     "soundEnabled": "دەنگ چالاککراوە",
-    "vibrationEnabled": "لەرزین چالاککراوە"
+    "vibrationEnabled": "لەرزین چالاککراوە",
+    "deleteAccount": "سڕینەوەی ئەکاونت",
+    "deleteAccountDesc": "سڕینەوەی ئەکاونت و هەموو داتاکانت بۆ هەمیشە",
+    "deleteAccountConfirm": "ئایا دڵنیایت لە سڕینەوەی ئەکاونتەکەت؟",
+    "deleteAccountWarning": "ئەم کارە ناگەڕێتەوە. هەموو داتاکانت و داواکارییەکانت و دڵخوازەکانت بۆ هەمیشە دەسڕدرێتەوە.",
+    "deleteAccountSuccess": "ئەکاونت بە سەرکەوتوویی سڕایەوە",
+    "deleteAccountFailed": "سڕینەوەی ئەکاونت سەرکەوتوو نەبوو",
+    "legalPages": "یاسایی و تایبەتمەندی"
+  },
+  "about": {
+    "appInfo": "زانیاریی ئەپەکە",
+    "version": "وەشان",
+    "platform": "پلاتفۆرم",
+    "developer": "گەشەپێدەر",
+    "contact": "پەیوەندیمان پێوە بکە",
+    "email": "ئیمەیڵ",
+    "socialMedia": "میدیای کۆمەڵایەتی",
+    "readOur": "بخوێنەوە",
+    "allRightsReserved": "هەموو مافەکان پارێزراون",
+    "madeWithLove": ""
   },
   "profile": {
     "watched": "بینراو",
@@ -335,7 +362,7 @@
     "user": "بەکارهێنەر",
     "fillAllFields": "تکایە هەموو خانەکان پڕبکەوە",
     "createAccount": "دروستکردنی ئەکاونت",
-    "joinToday": "ئەمڕۆ پەیوەندی بکە بە سپۆرتس لایڤ",
+    "joinToday": "ئەمڕۆ پەیوەندی بکە بە مینی فوتبۆڵ",
     "fullName": "ناوی تەواو",
     "enterName": "ناوی تەواوت بنووسە",
     "createPassword": "وشەی نهێنی دروستبکە",
@@ -364,7 +391,34 @@
     "invalidAge": "تەمەن دەبێت لە نێوان ١٣ و ١٠٠ ساڵ بێت",
     "cityRequired": "شار پێویستە",
     "personalInfo": "زانیاری کەسی",
-    "accountInfo": "زانیاری ئەکاونت"
+    "accountInfo": "زانیاری ئەکاونت",
+    "verifyEmail": "پشتڕاستکردنەوەی ئیمەیڵ",
+    "verifyEmailSubtitle": "کۆدی نێردراو بۆ ئیمەیڵەکەت بنووسە",
+    "verificationCode": "کۆدی پشتڕاستکردنەوە",
+    "enterCode": "کۆدی ٦ ژمارەیی بنووسە",
+    "verify": "پشتڕاستکردنەوە",
+    "verifying": "پشتڕاستکردنەوە...",
+    "resendCode": "دووبارە ناردنەوەی کۆد",
+    "resendIn": "دووبارە ناردنەوە لە",
+    "seconds": "چرکە",
+    "codeSent": "کۆد بە سەرکەوتوویی نێردرا",
+    "codeRequired": "کۆد پێویستە",
+    "invalidCode": "کۆدی نادروست",
+    "emailVerified": "ئیمەیڵ بە سەرکەوتوویی پشتڕاستکرایەوە",
+    "forgotPasswordTitle": "وشەی نهێنی لەبیرکردووە",
+    "forgotPasswordSubtitle": "ئیمەیڵەکەت بنووسە بۆ وەرگرتنی کۆدی ڕیسێت",
+    "sendResetCode": "ناردنی کۆدی ڕیسێت",
+    "sending": "ناردن...",
+    "resetCodeSent": "کۆدی ڕیسێت نێردرا",
+    "resetPassword": "ڕیسێتکردنی وشەی نهێنی",
+    "resetPasswordSubtitle": "کۆد و وشەی نهێنی نوێ بنووسە",
+    "newPassword": "وشەی نهێنی نوێ",
+    "enterNewPassword": "وشەی نهێنی نوێ بنووسە",
+    "confirmNewPassword": "دڵنیاکردنەوەی وشەی نهێنی نوێ",
+    "confirmNewPasswordPlaceholder": "دووبارە وشەی نهێنی نوێ بنووسە",
+    "resetting": "ڕیسێتکردن...",
+    "passwordResetSuccess": "وشەی نهێنی بە سەرکەوتوویی ڕیسێتکرا",
+    "backToLogin": "گەڕانەوە بۆ چوونەژوورەوە"
   },
   "errors": {
     "networkError": "هەڵەی پەیوەندی ئینتەرنێت",
@@ -672,7 +726,11 @@
     "itemsCount": "بەرهەم",
     "storeManagement": "بەڕێوەبەردنی فرۆشگا",
     "productsOffersCategories": "بەرهەمەکان و ئۆفەرەکان و بەشەکان",
-    "viewMore": "زیاتر ببینە"
+    "viewMore": "زیاتر ببینە",
+    "featuredProducts": "بەرهەمە تایبەتەکان",
+    "newlyAdded": "نوێ زیادکراو",
+    "discounts": "داشکاندنەکان",
+    "viewAll": "هەموو ببینە"
   },
   "checkout": {
     "title": "تەواوکردنی کڕین",

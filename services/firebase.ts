@@ -12,10 +12,8 @@ export async function requestNotificationPermission() {
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (enabled) {
-      console.log('✅ Firebase notification permission granted');
       return true;
     } else {
-      console.log('❌ Firebase notification permission denied');
       return false;
     }
   } catch (error) {
@@ -28,7 +26,6 @@ export async function requestNotificationPermission() {
 export async function getFCMToken() {
   try {
     const token = await messaging().getToken();
-    console.log('📱 FCM Token:', token);
     return token;
   } catch (error) {
     console.error('Error getting FCM token:', error);
@@ -41,7 +38,6 @@ export async function registerFCMToken(userId: string) {
   try {
     const token = await getFCMToken();
     if (!token) {
-      console.error('❌ No FCM token available');
       return false;
     }
 
@@ -51,10 +47,8 @@ export async function registerFCMToken(userId: string) {
       platform: Platform.OS,
     });
 
-    console.log('✅ FCM token registered successfully');
     return true;
   } catch (error) {
-    console.error('Error registering FCM token:', error);
     return false;
   }
 }
@@ -62,15 +56,11 @@ export async function registerFCMToken(userId: string) {
 // معالجة الإشعارات في الخلفية (Background)
 // FCM مع notification payload يعرض الإشعار تلقائياً مع الصورة — لا حاجة لإشعار محلي
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  console.log('📬 Background notification received:', remoteMessage);
 });
 
 // معالجة الإشعارات عندما يكون التطبيق مفتوحاً (Foreground)
 export function setupForegroundNotificationHandler() {
-  console.log('🔔 Setting up FCM foreground notification handler...');
-  
   const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-    console.log('📬 Foreground FCM message received:', JSON.stringify(remoteMessage, null, 2));
     
     const title = remoteMessage.notification?.title || 'إشعار جديد';
     const body = remoteMessage.notification?.body || '';
@@ -85,10 +75,8 @@ export function setupForegroundNotificationHandler() {
       trigger: null,
     });
     
-    console.log('✅ Local notification scheduled');
   });
 
-  console.log('✅ FCM foreground handler setup complete');
   return unsubscribe;
 }
 
@@ -99,14 +87,12 @@ export function setupNotificationOpenHandler(callback: (data: any) => void) {
     .getInitialNotification()
     .then((remoteMessage) => {
       if (remoteMessage) {
-        console.log('📬 Notification opened app from quit state:', remoteMessage);
         callback(remoteMessage.data);
       }
     });
 
   // عندما يكون التطبيق في الخلفية
   const unsubscribe = messaging().onNotificationOpenedApp((remoteMessage) => {
-    console.log('📬 Notification opened app from background:', remoteMessage);
     callback(remoteMessage.data);
   });
 
@@ -116,17 +102,13 @@ export function setupNotificationOpenHandler(callback: (data: any) => void) {
 // تحديث Token عند تغييره
 export function setupTokenRefreshHandler(userId: string) {
   const unsubscribe = messaging().onTokenRefresh(async (token) => {
-    console.log('🔄 FCM token refreshed:', token);
-    
     try {
       await api.post('/users/push-token', {
         userId,
         pushToken: token,
         platform: Platform.OS,
       });
-      console.log('✅ New FCM token registered');
     } catch (error) {
-      console.error('Error registering new FCM token:', error);
     }
   });
 

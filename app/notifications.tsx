@@ -9,8 +9,8 @@ import {
   StatusBar,
   Platform,
   RefreshControl,
-  Alert,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import {
   getNotifications,
   markAsRead,
@@ -25,6 +26,7 @@ import {
   deleteNotification,
 } from '@/services/notifications';
 import EventIcon from '@/components/ui/EventIcon';
+import { NotificationsListSkeleton } from '@/components/ui/Skeleton';
 
 interface Notification {
   id: string;
@@ -41,18 +43,22 @@ export default function NotificationsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    loadNotifications().then(() => {
-      // Auto-mark all as read when page opens
-      markAllAsRead().then(() => {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadNotifications().then(() => {
+        // Auto-mark all as read when page opens
+        markAllAsRead().then(() => {
+          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        });
       });
     });
+    return () => task.cancel();
   }, []);
 
   async function loadNotifications() {
@@ -92,7 +98,7 @@ export default function NotificationsScreen() {
   }
 
   async function handleDelete(id: string) {
-    Alert.alert(
+    alert(
       t('notifications.deleteNotification'),
       t('notifications.deleteConfirm'),
       [
@@ -132,17 +138,17 @@ export default function NotificationsScreen() {
   const getNotificationEventType = (type: Notification['type']): { eventType: string; color: string } => {
     switch (type) {
       case 'goal':
-        return { eventType: 'goal', color: '#4CAF50' };
+        return { eventType: 'goal', color: colors.goal };
       case 'match_start':
-        return { eventType: 'start_half', color: '#4CAF50' };
+        return { eventType: 'start_half', color: colors.success };
       case 'match_end':
-        return { eventType: 'end_match', color: '#9E9E9E' };
+        return { eventType: 'end_match', color: colors.textTertiary };
       case 'pre_match':
-        return { eventType: 'start_half', color: '#FF9800' };
+        return { eventType: 'start_half', color: colors.warning };
       case 'red_card':
-        return { eventType: 'red_card', color: '#F44336' };
+        return { eventType: 'red_card', color: colors.redCard };
       case 'penalty':
-        return { eventType: 'penalty', color: '#E91E63' };
+        return { eventType: 'penalty', color: colors.error };
       default:
         return { eventType: 'goal', color: colors.accent };
     }
@@ -161,9 +167,7 @@ export default function NotificationsScreen() {
             headerTintColor: colors.text,
           }}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
+        <NotificationsListSkeleton count={8} />
       </View>
     );
   }
@@ -266,7 +270,7 @@ export default function NotificationsScreen() {
                         { color: colors.text },
                         !notification.isRead && styles.unreadTitle,
                       ]}
-                      numberOfLines={1}
+                      numberOfLines={2}
                     >
                       {notification.title}
                     </Text>

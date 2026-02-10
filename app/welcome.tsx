@@ -17,8 +17,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
+import { useAlert } from '@/contexts/AlertContext';
 import { useRTL } from '@/contexts/RTLContext';
 import LanguageSelector from '@/components/LanguageSelector';
+import AppIcon from '@/components/AppIcon';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -30,6 +32,8 @@ export default function WelcomeScreen() {
   const { guestLogin, isLoading } = useAuthStore();
   const [guestLoading, setGuestLoading] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const { alert } = useAlert();
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -70,6 +74,10 @@ export default function WelcomeScreen() {
   }, []);
 
   const handleGuestLogin = async () => {
+    if (!agreedToTerms) {
+      alert(t('settings.attention'), t('welcome.mustAgree'));
+      return;
+    }
     try {
       setGuestLoading(true);
       await guestLogin();
@@ -82,10 +90,18 @@ export default function WelcomeScreen() {
   };
 
   const handleLogin = () => {
+    if (!agreedToTerms) {
+      alert(t('settings.attention'), t('welcome.mustAgree'));
+      return;
+    }
     router.push('/auth/login');
   };
 
   const handleRegister = () => {
+    if (!agreedToTerms) {
+      alert(t('settings.attention'), t('welcome.mustAgree'));
+      return;
+    }
     router.push('/auth/register');
   };
 
@@ -126,12 +142,7 @@ export default function WelcomeScreen() {
         ]}
       >
         <View style={styles.logoContainer}>
-          <LinearGradient
-            colors={isDark ? ['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)'] : ['rgba(0,0,0,0.08)', 'rgba(0,0,0,0.04)']}
-            style={[styles.logoBg, { borderColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)' }]}
-          >
-            <Ionicons name="football" size={50} color={colors.text} />
-          </LinearGradient>
+          <AppIcon size={120} />
         </View>
         <Text style={[styles.appName, { color: colors.text }]}>{t('app.name')}</Text>
         <Text style={[styles.tagline, { color: colors.textSecondary }]}>{t('welcome.tagline')}</Text>
@@ -218,10 +229,26 @@ export default function WelcomeScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Terms text */}
-        <Text style={[styles.termsText, { color: colors.textTertiary }]}>
-          {t('welcome.termsNotice')}
-        </Text>
+        {/* Terms Agreement Checkbox */}
+        <TouchableOpacity
+          style={[styles.termsRow, { flexDirection }]}
+          onPress={() => setAgreedToTerms(!agreedToTerms)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.checkbox, { borderColor: agreedToTerms ? colors.accent : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'), backgroundColor: agreedToTerms ? colors.accent : 'transparent' }]}>
+            {agreedToTerms && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+          <Text style={[styles.termsText, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('welcome.agreeToTerms')}{' '}
+            <Text style={[styles.termsLink, { color: colors.accent }]} onPress={() => router.push('/legal/terms-of-service' as any)}>
+              {t('settings.terms')}
+            </Text>
+            {' '}{t('welcome.andText')}{' '}
+            <Text style={[styles.termsLink, { color: colors.accent }]} onPress={() => router.push('/legal/privacy-policy' as any)}>
+              {t('settings.privacy')}
+            </Text>
+          </Text>
+        </TouchableOpacity>
       </Animated.View>
     </View>
   );
@@ -335,9 +362,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  termsRow: {
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   termsText: {
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 8,
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

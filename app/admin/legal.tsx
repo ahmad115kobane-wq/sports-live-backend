@@ -192,7 +192,7 @@ export default function AdminLegalScreen() {
                 <Ionicons name="document-text" size={20} color={colors.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>{page.titleAr}</Text>
+                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>{page.titleAr}</Text>
                 <Text style={[styles.cardSlug, { color: colors.textTertiary }]}>{page.slug}</Text>
               </View>
               {!page.isActive && (
@@ -211,8 +211,8 @@ export default function AdminLegalScreen() {
                 onPress={() => openModal(page)}
                 style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}
               >
-                <Ionicons name="create-outline" size={16} color="#6366f1" />
-                <Text style={{ color: '#6366f1', fontSize: 12, fontWeight: '600' }}>تعديل</Text>
+                <Ionicons name="create-outline" size={16} color="#A8A8A8" />
+                <Text style={{ color: '#A8A8A8', fontSize: 12, fontWeight: '600' }}>تعديل</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => deletePage(page)}

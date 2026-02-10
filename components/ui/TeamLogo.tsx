@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
@@ -23,7 +23,7 @@ interface TeamLogoProps {
   style?: any;
 }
 
-export default function TeamLogo({
+function TeamLogo({
   team,
   size = 'medium',
   showName = false,
@@ -103,7 +103,7 @@ export default function TeamLogo({
     return teamColors.default;
   };
 
-  const teamColor = getTeamColor(team.name);
+  const teamColor = useMemo(() => getTeamColor(team.name), [team.name]);
 
   const containerStyle = namePosition === 'right' ? styles.containerRow : styles.containerColumn;
 
@@ -135,7 +135,9 @@ export default function TeamLogo({
               borderRadius: currentSize.logo / 2,
             },
           ]}
-          resizeMode="contain"
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          recyclingKey={logoUrl}
         />
       ) : (
         <View
@@ -183,6 +185,8 @@ export default function TeamLogo({
     </View>
   );
 }
+
+export default React.memo(TeamLogo);
 
 const styles = StyleSheet.create({
   containerColumn: {

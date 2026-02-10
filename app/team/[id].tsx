@@ -1,5 +1,5 @@
 // Team Details Page
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   RefreshControl,
   Animated,
+  InteractionManager,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -39,10 +40,13 @@ export default function TeamDetailsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'squad' | 'matches'>('squad');
 
-  const scrollY = new Animated.Value(0);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    loadTeamData();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadTeamData();
+    });
+    return () => task.cancel();
   }, [id]);
 
   const loadTeamData = async () => {
@@ -56,13 +60,9 @@ export default function TeamDetailsScreen() {
       setTeam(teamRes.data?.data || teamRes.data);
       setPlayers(playersRes.data?.data || playersRes.data || []);
       
-      // Fetch team matches
-      const matchesRes = await matchApi.getAll();
-      const matchesData = matchesRes.data?.data || matchesRes.data || [];
-      // Filter matches that include this team
-      setMatches(matchesData.filter((m: Match) => 
-        m.homeTeam?.id === id || m.awayTeam?.id === id
-      ));
+      // Fetch team matches using dedicated endpoint
+      const matchesRes = await teamApi.getMatches(id as string);
+      setMatches(matchesRes.data?.data || []);
     } catch (error) {
       console.error('Error loading team:', error);
     } finally {
@@ -145,12 +145,12 @@ export default function TeamDetailsScreen() {
 
           <View style={styles.heroContent}>
             <TeamLogo team={team || { name: '' }} size="xlarge" />
-            <Text style={[styles.teamName, { color: '#fff' }]}>{team?.name}</Text>
-            <Text style={[styles.teamCountry, { color: 'rgba(255,255,255,0.7)' }]}>
+            <Text style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{team?.name}</Text>
+            <Text style={[styles.teamCountry, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }]}>
               {team?.country} • {team?.shortName}
             </Text>
             {team?.coach && (
-              <Text style={[styles.teamCoach, { color: 'rgba(255,255,255,0.6)' }]}>
+              <Text style={[styles.teamCoach, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)' }]}>
                 {t('match.coach')}: {team.coach}
               </Text>
             )}
@@ -161,17 +161,17 @@ export default function TeamDetailsScreen() {
         {team && (team.wins !== undefined || team.draws !== undefined || team.losses !== undefined) && (
           <View style={[styles.statsRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#4CAF50' }]}>{team.wins || 0}</Text>
+              <Text style={[styles.statValue, { color: '#22C55E' }]}>{team.wins || 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.wins')}</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#FF9800' }]}>{team.draws || 0}</Text>
+              <Text style={[styles.statValue, { color: '#F59E0B' }]}>{team.draws || 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.draws')}</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#F44336' }]}>{team.losses || 0}</Text>
+              <Text style={[styles.statValue, { color: '#EF4444' }]}>{team.losses || 0}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('team.losses')}</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />

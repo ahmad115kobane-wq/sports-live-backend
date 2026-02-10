@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from '@/components/ui/BlurView';
 import { Colors } from '@/constants/Colors';
-import { useMatchStore } from '@/store/matchStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import React, { useEffect, useRef } from 'react';
@@ -25,10 +24,9 @@ function TabIcon({
   const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.spring(scaleAnim, {
+    Animated.timing(scaleAnim, {
       toValue: focused ? 1 : 0,
-      tension: 300,
-      friction: 20,
+      duration: 150,
       useNativeDriver: true,
     }).start();
   }, [focused]);
@@ -71,7 +69,6 @@ function TabIcon({
 export default function TabLayout() {
   const { colorScheme, isDark } = useTheme();
   const colors = Colors[colorScheme];
-  const { liveMatches } = useMatchStore();
   const { t, isRTL } = useRTL();
 
   return (

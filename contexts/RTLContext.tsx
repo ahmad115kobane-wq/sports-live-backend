@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { I18nManager, Platform, Alert } from 'react-native';
 import i18n, { 
   LANGUAGES, 
@@ -71,18 +71,21 @@ export const RTLProvider: React.FC<RTLProviderProps> = ({ children }) => {
 
   const currentIsRTL = isRTL(language);
 
+  // Stable t function reference — only changes when language changes
+  const stableT = useCallback(((key: string, options?: any) => i18n.t(key, options)) as typeof i18n.t, [language]);
+
   // When language is RTL (Arabic/Kurdish), isRTL=true means content should flow right-to-left
   // When language is LTR (English), isRTL=false means content should flow left-to-right
-  const value: RTLContextType = {
+  const value = useMemo<RTLContextType>(() => ({
     isRTL: !currentIsRTL, // Inverted because the app default is Arabic RTL
     language,
     languageInfo: LANGUAGES[language],
     changeLanguage: handleChangeLanguage,
-    t: i18n.t.bind(i18n),
+    t: stableT,
     direction: currentIsRTL ? 'rtl' : 'ltr',
     textAlign: !currentIsRTL ? 'right' : 'left',
     flexDirection: !currentIsRTL ? 'row-reverse' : 'row',
-  };
+  }), [language, currentIsRTL, stableT]);
 
   if (!isReady) {
     return null; // Or a loading component

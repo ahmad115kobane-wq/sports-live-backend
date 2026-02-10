@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Alert,
   Platform,
   Image,
   ActivityIndicator,
@@ -22,12 +21,14 @@ import { useAuthStore } from '@/store/authStore';
 import { userApi } from '@/services/api';
 import { useRTL } from '@/contexts/RTLContext';
 import { SOCKET_URL } from '@/constants/config';
+import { useAlert } from '@/contexts/AlertContext';
 
 export default function EditProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const { user, updateUser } = useAuthStore();
   const { isRTL, t } = useRTL();
+  const { alert } = useAlert();
 
   const [name, setName] = useState(user?.name || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -77,13 +78,13 @@ export default function EditProfileScreen() {
       const response = await userApi.uploadAvatar(formData);
       if (response.data?.data) {
         updateUser(response.data.data);
-        Alert.alert(
+        alert(
           t('profile.success'),
           t('profile.avatarUpdated'),
         );
       }
     } catch (error: any) {
-      Alert.alert(
+      alert(
         t('profile.error'),
         error.response?.data?.message || t('profile.avatarUploadFailed'),
       );
@@ -94,12 +95,12 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert(t('profile.error'), t('profile.nameRequired'));
+      alert(t('profile.error'), t('profile.nameRequired'));
       return;
     }
 
     if (newPassword && newPassword !== confirmPassword) {
-      Alert.alert(
+      alert(
         t('profile.error'),
         t('profile.passwordsNotMatch'),
       );
@@ -107,7 +108,7 @@ export default function EditProfileScreen() {
     }
 
     if (newPassword && newPassword.length < 6) {
-      Alert.alert(
+      alert(
         t('profile.error'),
         t('profile.passwordMinLength'),
       );
@@ -115,7 +116,7 @@ export default function EditProfileScreen() {
     }
 
     if (newPassword && !currentPassword) {
-      Alert.alert(
+      alert(
         t('profile.error'),
         t('profile.enterCurrentPassword'),
       );
@@ -136,7 +137,7 @@ export default function EditProfileScreen() {
       }
 
       if (Object.keys(data).length === 0) {
-        Alert.alert(
+        alert(
           t('profile.info'),
           t('profile.noChanges'),
         );
@@ -146,14 +147,14 @@ export default function EditProfileScreen() {
       const response = await userApi.updateProfile(data);
       if (response.data?.data) {
         updateUser(response.data.data);
-        Alert.alert(
+        alert(
           t('profile.success'),
           t('profile.profileUpdated'),
           [{ text: t('common.ok'), onPress: () => router.back() }],
         );
       }
     } catch (error: any) {
-      Alert.alert(
+      alert(
         t('profile.error'),
         error.response?.data?.message || t('profile.profileUpdateFailed'),
       );

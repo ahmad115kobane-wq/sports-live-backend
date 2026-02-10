@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/auth/login', { email, password });
       console.log('✅ Login response:', response.data);
       
-      const { user, token } = response.data.data;
+      const { user, token, requiresVerification } = response.data.data;
       
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
@@ -50,9 +50,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      if (requiresVerification) {
+        set({ hasSeenWelcome: true });
+        console.log('✅ Login - email verification required');
+        throw { requiresVerification: true, email: user.email };
+      }
+      
       set({ user, token, isAuthenticated: true, isGuest: false, hasSeenWelcome: true });
       console.log('✅ Login successful, user set');
     } catch (error: any) {
+      if (error?.requiresVerification) {
+        throw error;
+      }
       console.log('❌ Login error:', error);
       console.log('❌ Error response:', error.response?.data);
       console.log('❌ Error message:', error.message);
@@ -68,17 +77,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/auth/register', { name, email, password });
       console.log('✅ Register response:', response.data);
       
-      const { user, token } = response.data.data;
+      const { user, token, requiresVerification } = response.data.data;
       
+      // Store token temporarily for verification
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
       await AsyncStorage.setItem('hasSeenWelcome', 'true');
       
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // If email verification is required, don't fully authenticate yet
+      if (requiresVerification) {
+        set({ hasSeenWelcome: true });
+        console.log('✅ Register successful - verification required');
+        throw { requiresVerification: true, email };
+      }
+      
       set({ user, token, isAuthenticated: true, isGuest: false, hasSeenWelcome: true });
       console.log('✅ Register successful');
     } catch (error: any) {
+      if (error?.requiresVerification) {
+        throw error; // Re-throw verification redirect
+      }
       console.log('❌ Register error:', error);
       console.log('❌ Error response:', error.response?.data);
       console.log('❌ Error message:', error.message);
@@ -139,10 +159,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loadStoredAuth: async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const userStr = await AsyncStorage.getItem('user');
-      const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcome');
-      const isGuest = await AsyncStorage.getItem('isGuest');
+      const [token, userStr, hasSeenWelcome, isGuest] = await Promise.all([
+        AsyncStorage.getItem('token'),
+        AsyncStorage.getItem('user'),
+        AsyncStorage.getItem('hasSeenWelcome'),
+        AsyncStorage.getItem('isGuest'),
+      ]);
       
       // Register force logout for API interceptor
       _forceLogout = () => {
@@ -157,31 +179,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const user = JSON.parse(userStr);
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // Validate token against backend
-        try {
-          const response = await api.get('/users/me');
-          const validUser = response.data?.data || user;
-          set({ 
-            user: validUser, 
-            token, 
-            isAuthenticated: true, 
-            isLoading: false,
-            hasSeenWelcome: hasSeenWelcome === 'true',
-            isGuest: isGuest === 'true',
-          });
-        } catch (validationError: any) {
-          // Token is invalid or expired - clear auth and go to welcome
+        // ── INSTANT: Trust local data → allow navigation immediately ──
+        set({ 
+          user, 
+          token, 
+          isAuthenticated: true, 
+          isLoading: false,
+          hasSeenWelcome: hasSeenWelcome === 'true',
+          isGuest: isGuest === 'true',
+        });
+
+        // ── BACKGROUND: Validate token silently, logout only if invalid ──
+        api.get('/users/me').then(response => {
+          const validUser = response.data?.data;
+          if (validUser) {
+            set({ user: validUser });
+            AsyncStorage.setItem('user', JSON.stringify(validUser));
+          }
+        }).catch(() => {
           console.log('⚠️ Stored token is invalid, clearing auth');
-          await AsyncStorage.removeItem('token');
-          await AsyncStorage.removeItem('user');
-          await AsyncStorage.removeItem('isGuest');
+          AsyncStorage.removeItem('token');
+          AsyncStorage.removeItem('user');
+          AsyncStorage.removeItem('isGuest');
           delete api.defaults.headers.common['Authorization'];
-          set({ 
-            isLoading: false,
-            isAuthenticated: false,
-            hasSeenWelcome: hasSeenWelcome === 'true',
-          });
-        }
+          set({ user: null, token: null, isAuthenticated: false, isGuest: false });
+        });
       } else {
         set({ 
           isLoading: false,

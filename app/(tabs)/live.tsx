@@ -10,9 +10,10 @@ import {
   StatusBar,
   Platform,
   Dimensions,
-  Image,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -37,20 +38,6 @@ function AutoImage({ uri, colors }: { uri: string; colors: any }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    Image.getSize(
-      uri,
-      (w, h) => {
-        if (w && h) setRatio(w / h);
-        setLoading(false);
-      },
-      () => {
-        setLoading(false);
-        setError(true);
-      },
-    );
-  }, [uri]);
-
   if (error) return null;
 
   return (
@@ -63,8 +50,15 @@ function AutoImage({ uri, colors }: { uri: string; colors: any }) {
       <Image
         source={{ uri }}
         style={[autoImgStyles.image, { aspectRatio: ratio }]}
-        resizeMode="cover"
-        onLoad={() => setLoading(false)}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        onLoad={(e: any) => {
+          if (e?.source?.width && e?.source?.height) {
+            setRatio(e.source.width / e.source.height);
+          }
+          setLoading(false);
+        }}
+        onError={() => setError(true)}
       />
     </View>
   );
@@ -119,10 +113,14 @@ export default function NewsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    loadNews();
-    Animated.loop(
+    const shimmer = Animated.loop(
       Animated.timing(waveAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
-    ).start();
+    );
+    shimmer.start();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadNews();
+    });
+    return () => { task.cancel(); shimmer.stop(); };
   }, []);
 
   const loadNews = async (pageNum = 1) => {
@@ -200,32 +198,34 @@ export default function NewsScreen() {
               {item.author.avatar ? (
                 <Image source={{ uri: `${SOCKET_URL}${item.author.avatar}` }} style={styles.authorAvatarImg} />
               ) : (
-                <Ionicons name="person" size={22} color={colors.accent} />
+                <Ionicons name="person" size={26} color={colors.accent} />
               )}
             </View>
-            <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>{item.author.name}</Text>
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark" size={10} color="#fff" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{item.author.name}</Text>
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark" size={11} color="#fff" />
+              </View>
             </View>
             <View style={{ flex: 1 }} />
+            <Text style={[styles.articleTime, { color: colors.textTertiary }]}>
+              {getTimeAgo(item.createdAt)}
+            </Text>
             <View style={[styles.newsBadge, { backgroundColor: colors.accent + '15' }]}>
               <Ionicons name="newspaper-outline" size={12} color={colors.accent} />
             </View>
           </View>
-          <Text style={[styles.articleTime, { color: colors.textTertiary }]}>
-            {getTimeAgo(item.createdAt)}
-          </Text>
         </View>
 
         {/* Title */}
-        <Text style={[styles.articleTitle, { color: colors.text }]}>
+        <Text style={[styles.articleTitle, { color: colors.text }]} numberOfLines={3}>
           {item.title}
         </Text>
 
         {/* Content Preview */}
         <Text
           style={[styles.articleContent, { color: colors.textSecondary }]}
-          numberOfLines={2}
+          numberOfLines={3}
         >
           {item.content}
         </Text>
@@ -405,43 +405,45 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   authorAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
   authorAvatarImg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
   },
   authorInitial: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
   },
   authorName: {
     ...TYPOGRAPHY.titleMedium,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.3,
     flexShrink: 1,
+    fontSize: 17,
   },
   verifiedBadge: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#1DA1F2',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 2,
   },
   articleTime: {
     ...TYPOGRAPHY.labelSmall,
-    marginTop: 2,
     opacity: 0.6,
     fontWeight: '500',
+    fontSize: 11,
+    paddingHorizontal: SPACING.xs,
   },
   newsBadge: {
     width: 30,

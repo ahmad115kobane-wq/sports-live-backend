@@ -13,6 +13,35 @@ import { RADIUS, SPACING, SHADOWS } from '@/constants/Theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// ── Shared singleton animations (one animation drives ALL skeletons) ──
+const sharedShimmer = new Animated.Value(0);
+const sharedPulse = new Animated.Value(0.4);
+let shimmerRunning = false;
+let pulseRunning = false;
+
+function ensureShimmer() {
+  if (shimmerRunning) return;
+  shimmerRunning = true;
+  Animated.loop(
+    Animated.timing(sharedShimmer, { toValue: 1, duration: 1500, useNativeDriver: true })
+  ).start();
+}
+function ensurePulse() {
+  if (pulseRunning) return;
+  pulseRunning = true;
+  Animated.loop(
+    Animated.sequence([
+      Animated.timing(sharedPulse, { toValue: 0.8, duration: 800, useNativeDriver: true }),
+      Animated.timing(sharedPulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+    ])
+  ).start();
+}
+
+const sharedShimmerTranslate = sharedShimmer.interpolate({
+  inputRange: [0, 1],
+  outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
+});
+
 interface SkeletonProps {
   width?: number | string;
   height?: number;
@@ -29,42 +58,12 @@ export function Skeleton({
   variant = 'wave'
 }: SkeletonProps) {
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
-    if (variant === 'wave') {
-      Animated.loop(
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        })
-      ).start();
-    } else {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 0.8,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 0.4,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    }
+    if (variant === 'wave') ensureShimmer();
+    else ensurePulse();
   }, [variant]);
-
-  const shimmerTranslate = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
-  });
 
   const baseColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const shimmerColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)';
@@ -78,7 +77,7 @@ export function Skeleton({
             height,
             borderRadius,
             backgroundColor: baseColor,
-            opacity: pulseAnim,
+            opacity: sharedPulse,
           },
           style,
         ]}
@@ -102,7 +101,7 @@ export function Skeleton({
       <Animated.View 
         style={[
           StyleSheet.absoluteFill,
-          { transform: [{ translateX: shimmerTranslate }] }
+          { transform: [{ translateX: sharedShimmerTranslate }] }
         ]}
       >
         <LinearGradient
@@ -357,6 +356,163 @@ export function NewsSkeleton() {
   );
 }
 
+// Club/Team Card Skeleton (for Clubs page)
+export function ClubCardSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <View style={[styles.clubCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Accent bar */}
+      <View style={[styles.clubAccent, { backgroundColor: colors.border }]} />
+      <View style={styles.clubBody}>
+        {/* Logo */}
+        <Skeleton width={48} height={48} borderRadius={24} />
+        {/* Info */}
+        <View style={styles.clubInfo}>
+          <Skeleton width="70%" height={16} borderRadius={4} />
+          <View style={{ height: 6 }} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Skeleton width={50} height={20} borderRadius={RADIUS.full} />
+            <Skeleton width={40} height={20} borderRadius={RADIUS.full} />
+          </View>
+          <View style={{ height: 6 }} />
+          <Skeleton width="50%" height={12} borderRadius={4} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Clubs Grid Skeleton (multiple cards)
+export function ClubsGridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <View style={{ gap: SPACING.md, paddingHorizontal: SPACING.md }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <ClubCardSkeleton key={i} />
+      ))}
+    </View>
+  );
+}
+
+// Notification Item Skeleton
+export function NotificationSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <View style={[styles.notifItem, { backgroundColor: colors.surface }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.md }}>
+        <Skeleton width={40} height={40} borderRadius={20} />
+        <View style={{ flex: 1 }}>
+          <Skeleton width="80%" height={14} borderRadius={4} />
+          <View style={{ height: 6 }} />
+          <Skeleton width="60%" height={12} borderRadius={4} />
+          <View style={{ height: 4 }} />
+          <Skeleton width="30%" height={10} borderRadius={4} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// Notifications List Skeleton
+export function NotificationsListSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <View style={{ gap: SPACING.sm, padding: SPACING.md }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <NotificationSkeleton key={i} />
+      ))}
+    </View>
+  );
+}
+
+// Order Card Skeleton
+export function OrderCardSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <View style={[styles.orderCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Header: order id + status */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+        <Skeleton width={100} height={14} borderRadius={4} />
+        <Skeleton width={70} height={24} borderRadius={RADIUS.full} />
+      </View>
+      {/* Items */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm }}>
+        <Skeleton width={44} height={44} borderRadius={RADIUS.md} />
+        <View style={{ flex: 1 }}>
+          <Skeleton width="60%" height={13} borderRadius={4} />
+          <View style={{ height: 4 }} />
+          <Skeleton width="30%" height={11} borderRadius={4} />
+        </View>
+        <Skeleton width={60} height={14} borderRadius={4} />
+      </View>
+      {/* Footer: total */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: SPACING.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
+        <Skeleton width={50} height={12} borderRadius={4} />
+        <Skeleton width={70} height={16} borderRadius={4} />
+      </View>
+    </View>
+  );
+}
+
+// Orders List Skeleton
+export function OrdersListSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <View style={{ gap: SPACING.md, padding: SPACING.md }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <OrderCardSkeleton key={i} />
+      ))}
+    </View>
+  );
+}
+
+// Player Profile Skeleton
+export function PlayerProfileSkeleton() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  return (
+    <View style={styles.playerProfile}>
+      {/* Header gradient area */}
+      <View style={[styles.playerHeader, { backgroundColor: colors.primaryLight }]}>
+        <Skeleton width={80} height={80} borderRadius={40} />
+        <View style={{ height: SPACING.md }} />
+        <Skeleton width={160} height={22} borderRadius={4} />
+        <View style={{ height: SPACING.sm }} />
+        <Skeleton width={100} height={14} borderRadius={4} />
+        <View style={{ height: SPACING.md }} />
+        {/* Stats row */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '100%' }}>
+          <View style={{ alignItems: 'center' }}>
+            <Skeleton width={40} height={28} borderRadius={RADIUS.md} />
+            <View style={{ height: 4 }} />
+            <Skeleton width={50} height={10} borderRadius={4} />
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Skeleton width={40} height={28} borderRadius={RADIUS.md} />
+            <View style={{ height: 4 }} />
+            <Skeleton width={50} height={10} borderRadius={4} />
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Skeleton width={40} height={28} borderRadius={RADIUS.md} />
+            <View style={{ height: 4 }} />
+            <Skeleton width={50} height={10} borderRadius={4} />
+          </View>
+        </View>
+      </View>
+      {/* Info cards */}
+      <View style={{ padding: SPACING.lg, gap: SPACING.md }}>
+        <Skeleton width="100%" height={56} borderRadius={RADIUS.lg} />
+        <Skeleton width="100%" height={56} borderRadius={RADIUS.lg} />
+        <Skeleton width="100%" height={56} borderRadius={RADIUS.lg} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   // Match Card Skeleton
   matchCardSkeleton: {
@@ -511,6 +667,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.sm,
+  },
+  // Club Card Skeleton
+  clubCard: {
+    borderRadius: RADIUS.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    ...SHADOWS.sm,
+  },
+  clubAccent: {
+    height: 3,
+    width: '40%',
+    borderRadius: 2,
+  },
+  clubBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    gap: SPACING.md,
+  },
+  clubInfo: {
+    flex: 1,
+  },
+  // Notification Item Skeleton
+  notifItem: {
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+  },
+  // Order Card Skeleton
+  orderCard: {
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    borderWidth: 1,
+    ...SHADOWS.sm,
+  },
+  // Player Profile Skeleton
+  playerProfile: {
+    flex: 1,
+  },
+  playerHeader: {
+    alignItems: 'center',
+    paddingTop: SPACING.xxxl,
+    paddingBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
   },
 });
 

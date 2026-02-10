@@ -257,7 +257,7 @@ export default function SelectFavoritesScreen() {
                       <Ionicons name="trophy" size={24} color={colors.textTertiary} />
                     </View>
                   )}
-                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                     {comp.name}
                   </Text>
                   {selectedCompetitions.includes(comp.id) && (
@@ -301,7 +301,7 @@ export default function SelectFavoritesScreen() {
                       <Ionicons name="shield" size={24} color="#fff" />
                     </View>
                   )}
-                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                     {team.name}
                   </Text>
                   {selectedTeams.includes(team.id) && (

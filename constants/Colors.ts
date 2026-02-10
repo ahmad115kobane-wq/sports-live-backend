@@ -46,52 +46,52 @@ export const Colors = {
     borderFocus: '#5C5C5C',
     divider: '#F0F0F0',
     
-    // ✅ Semantic Colors - Muted (inverse)
-    success: '#6B6B6B',
-    successLight: 'rgba(107, 107, 107, 0.1)',
-    successDark: '#8A8A8A',
-    successGlow: 'rgba(107, 107, 107, 0.12)',
+    // ✅ Semantic Colors - Real Colors
+    success: '#16A34A',
+    successLight: 'rgba(22, 163, 74, 0.1)',
+    successDark: '#15803D',
+    successGlow: 'rgba(22, 163, 74, 0.12)',
     
-    warning: '#5C5C5C',
-    warningLight: 'rgba(92, 92, 92, 0.1)',
-    warningDark: '#7A7A7A',
-    warningGlow: 'rgba(92, 92, 92, 0.12)',
+    warning: '#D97706',
+    warningLight: 'rgba(217, 119, 6, 0.1)',
+    warningDark: '#B45309',
+    warningGlow: 'rgba(217, 119, 6, 0.12)',
     
-    error: '#6B6B6B',
-    errorLight: 'rgba(107, 107, 107, 0.1)',
-    errorDark: '#8A8A8A',
-    errorGlow: 'rgba(107, 107, 107, 0.12)',
+    error: '#DC2626',
+    errorLight: 'rgba(220, 38, 38, 0.1)',
+    errorDark: '#B91C1C',
+    errorGlow: 'rgba(220, 38, 38, 0.12)',
     
-    info: '#7A7A7A',
-    infoLight: 'rgba(122, 122, 122, 0.1)',
-    infoDark: '#9A9A9A',
-    infoGlow: 'rgba(122, 122, 122, 0.12)',
+    info: '#2563EB',
+    infoLight: 'rgba(37, 99, 235, 0.1)',
+    infoDark: '#1D4ED8',
+    infoGlow: 'rgba(37, 99, 235, 0.12)',
     
     // ⚽ Live Match Colors
-    live: '#5C5C5C',
-    liveLight: 'rgba(92, 92, 92, 0.1)',
-    liveBackground: 'rgba(92, 92, 92, 0.06)',
-    livePulse: '#4A4A4A',
-    liveGlow: 'rgba(92, 92, 92, 0.15)',
+    live: '#DC2626',
+    liveLight: 'rgba(220, 38, 38, 0.1)',
+    liveBackground: 'rgba(220, 38, 38, 0.06)',
+    livePulse: '#EF4444',
+    liveGlow: 'rgba(220, 38, 38, 0.15)',
     
     // 🥅 Match Events
-    goal: '#5C5C5C',
-    goalBackground: 'rgba(92, 92, 92, 0.08)',
-    goalGlow: 'rgba(92, 92, 92, 0.12)',
+    goal: '#16A34A',
+    goalBackground: 'rgba(22, 163, 74, 0.08)',
+    goalGlow: 'rgba(22, 163, 74, 0.12)',
     
-    yellowCard: '#4A4A4A',
-    yellowCardBackground: 'rgba(74, 74, 74, 0.1)',
-    yellowCardGlow: 'rgba(74, 74, 74, 0.15)',
+    yellowCard: '#CA8A04',
+    yellowCardBackground: 'rgba(202, 138, 4, 0.1)',
+    yellowCardGlow: 'rgba(202, 138, 4, 0.15)',
     
-    redCard: '#6B6B6B',
-    redCardBackground: 'rgba(107, 107, 107, 0.08)',
-    redCardGlow: 'rgba(107, 107, 107, 0.12)',
+    redCard: '#DC2626',
+    redCardBackground: 'rgba(220, 38, 38, 0.08)',
+    redCardGlow: 'rgba(220, 38, 38, 0.12)',
     
-    substitution: '#7A7A7A',
-    substitutionBackground: 'rgba(122, 122, 122, 0.08)',
+    substitution: '#2563EB',
+    substitutionBackground: 'rgba(37, 99, 235, 0.08)',
     
-    var: '#5C5C5C',
-    varBackground: 'rgba(92, 92, 92, 0.08)',
+    var: '#7C3AED',
+    varBackground: 'rgba(124, 58, 237, 0.08)',
     
     // 🃏 Card Styles - White cards
     card: '#FFFFFF',
@@ -101,27 +101,27 @@ export const Colors = {
     cardShadow: 'rgba(0, 0, 0, 0.08)',
     
     // 🏟️ Match Specific
-    homeTeam: '#5C5C5C',
-    awayTeam: '#7A7A7A',
+    homeTeam: '#2563EB',
+    awayTeam: '#DC2626',
     draw: '#8A8A8A',
     
     // 📊 Stats Colors
-    possession: '#5C5C5C',
-    shots: '#6B6B6B',
-    passes: '#7A7A7A',
-    fouls: '#8A8A8A',
+    possession: '#2563EB',
+    shots: '#DC2626',
+    passes: '#16A34A',
+    fouls: '#D97706',
     
     // 🎨 Gradient Presets
     gradients: {
       primary: ['#F5F5F5', '#EBEBEB', '#E0E0E0'] as const,
       accent: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
       secondary: ['#9A9A9A', '#8A8A8A', '#7A7A7A'] as const,
-      live: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
+      live: ['#DC2626', '#B91C1C', '#991B1B'] as const,
       featured: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
       premium: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
       dark: ['#FAFAFA', '#F3F3F3', '#EDEDED'] as const,
       authDark: ['#000000', '#0A0A0A', '#141414'] as const,
-      success: ['#8A8A8A', '#7A7A7A', '#6B6B6B'] as const,
+      success: ['#16A34A', '#15803D', '#166534'] as const,
       cool: ['#9A9A9A', '#8A8A8A'] as const,
       sunset: ['#8A8A8A', '#7A7A7A'] as const,
       ocean: ['#9A9A9A', '#8A8A8A', '#7A7A7A'] as const,
@@ -197,52 +197,52 @@ export const Colors = {
     borderFocus: '#A8A8A8',
     divider: '#1C1C1C',
     
-    // ✅ Semantic Colors - Muted
-    success: '#8A8A8A',
-    successLight: 'rgba(138, 138, 138, 0.1)',
-    successDark: '#6B6B6B',
-    successGlow: 'rgba(138, 138, 138, 0.15)',
+    // ✅ Semantic Colors - Real Colors
+    success: '#22C55E',
+    successLight: 'rgba(34, 197, 94, 0.12)',
+    successDark: '#16A34A',
+    successGlow: 'rgba(34, 197, 94, 0.18)',
     
-    warning: '#9A9A9A',
-    warningLight: 'rgba(154, 154, 154, 0.1)',
-    warningDark: '#7A7A7A',
-    warningGlow: 'rgba(154, 154, 154, 0.15)',
+    warning: '#F59E0B',
+    warningLight: 'rgba(245, 158, 11, 0.12)',
+    warningDark: '#D97706',
+    warningGlow: 'rgba(245, 158, 11, 0.18)',
     
-    error: '#8A8A8A',
-    errorLight: 'rgba(138, 138, 138, 0.1)',
-    errorDark: '#6B6B6B',
-    errorGlow: 'rgba(138, 138, 138, 0.15)',
+    error: '#EF4444',
+    errorLight: 'rgba(239, 68, 68, 0.12)',
+    errorDark: '#DC2626',
+    errorGlow: 'rgba(239, 68, 68, 0.18)',
     
-    info: '#7A7A7A',
-    infoLight: 'rgba(122, 122, 122, 0.1)',
-    infoDark: '#5C5C5C',
-    infoGlow: 'rgba(122, 122, 122, 0.15)',
+    info: '#3B82F6',
+    infoLight: 'rgba(59, 130, 246, 0.12)',
+    infoDark: '#2563EB',
+    infoGlow: 'rgba(59, 130, 246, 0.18)',
     
     // ⚽ Live Match Colors
-    live: '#9A9A9A',
-    liveLight: 'rgba(154, 154, 154, 0.12)',
-    liveBackground: 'rgba(154, 154, 154, 0.08)',
-    livePulse: '#B0B0B0',
-    liveGlow: 'rgba(154, 154, 154, 0.2)',
+    live: '#EF4444',
+    liveLight: 'rgba(239, 68, 68, 0.15)',
+    liveBackground: 'rgba(239, 68, 68, 0.08)',
+    livePulse: '#F87171',
+    liveGlow: 'rgba(239, 68, 68, 0.25)',
     
     // 🥅 Match Events
-    goal: '#9A9A9A',
-    goalBackground: 'rgba(154, 154, 154, 0.1)',
-    goalGlow: 'rgba(154, 154, 154, 0.15)',
+    goal: '#22C55E',
+    goalBackground: 'rgba(34, 197, 94, 0.12)',
+    goalGlow: 'rgba(34, 197, 94, 0.18)',
     
-    yellowCard: '#B0B0B0',
-    yellowCardBackground: 'rgba(176, 176, 176, 0.12)',
-    yellowCardGlow: 'rgba(176, 176, 176, 0.2)',
+    yellowCard: '#EAB308',
+    yellowCardBackground: 'rgba(234, 179, 8, 0.15)',
+    yellowCardGlow: 'rgba(234, 179, 8, 0.25)',
     
-    redCard: '#8A8A8A',
-    redCardBackground: 'rgba(138, 138, 138, 0.1)',
-    redCardGlow: 'rgba(138, 138, 138, 0.15)',
+    redCard: '#EF4444',
+    redCardBackground: 'rgba(239, 68, 68, 0.12)',
+    redCardGlow: 'rgba(239, 68, 68, 0.18)',
     
-    substitution: '#7A7A7A',
-    substitutionBackground: 'rgba(122, 122, 122, 0.1)',
+    substitution: '#3B82F6',
+    substitutionBackground: 'rgba(59, 130, 246, 0.12)',
     
-    var: '#9A9A9A',
-    varBackground: 'rgba(154, 154, 154, 0.1)',
+    var: '#A855F7',
+    varBackground: 'rgba(168, 85, 247, 0.12)',
     
     // 🃏 Card Styles
     card: '#151515',
@@ -252,27 +252,27 @@ export const Colors = {
     cardShadow: 'rgba(0, 0, 0, 0.4)',
     
     // 🏟️ Match Specific
-    homeTeam: '#9A9A9A',
-    awayTeam: '#7A7A7A',
+    homeTeam: '#3B82F6',
+    awayTeam: '#EF4444',
     draw: '#6B6B6B',
     
     // 📊 Stats Colors
-    possession: '#9A9A9A',
-    shots: '#8A8A8A',
-    passes: '#7A7A7A',
-    fouls: '#6B6B6B',
+    possession: '#3B82F6',
+    shots: '#EF4444',
+    passes: '#22C55E',
+    fouls: '#F59E0B',
     
     // 🎨 Gradient Presets
     gradients: {
       primary: ['#0A0A0A', '#141414', '#1E1E1E'] as const,
       accent: ['#7A7A7A', '#8A8A8A', '#9A9A9A'] as const,
       secondary: ['#5C5C5C', '#6B6B6B', '#7A7A7A'] as const,
-      live: ['#6B6B6B', '#7A7A7A', '#8A8A8A'] as const,
+      live: ['#EF4444', '#DC2626', '#B91C1C'] as const,
       featured: ['#4A4A4A', '#5C5C5C', '#6B6B6B'] as const,
       premium: ['#5C5C5C', '#6B6B6B', '#7A7A7A'] as const,
       dark: ['#000000', '#0A0A0A', '#141414'] as const,
       authDark: ['#000000', '#0A0A0A', '#141414'] as const,
-      success: ['#6B6B6B', '#7A7A7A', '#8A8A8A'] as const,
+      success: ['#22C55E', '#16A34A', '#15803D'] as const,
       cool: ['#5C5C5C', '#6B6B6B'] as const,
       sunset: ['#6B6B6B', '#7A7A7A'] as const,
       ocean: ['#5C5C5C', '#6B6B6B', '#7A7A7A'] as const,

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   Image,
   ActivityIndicator,
   StatusBar,
@@ -20,6 +19,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { newsApi } from '@/services/api';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -43,6 +43,7 @@ export default function PublisherScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
 
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,7 @@ export default function PublisherScreen() {
 
   const handlePublish = async () => {
     if (!title.trim() || !content.trim()) {
-      Alert.alert(
+      alert(
         t('common.error'),
         t('news.fillRequired'),
       );
@@ -112,7 +113,7 @@ export default function PublisherScreen() {
 
       await newsApi.create(formData);
       Vibration.vibrate(20);
-      Alert.alert(t('common.success'), t('news.published'));
+      alert(t('common.success'), t('news.published'));
       setTitle('');
       setContent('');
       setSelectedImage(null);
@@ -120,14 +121,14 @@ export default function PublisherScreen() {
       loadMyArticles();
     } catch (error) {
       console.error('Publish error:', error);
-      Alert.alert(t('common.error'), t('news.publishFailed'));
+      alert(t('common.error'), t('news.publishFailed'));
     } finally {
       setPublishing(false);
     }
   };
 
   const handleDelete = (article: NewsArticle) => {
-    Alert.alert(
+    alert(
       t('news.deleteArticle'),
       t('news.deleteConfirm'),
       [
@@ -141,7 +142,7 @@ export default function PublisherScreen() {
               setArticles(prev => prev.filter(a => a.id !== article.id));
               Vibration.vibrate(15);
             } catch (error) {
-              Alert.alert(t('common.error'), t('news.deleteFailed'));
+              alert(t('common.error'), t('news.deleteFailed'));
             }
           },
         },

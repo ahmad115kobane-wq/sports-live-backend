@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { getNotificationPreferences, updateNotificationPreferences } from '@/services/notifications';
 
 export default function NotificationSettings() {
   const { t, isRTL } = useRTL();
+  const { alert } = useAlert();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
@@ -58,7 +60,7 @@ export default function NotificationSettings() {
     
     if (success) {
       // Show success message
-      Alert.alert(
+      alert(
         t('common.success'),
         t('settings.notificationsSaved'),
         [{ text: t('common.ok') }]
@@ -66,7 +68,7 @@ export default function NotificationSettings() {
     } else {
       // Revert on failure
       setSettings(settings);
-      Alert.alert(
+      alert(
         t('common.error'),
         t('settings.notificationsSaveFailed'),
         [{ text: t('common.ok') }]

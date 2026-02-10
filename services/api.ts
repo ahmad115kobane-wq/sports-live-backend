@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@/constants/config';
 
-console.log('🌐 API URL configured:', API_URL);
+if (__DEV__) console.log('🌐 API URL configured:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -12,25 +12,12 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add auth token (uses in-memory token from axios defaults, no disk I/O)
 api.interceptors.request.use(
-  async (config) => {
-    console.log('📤 Request:', config.method?.toUpperCase(), `${config.baseURL ?? ''}${config.url ?? ''}`);
-    
-    // Add auth token if available
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch (error) {
-      console.log('Error getting token:', error);
-    }
-    
+  (config) => {
     return config;
   },
   (error) => {
-    console.log('📤 Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -38,13 +25,10 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
-    console.log('📥 Response:', response.status, response.config.url);
     return response;
   },
   async (error) => {
-    console.log('📥 Response Error:', error.code, error.message);
     if (error.response?.status === 401 && !error.config?.url?.includes('/users/me')) {
-      console.log('⚠️ Unauthorized - session expired or invalid token');
       try {
         const { getForceLogout } = require('@/store/authStore');
         const forceLogout = getForceLogout();
@@ -55,7 +39,7 @@ api.interceptors.response.use(
           await AsyncStorage.removeItem('user');
         }
       } catch (e) {
-        console.log('Error clearing auth data:', e);
+        if (__DEV__) console.log('Error clearing auth data:', e);
       }
     }
     return Promise.reject(error);
@@ -114,6 +98,8 @@ export const teamApi = {
     city?: string;
     country?: string;
   }) => api.post('/teams', data),
+  getMatches: (id: string, params?: { status?: string; limit?: number }) =>
+    api.get(`/teams/${id}/matches`, { params }),
   update: (id: string, data: any) => api.put(`/teams/${id}`, data),
   delete: (id: string) => api.delete(`/teams/${id}`),
   addPlayer: (teamId: string, data: {
@@ -156,6 +142,7 @@ export const userApi = {
   savePreferences: (data: { favoriteTeams: string[]; favoriteCompetitions: string[] }) => 
     api.put('/users/preferences', data),
   getPreferences: () => api.get('/users/preferences'),
+  deleteAccount: () => api.delete('/auth/delete-account'),
   // Admin endpoints
   getAll: (page = 1, limit = 10) => api.get('/admin/users', { params: { page, limit } }),
   getById: (id: string) => api.get(`/admin/users/${id}`),

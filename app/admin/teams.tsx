@@ -114,7 +114,7 @@ export default function TeamsManagementScreen() {
   const colorOptions = [
     '#1E3A8A', '#166534', '#DC2626', '#7C3AED', 
     '#EA580C', '#0891B2', '#4F46E5', '#BE185D',
-    '#059669', '#D97706', '#6366F1', '#EC4899'
+    '#059669', '#D97706', '#4F46E5', '#EC4899'
   ];
 
   // Positions per category
@@ -451,7 +451,7 @@ export default function TeamsManagementScreen() {
             )}
           </View>
           <View style={styles.teamDetails}>
-            <Text style={[styles.teamName, { color: colors.text }]}>{team.name}</Text>
+            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{team.name}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 2 }}>
               <Text style={[styles.teamShortName, { color: colors.textSecondary }]}>{team.shortName}</Text>
               <View style={[styles.categoryBadge, { backgroundColor: colors.accent + '20' }]}>
@@ -505,7 +505,7 @@ export default function TeamsManagementScreen() {
                 <View style={[styles.playerNumber, { backgroundColor: team.primaryColor || colors.accent }]}>
                   <Text style={styles.playerNumberText}>{player.shirtNumber}</Text>
                 </View>
-                <Text style={[styles.playerChipName, { color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.playerChipName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                   {player.name}
                 </Text>
               </View>

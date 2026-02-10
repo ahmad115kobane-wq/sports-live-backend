@@ -90,10 +90,10 @@ export default function FootballField({ events, onFieldPress }: FootballFieldPro
                 <SvgText x={event.posX} y={(event.posY || 0) + 1.5} fontSize="3.5" textAnchor="middle" fill="#fff" fontWeight="bold">G</SvgText>
               )}
               {event.type === 'yellow_card' && (
-                <Rect x={(event.posX || 0) - 1} y={(event.posY || 0) - 1.5} width="2" height="3" fill="#FFEB3B" rx="0.3" />
+                <Rect x={(event.posX || 0) - 1} y={(event.posY || 0) - 1.5} width="2" height="3" fill="#EAB308" rx="0.3" />
               )}
               {event.type === 'red_card' && (
-                <Rect x={(event.posX || 0) - 1} y={(event.posY || 0) - 1.5} width="2" height="3" fill="#F44336" rx="0.3" />
+                <Rect x={(event.posX || 0) - 1} y={(event.posY || 0) - 1.5} width="2" height="3" fill="#EF4444" rx="0.3" />
               )}
               {event.type === 'substitution' && (
                 <SvgText x={event.posX} y={(event.posY || 0) + 1.5} fontSize="3.5" textAnchor="middle" fill="#fff" fontWeight="bold">S</SvgText>

@@ -11,8 +11,9 @@ import {
   Platform,
   Dimensions,
   ActivityIndicator,
-  Image,
+  InteractionManager,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,7 +35,7 @@ import { ar, enUS, arSA } from 'date-fns/locale';
 import { useRTL } from '@/contexts/RTLContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Match } from '@/types';
-import { useLiveMatchTimes, MatchTime } from '@/hooks/useLiveMinute';
+import { useLiveMatchTimes, useCountdowns, MatchTime } from '@/hooks/useLiveMinute';
 import { SOCKET_URL } from '@/constants/config';
 import { matchUpdateEmitter } from '@/utils/matchEvents';
 
@@ -102,7 +103,7 @@ function NewsBanner({ articles, colors, isDark }: { articles: any[]; colors: any
               style={[newsBannerStyles.slide, { width: NEWS_BANNER_WIDTH }]}
             >
               {imgUrl ? (
-                <Image source={{ uri: imgUrl }} style={newsBannerStyles.image} resizeMode="cover" />
+                <Image source={{ uri: imgUrl }} style={newsBannerStyles.image} contentFit="cover" cachePolicy="memory-disk" />
               ) : (
                 <LinearGradient
                   colors={isDark ? ['#1a1a2e', '#0f3460'] : ['#667eea', '#764ba2']}
@@ -261,15 +262,14 @@ export default function HomeScreen() {
   // قائمة المباريات مجمعة حسب الأيام
   const [dayMatchesList, setDayMatchesList] = useState<DayMatches[]>([]);
   
-  const { 
-    featuredMatch, 
-    liveMatches,
-    fetchFeaturedMatch,
-    fetchLiveMatches,
-    isLoading
-  } = useMatchStore();
+  // ── Zustand selectors: subscribe only to what's needed ──
+  const featuredMatch = useMatchStore(s => s.featuredMatch);
+  const liveMatches = useMatchStore(s => s.liveMatches);
+  const fetchFeaturedMatch = useMatchStore(s => s.fetchFeaturedMatch);
+  const fetchLiveMatches = useMatchStore(s => s.fetchLiveMatches);
 
-  const { competitions, fetchActiveCompetitions } = useCompetitionStore();
+  const competitions = useCompetitionStore(s => s.competitions);
+  const fetchActiveCompetitions = useCompetitionStore(s => s.fetchActiveCompetitions);
   const [selectedCompetition, setSelectedCompetition] = useState<string | null>(null);
   
   // جميع المباريات المجمعة حسب التاريخ
@@ -279,22 +279,39 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [sliders, setSliders] = useState<any[]>([]);
 
-  // Single shared timer for all live matches — ticks every second, computes MM:SS
-  const allLiveMatches = useMemo(() => {
-    const combined = [...allMatches, ...liveMatches];
-    // Deduplicate by id
+  // Only pass relevant matches to timer hooks (not ALL matches)
+  const activeMatches = useMemo(() => {
+    const ACTIVE = ['live', 'extra_time', 'halftime', 'extra_time_halftime', 'penalties'];
     const map = new Map<string, Match>();
-    combined.forEach(m => map.set(m.id, m));
+    // Live matches from store
+    liveMatches.forEach(m => map.set(m.id, m));
+    // Active matches from allMatches (live/paused only)
+    allMatches.forEach(m => { if (ACTIVE.includes(m.status)) map.set(m.id, m); });
     return Array.from(map.values());
   }, [allMatches, liveMatches]);
-  const liveTimesMap = useLiveMatchTimes(allLiveMatches);
+
+  const upcomingMatches = useMemo(() => {
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    return allMatches.filter(m => {
+      if (m.status !== 'scheduled') return false;
+      const diff = new Date(m.startTime).getTime() - now;
+      return diff > 0 && diff <= DAY;
+    });
+  }, [allMatches]);
+
+  const liveTimesMap = useLiveMatchTimes(activeMatches);
+  const countdownsMap = useCountdowns(upcomingMatches);
 
   const { user } = useAuthStore();
   const { joinLiveFeed } = useSocket();
 
   useEffect(() => {
-    loadData();
-    joinLiveFeed();
+    const task = InteractionManager.runAfterInteractions(() => {
+      loadData();
+      joinLiveFeed();
+    });
+    return () => task.cancel();
   }, []);
 
   // Subscribe to real-time match updates (goals, status changes, etc.)
@@ -336,19 +353,18 @@ export default function HomeScreen() {
   // مجموعة IDs المباريات المباشرة لاستبعادها من قسم مباريات اليوم
   const liveMatchIds = useMemo(() => new Set(liveMatches.map(m => m.id)), [liveMatches]);
 
-  // تحديث قائمة الأيام عند تغير المباريات أو البطولة المختارة
+  // تحديث قائمة الأيام — الفلترة والتجميع تتم بعد frame الحالي
   useEffect(() => {
     if (allMatches.length > 0) {
-      // فلترة المباريات حسب البطولة المختارة
-      let filteredMatches = selectedCompetition 
-        ? allMatches.filter(match => match.competitionId === selectedCompetition)
-        : allMatches;
-
-      // استبعاد المباريات المباشرة من قسم اليوم — تظهر فقط في قسم البث المباشر
-      filteredMatches = filteredMatches.filter(match => !liveMatchIds.has(match.id));
-      
-      const grouped = groupMatchesByDate(filteredMatches);
-      setDayMatchesList(grouped);
+      const task = InteractionManager.runAfterInteractions(() => {
+        let filteredMatches = selectedCompetition 
+          ? allMatches.filter(match => match.competitionId === selectedCompetition)
+          : allMatches;
+        filteredMatches = filteredMatches.filter(match => !liveMatchIds.has(match.id));
+        const grouped = groupMatchesByDate(filteredMatches);
+        setDayMatchesList(grouped);
+      });
+      return () => task.cancel();
     } else if (!loadingAllMatches && allMatches.length === 0) {
       setDayMatchesList([]);
     }
@@ -408,20 +424,26 @@ export default function HomeScreen() {
     return t('home.welcome');
   };
 
-  // Shimmer animation for header
+  // Shimmer animation — only while loading
   const waveAnim = useRef(new Animated.Value(-150)).current;
+  const shimmerRef = useRef<Animated.CompositeAnimation | null>(null);
   
   useEffect(() => {
-    const shimmerLoop = Animated.loop(
-      Animated.timing(waveAnim, {
-        toValue: SCREEN_WIDTH + 150,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    );
-    shimmerLoop.start();
-    return () => shimmerLoop.stop();
-  }, []);
+    if (loadingAllMatches) {
+      shimmerRef.current = Animated.loop(
+        Animated.timing(waveAnim, {
+          toValue: SCREEN_WIDTH + 150,
+          duration: 3000,
+          useNativeDriver: true,
+        })
+      );
+      shimmerRef.current.start();
+    } else {
+      shimmerRef.current?.stop();
+      shimmerRef.current = null;
+    }
+    return () => { shimmerRef.current?.stop(); };
+  }, [loadingAllMatches]);
 
   const waveTranslate = waveAnim;
 
@@ -491,7 +513,7 @@ export default function HomeScreen() {
                 <Text style={[
                   styles.competitionName, 
                   { color: colors.text }
-                ]} numberOfLines={1}>
+                ]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                   {t('clubs.title')}
                 </Text>
               </TouchableOpacity>
@@ -556,6 +578,8 @@ export default function HomeScreen() {
                           { color: isSelected ? '#fff' : colors.text }
                         ]}
                         numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.75}
                       >
                         {competition.shortName || competition.name}
                       </Text>
@@ -588,7 +612,7 @@ export default function HomeScreen() {
                 <View style={[styles.sectionIconBg, { backgroundColor: colors.liveBackground }]}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.live }} />
                 </View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                   {t('home.liveNow')}
                 </Text>
               </View>
@@ -613,6 +637,7 @@ export default function HomeScreen() {
                   match={match}
                   onPress={() => router.push(`/match/${match.id}`)}
                   liveTime={liveTimesMap.get(match.id)}
+                  countdown={countdownsMap.get(match.id)}
                 />
               ))}
             </View>
@@ -638,7 +663,7 @@ export default function HomeScreen() {
                       color={isTodayDay ? colors.accent : colors.info} 
                     />
                   </View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                     {dayLabel}
                   </Text>
                 </View>
@@ -662,6 +687,7 @@ export default function HomeScreen() {
                       match={match}
                       onPress={() => router.push(`/match/${match.id}`)}
                       liveTime={liveTimesMap.get(match.id)}
+                      countdown={countdownsMap.get(match.id)}
                     />
                   ))
                 ) : (
@@ -753,7 +779,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F44336',
+    backgroundColor: '#EF4444',
   },
   headerActions: {
     flexDirection: 'row',
@@ -777,7 +803,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#F44336',
+    backgroundColor: '#EF4444',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -77,7 +77,7 @@ export default function OperatorScreen() {
   const renderMatchCard = ({ item: match }: { item: Match }) => {
     const isLive = match.status === 'live' || match.status === 'halftime' || match.status === 'extra_time' || match.status === 'extra_time_halftime' || match.status === 'penalties';
     const isScheduled = match.status === 'scheduled';
-    const statusInfo = MATCH_STATUS[match.status] || { label: match.status, color: '#9E9E9E' };
+    const statusInfo = MATCH_STATUS[match.status] || { label: match.status, color: '#6B7280' };
 
     return (
       <TouchableOpacity
@@ -92,7 +92,7 @@ export default function OperatorScreen() {
         <View style={[styles.matchCardRow, { flexDirection }]}>
           {/* Home Team */}
           <View style={styles.matchTeam}>
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.homeTeam.shortName || match.homeTeam.name}
             </Text>
           </View>
@@ -126,7 +126,7 @@ export default function OperatorScreen() {
 
           {/* Away Team */}
           <View style={[styles.matchTeam, { alignItems: 'flex-end' }]}>
-            <Text style={[styles.matchTeamName, { color: colors.text, textAlign: 'right' }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text, textAlign: 'right' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.awayTeam.shortName || match.awayTeam.name}
             </Text>
           </View>

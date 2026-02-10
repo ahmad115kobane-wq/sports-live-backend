@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "سبورتس لايف"
+    "name": "ميني فوتبول"
   },
   "welcome": {
     "tagline": "تابع مبارياتك المفضلة لحظة بلحظة",
@@ -10,6 +10,9 @@
     "loginOrRegister": "تسجيل الدخول أو إنشاء حساب",
     "continueAsGuest": "الدخول كضيف",
     "termsNotice": "بالمتابعة، أنت توافق على شروط الاستخدام",
+    "agreeToTerms": "أوافق على",
+    "andText": "و",
+    "mustAgree": "يجب الموافقة على الشروط والخصوصية للمتابعة",
     "upgradeAccount": "ترقية الحساب",
     "upgradeDescription": "أنت تستخدم حساب ضيف. قم بالترقية للوصول لجميع المميزات",
     "guestAccount": "حساب ضيف"
@@ -101,7 +104,10 @@
     "vs": "ضد",
     "keyEvents": "أحداث مهمة",
     "allEvents": "جميع الأحداث",
-    "noEvents": "لا توجد أحداث حتى الآن",
+    "noEvents": "لا توجد أحداث",
+    "noEventsYet": "لا توجد أحداث حتى الآن",
+    "matchNotStarted": "المباراة لم تبدأ بعد",
+    "noEventsDesc": "ستظهر الأحداث عند حدوثها",
     "eventsWillAppear": "ستظهر الأحداث عند حدوثها",
     "eventsHere": "ستظهر أحداث المباراة هنا",
     "watchLive": "شاهد مباشرة",
@@ -257,6 +263,8 @@
     "rate": "قيّم التطبيق",
     "share": "شارك التطبيق",
     "logout": "تسجيل الخروج",
+    "logoutConfirm": "هل أنت متأكد من تسجيل الخروج؟",
+    "attention": "تنبيه",
     "login": "تسجيل الدخول",
     "register": "إنشاء حساب",
     "version": "الإصدار",
@@ -268,7 +276,26 @@
     "goalNotifications": "إشعارات الأهداف",
     "newsNotifications": "إشعارات الأخبار",
     "soundEnabled": "تفعيل الصوت",
-    "vibrationEnabled": "تفعيل الاهتزاز"
+    "vibrationEnabled": "تفعيل الاهتزاز",
+    "deleteAccount": "حذف الحساب",
+    "deleteAccountDesc": "حذف حسابك وجميع بياناتك نهائياً",
+    "deleteAccountConfirm": "هل أنت متأكد من حذف حسابك؟",
+    "deleteAccountWarning": "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك وطلباتك ومفضلاتك نهائياً.",
+    "deleteAccountSuccess": "تم حذف الحساب بنجاح",
+    "deleteAccountFailed": "فشل حذف الحساب",
+    "legalPages": "القانونية والخصوصية"
+  },
+  "about": {
+    "appInfo": "معلومات التطبيق",
+    "version": "الإصدار",
+    "platform": "المنصة",
+    "developer": "المطور",
+    "contact": "تواصل معنا",
+    "email": "البريد الإلكتروني",
+    "socialMedia": "وسائل التواصل",
+    "readOur": "اقرأ",
+    "allRightsReserved": "جميع الحقوق محفوظة",
+    "madeWithLove": ""
   },
   "profile": {
     "watched": "تمت مشاهدتها",
@@ -335,7 +362,7 @@
     "user": "مستخدم",
     "fillAllFields": "يرجى ملء جميع الحقول",
     "createAccount": "إنشاء حساب",
-    "joinToday": "انضم إلى سبورتس لايف اليوم",
+    "joinToday": "انضم إلى ميني فوتبول اليوم",
     "fullName": "الاسم الكامل",
     "enterName": "أدخل اسمك الكامل",
     "createPassword": "أنشئ كلمة مرور",
@@ -364,7 +391,34 @@
     "invalidAge": "يجب أن يكون العمر بين 13 و 100 سنة",
     "cityRequired": "المدينة مطلوبة",
     "personalInfo": "المعلومات الشخصية",
-    "accountInfo": "معلومات الحساب"
+    "accountInfo": "معلومات الحساب",
+    "verifyEmail": "تأكيد البريد الإلكتروني",
+    "verifyEmailSubtitle": "أدخل الرمز المرسل إلى بريدك الإلكتروني",
+    "verificationCode": "رمز التحقق",
+    "enterCode": "أدخل الرمز المكون من 6 أرقام",
+    "verify": "تأكيد",
+    "verifying": "جاري التحقق...",
+    "resendCode": "إعادة إرسال الرمز",
+    "resendIn": "إعادة الإرسال بعد",
+    "seconds": "ثانية",
+    "codeSent": "تم إرسال الرمز بنجاح",
+    "codeRequired": "الرمز مطلوب",
+    "invalidCode": "رمز غير صالح",
+    "emailVerified": "تم تأكيد البريد الإلكتروني بنجاح",
+    "forgotPasswordTitle": "نسيت كلمة المرور",
+    "forgotPasswordSubtitle": "أدخل بريدك الإلكتروني لإرسال رمز إعادة التعيين",
+    "sendResetCode": "إرسال رمز إعادة التعيين",
+    "sending": "جاري الإرسال...",
+    "resetCodeSent": "تم إرسال رمز إعادة التعيين",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "resetPasswordSubtitle": "أدخل الرمز وكلمة المرور الجديدة",
+    "newPassword": "كلمة المرور الجديدة",
+    "enterNewPassword": "أدخل كلمة المرور الجديدة",
+    "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+    "confirmNewPasswordPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+    "resetting": "جاري إعادة التعيين...",
+    "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح",
+    "backToLogin": "العودة لتسجيل الدخول"
   },
   "errors": {
     "networkError": "خطأ في الاتصال بالإنترنت",
@@ -672,7 +726,11 @@
     "itemsCount": "منتج",
     "storeManagement": "إدارة المتجر",
     "productsOffersCategories": "المنتجات والعروض والأقسام",
-    "viewMore": "عرض المزيد"
+    "viewMore": "عرض المزيد",
+    "featuredProducts": "منتجات مميزة",
+    "newlyAdded": "مضاف جديداً",
+    "discounts": "تخفيضات",
+    "viewAll": "عرض الكل"
   },
   "checkout": {
     "title": "إتمام الشراء",

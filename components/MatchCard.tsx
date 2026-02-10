@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import { MatchTime } from '@/hooks/useLiveMinute';
 import {
   View,
@@ -27,6 +27,7 @@ interface MatchCardProps {
   variant?: 'default' | 'compact' | 'detailed';
   liveMinute?: number | null;
   liveTime?: MatchTime | null;
+  countdown?: string;
 }
 
 function MatchCard({ 
@@ -36,6 +37,7 @@ function MatchCard({
   variant = 'default',
   liveMinute,
   liveTime,
+  countdown: externalCountdown,
 }: MatchCardProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
@@ -55,25 +57,8 @@ function MatchCard({
 
   const matchDate = new Date(match.startTime);
 
-  // Countdown for matches within 24 hours
-  const [countdown, setCountdown] = useState('');
-  useEffect(() => {
-    if (!isUpcoming) return;
-    const updateCountdown = () => {
-      const diff = matchDate.getTime() - Date.now();
-      if (diff <= 0 || diff > 24 * 60 * 60 * 1000) {
-        setCountdown('');
-        return;
-      }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
-    };
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [isUpcoming, matchDate.getTime()]);
+  // Use shared countdown from parent (with seconds), or empty
+  const countdown = externalCountdown || '';
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
@@ -82,7 +67,7 @@ function MatchCard({
           styles.container,
           { 
             backgroundColor: colors.card,
-            borderColor: isLive ? 'rgba(239, 68, 68, 0.35)' : colors.cardBorder,
+            borderColor: isLive ? (isDark ? 'rgba(168,168,168,0.25)' : 'rgba(0,0,0,0.15)') : colors.cardBorder,
           },
           isLive && styles.liveContainer,
         ]}
@@ -90,7 +75,7 @@ function MatchCard({
         {/* Live Top Accent */}
         {isLive && (
           <LinearGradient
-            colors={['rgba(239, 68, 68, 0.8)', 'rgba(239, 68, 68, 0.2)', 'transparent']}
+            colors={[colors.live, colors.liveLight, 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.liveAccent}
@@ -101,23 +86,23 @@ function MatchCard({
         <View style={[styles.header, { flexDirection }]}>
           <View style={[styles.competitionRow, { flexDirection }]}>
             <View style={[styles.competitionDot, { backgroundColor: isLive ? colors.live : colors.accent }]} />
-            <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+            <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.competition?.name || t('match.match')}
             </Text>
           </View>
           
           {isLive && showLiveIndicator ? (
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>
+            <View style={[styles.liveBadge, { backgroundColor: colors.liveLight }]}>
+              <View style={[styles.liveDot, { backgroundColor: colors.live }]} />
+              <Text style={[styles.liveText, { color: colors.live }]}>
                 {liveTime ? liveTime.display : (liveMinute ?? match.currentMinute) ? `${liveMinute ?? match.currentMinute}'` : 'LIVE'}
               </Text>
             </View>
           ) : isUpcoming ? (
             countdown ? (
-              <View style={styles.countdownBadge}>
-                <Ionicons name="time-outline" size={11} color="#3B82F6" />
-                <Text style={styles.countdownText}>{countdown}</Text>
+              <View style={[styles.countdownBadge, { backgroundColor: isDark ? 'rgba(168,168,168,0.1)' : 'rgba(92,92,92,0.08)' }]}>
+                <Ionicons name="time-outline" size={11} color={colors.accent} />
+                <Text style={[styles.countdownText, { color: colors.accent }]}>{countdown}</Text>
               </View>
             ) : (
               <View style={[styles.timeBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
@@ -152,6 +137,8 @@ function MatchCard({
                 match.homeScore > match.awayScore && isFinished && styles.winnerName
               ]} 
               numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
             >
               {match.homeTeam.name}
             </Text>
@@ -210,6 +197,8 @@ function MatchCard({
                 match.awayScore > match.homeScore && isFinished && styles.winnerName
               ]} 
               numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
             >
               {match.awayTeam.name}
             </Text>
@@ -279,19 +268,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     gap: 5,
   },
   liveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#EF4444',
   },
   liveText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#EF4444',
     letterSpacing: 0.3,
   },
   countdownBadge: {
@@ -300,13 +286,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     gap: 4,
   },
   countdownText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#3B82F6',
     fontVariant: ['tabular-nums'],
   },
   timeBadge: {
@@ -342,18 +326,19 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   teamName: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 17,
+    maxWidth: '100%',
   },
   winnerName: {
     fontWeight: '800',
   },
   scoreSection: {
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    minWidth: 80,
+    paddingHorizontal: SPACING.xs,
+    minWidth: 70,
   },
   vsContainer: {
     alignItems: 'center',

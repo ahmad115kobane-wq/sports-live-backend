@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Match } from '@/types';
 
 // ─── Types ───
@@ -185,38 +185,113 @@ export function useLiveMinutes(matches: Match[]): Map<string, number> {
   return minutes;
 }
 
+// ─── Hook: Shared countdown for upcoming matches (HH:MM:SS) ───
+// Single timer for ALL upcoming matches within 24h
+// Uses ref-based comparison to avoid unnecessary re-renders
+export function useCountdowns(matches: Match[]): Map<string, string> {
+  const [countdowns, setCountdowns] = useState<Map<string, string>>(new Map());
+  const matchesRef = useRef(matches);
+  const prevResultRef = useRef<Map<string, string>>(new Map());
+  matchesRef.current = matches;
+
+  const computeAndSet = useCallback(() => {
+    const map = new Map<string, string>();
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    for (const match of matchesRef.current) {
+      if (match.status !== 'scheduled') continue;
+      const diff = new Date(match.startTime).getTime() - now;
+      if (diff <= 0 || diff > DAY) continue;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      // Show HH:MM only (no seconds) to reduce re-renders
+      map.set(match.id, `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+    }
+    // Only update state if values actually changed
+    const prev = prevResultRef.current;
+    if (map.size !== prev.size) {
+      prevResultRef.current = map;
+      setCountdowns(map);
+      return;
+    }
+    let changed = false;
+    for (const [id, val] of map) {
+      if (prev.get(id) !== val) { changed = true; break; }
+    }
+    if (changed) {
+      prevResultRef.current = map;
+      setCountdowns(map);
+    }
+  }, []);
+
+  useEffect(() => {
+    computeAndSet();
+
+    const hasUpcoming = matches.some(m => {
+      if (m.status !== 'scheduled') return false;
+      const diff = new Date(m.startTime).getTime() - Date.now();
+      return diff > 0 && diff <= 24 * 60 * 60 * 1000;
+    });
+    if (!hasUpcoming) return;
+
+    // Tick every 60s — minute-level countdown is sufficient
+    const interval = setInterval(computeAndSet, 60000);
+    return () => clearInterval(interval);
+  }, [matches, computeAndSet]);
+
+  return countdowns;
+}
+
 // ─── Hook: Multiple matches with MM:SS (home page, premium) ───
 // Ticks every second but uses a single shared timer for all matches
+// Uses ref-based comparison to avoid unnecessary re-renders
 export function useLiveMatchTimes(matches: Match[]): Map<string, MatchTime> {
   const [times, setTimes] = useState<Map<string, MatchTime>>(new Map());
   const matchesRef = useRef(matches);
+  const prevResultRef = useRef<Map<string, MatchTime>>(new Map());
   matchesRef.current = matches;
 
-  const compute = useCallback(() => {
-    const ACTIVE_STATUSES = [...TICKING_STATUSES, ...PAUSED_STATUSES];
+  const ACTIVE = useMemo(() => [...TICKING_STATUSES, ...PAUSED_STATUSES], []);
+
+  const computeAndSet = useCallback(() => {
     const map = new Map<string, MatchTime>();
     for (const match of matchesRef.current) {
-      if (ACTIVE_STATUSES.includes(match.status)) {
+      if (ACTIVE.includes(match.status)) {
         const t = computeMatchTime(match);
         if (t) map.set(match.id, t);
       }
     }
-    return map;
-  }, []);
+    // Only update state if values actually changed
+    const prev = prevResultRef.current;
+    if (map.size !== prev.size) {
+      prevResultRef.current = map;
+      setTimes(map);
+      return;
+    }
+    let changed = false;
+    for (const [id, time] of map) {
+      const p = prev.get(id);
+      if (!p || p.minute !== time.minute || p.displayMinute !== time.displayMinute) {
+        changed = true;
+        break;
+      }
+    }
+    if (changed) {
+      prevResultRef.current = map;
+      setTimes(map);
+    }
+  }, [ACTIVE]);
 
   useEffect(() => {
-    setTimes(compute());
+    computeAndSet();
 
     const hasTicking = matches.some(m => TICKING_STATUSES.includes(m.status));
     if (!hasTicking) return;
 
-    // Single 1-second interval for ALL matches
-    const interval = setInterval(() => {
-      setTimes(compute());
-    }, 1000);
-
+    // Tick every 30s — minute-level precision is enough for card display
+    const interval = setInterval(computeAndSet, 30000);
     return () => clearInterval(interval);
-  }, [matches, compute]);
+  }, [matches, computeAndSet]);
 
   return times;
 }

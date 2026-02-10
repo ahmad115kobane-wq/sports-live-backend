@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Modal,
   Platform,
   StatusBar,
@@ -24,24 +23,25 @@ import { EVENT_TYPES, MATCH_STATUS } from '@/constants/config';
 import FootballFieldOperator from '@/components/FootballFieldOperator';
 import PlayerSelector from '@/components/PlayerSelector';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import EventIcon from '@/components/ui/EventIcon';
 
 // Quick-access events (most used, top row)
 const QUICK_EVENTS: { type: EventType; labelKey: string; color: string }[] = [
-  { type: 'goal', labelKey: 'events.goal', color: '#4CAF50' },
-  { type: 'yellow_card', labelKey: 'events.yellow_card', color: '#FFEB3B' },
-  { type: 'red_card', labelKey: 'events.red_card', color: '#F44336' },
-  { type: 'substitution', labelKey: 'events.substitution', color: '#2196F3' },
-  { type: 'penalty', labelKey: 'events.penalty', color: '#E91E63' },
+  { type: 'goal', labelKey: 'events.goal', color: '#22C55E' },
+  { type: 'yellow_card', labelKey: 'events.yellow_card', color: '#EAB308' },
+  { type: 'red_card', labelKey: 'events.red_card', color: '#EF4444' },
+  { type: 'substitution', labelKey: 'events.substitution', color: '#3B82F6' },
+  { type: 'penalty', labelKey: 'events.penalty', color: '#EC4899' },
 ];
 
 // Secondary events (less frequent)
 const MORE_EVENTS: { type: EventType; labelKey: string; color: string }[] = [
   { type: 'corner', labelKey: 'events.corner', color: '#00BCD4' },
-  { type: 'foul', labelKey: 'events.foul', color: '#FF9800' },
-  { type: 'offside', labelKey: 'events.offside', color: '#607D8B' },
-  { type: 'var_review', labelKey: 'events.var_review', color: '#9C27B0' },
-  { type: 'injury', labelKey: 'events.injury', color: '#FF5722' },
+  { type: 'foul', labelKey: 'events.foul', color: '#F59E0B' },
+  { type: 'offside', labelKey: 'events.offside', color: '#64748B' },
+  { type: 'var_review', labelKey: 'events.var_review', color: '#A855F7' },
+  { type: 'injury', labelKey: 'events.injury', color: '#F97316' },
 ];
 
 export default function OperatorMatchScreen() {
@@ -49,6 +49,7 @@ export default function OperatorMatchScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [match, setMatch] = useState<Match | null>(null);
@@ -158,7 +159,7 @@ export default function OperatorMatchScreen() {
       } catch (e) { /* ignore stats load error */ }
     } catch (error) {
       console.error('Error loading match:', error);
-      Alert.alert(t('common.error'), t('operator.failedLoadMatch'));
+      alert(t('common.error'), t('operator.failedLoadMatch'));
     }
   };
 
@@ -177,7 +178,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleStartMatch = async () => {
-    Alert.alert(
+    alert(
       t('operator.startMatch'),
       t('operator.startMatchConfirm'),
       [
@@ -190,7 +191,7 @@ export default function OperatorMatchScreen() {
               setAutoMinute(1);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedStartMatch'));
+              alert(t('common.error'), t('operator.failedStartMatch'));
             }
           },
         },
@@ -199,7 +200,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleHalftime = async () => {
-    Alert.alert(
+    alert(
       t('operator.half'),
       t('operator.halfTimeConfirm'),
       [
@@ -211,7 +212,7 @@ export default function OperatorMatchScreen() {
               await operatorApi.setHalftime(id!);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedHalftime'));
+              alert(t('common.error'), t('operator.failedHalftime'));
             }
           },
         },
@@ -220,7 +221,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleSecondHalf = async () => {
-    Alert.alert(
+    alert(
       t('operator.secondHalf'),
       t('operator.secondHalfConfirm'),
       [
@@ -233,7 +234,7 @@ export default function OperatorMatchScreen() {
               setAutoMinute(46);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedSecondHalf'));
+              alert(t('common.error'), t('operator.failedSecondHalf'));
             }
           },
         },
@@ -242,7 +243,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleEndMatch = async () => {
-    Alert.alert(
+    alert(
       t('operator.endMatch'),
       t('operator.endMatchConfirm'),
       [
@@ -255,7 +256,7 @@ export default function OperatorMatchScreen() {
               await operatorApi.endMatch(id!);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedEndMatch'));
+              alert(t('common.error'), t('operator.failedEndMatch'));
             }
           },
         },
@@ -271,7 +272,7 @@ export default function OperatorMatchScreen() {
   const handleSubmitStoppage = async () => {
     const min = parseInt(stoppageInput, 10);
     if (!min || min < 1 || min > 30) {
-      Alert.alert(t('common.error'), t('operator.invalidStoppage'));
+      alert(t('common.error'), t('operator.invalidStoppage'));
       return;
     }
     try {
@@ -280,12 +281,12 @@ export default function OperatorMatchScreen() {
       setShowStoppageModal(false);
       Vibration.vibrate(30);
     } catch (error) {
-      Alert.alert(t('common.error'), t('operator.failedStoppage'));
+      alert(t('common.error'), t('operator.failedStoppage'));
     }
   };
 
   const handleStartExtraTime = async () => {
-    Alert.alert(
+    alert(
       t('operator.extraTime'),
       t('operator.confirmExtraTime'),
       [
@@ -299,7 +300,7 @@ export default function OperatorMatchScreen() {
               setStoppageTime(null);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedExtraTime'));
+              alert(t('common.error'), t('operator.failedExtraTime'));
             }
           },
         },
@@ -308,7 +309,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleExtraTimeHalftime = async () => {
-    Alert.alert(
+    alert(
       t('operator.extraTimeHalf'),
       t('operator.confirmExtraTimeHalf'),
       [
@@ -320,7 +321,7 @@ export default function OperatorMatchScreen() {
               await operatorApi.setExtraTimeHalftime(id!);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedETHalftime'));
+              alert(t('common.error'), t('operator.failedETHalftime'));
             }
           },
         },
@@ -329,7 +330,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleStartET2 = async () => {
-    Alert.alert(
+    alert(
       t('operator.startET2'),
       t('operator.confirmET2'),
       [
@@ -342,7 +343,7 @@ export default function OperatorMatchScreen() {
               setAutoMinute(106);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedET2'));
+              alert(t('common.error'), t('operator.failedET2'));
             }
           },
         },
@@ -351,7 +352,7 @@ export default function OperatorMatchScreen() {
   };
 
   const handleStartPenalties = async () => {
-    Alert.alert(
+    alert(
       t('operator.penalties'),
       t('operator.confirmPenalties'),
       [
@@ -365,7 +366,7 @@ export default function OperatorMatchScreen() {
               setStoppageTime(null);
               loadMatch();
             } catch (error) {
-              Alert.alert(t('common.error'), t('operator.failedPenalties'));
+              alert(t('common.error'), t('operator.failedPenalties'));
             }
           },
         },
@@ -395,7 +396,7 @@ export default function OperatorMatchScreen() {
 
   const handleSubmitEvent = async () => {
     if (!selectedEventType) {
-      Alert.alert(
+      alert(
         t('common.error'),
         t('operator.selectEventType')
       );
@@ -405,14 +406,14 @@ export default function OperatorMatchScreen() {
     // Substitution requires both players and a team
     if (selectedEventType === 'substitution') {
       if (!selectedPlayer || !secondaryPlayer) {
-        Alert.alert(
+        alert(
           t('common.error'),
           t('operator.selectBothPlayers')
         );
         return;
       }
       if (!selectedTeamId) {
-        Alert.alert(
+        alert(
           t('common.error'),
           t('operator.selectTeamFirst')
         );
@@ -457,7 +458,7 @@ export default function OperatorMatchScreen() {
 
       loadMatch();
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.response?.data?.message || t('operator.failedAddEvent'));
+      alert(t('common.error'), error.response?.data?.message || t('operator.failedAddEvent'));
     } finally {
       setLoading(false);
     }
@@ -479,7 +480,7 @@ export default function OperatorMatchScreen() {
     );
   }
 
-  const statusInfo = MATCH_STATUS[match.status] || { label: match.status, color: '#9E9E9E' };
+  const statusInfo = MATCH_STATUS[match.status] || { label: match.status, color: '#6B7280' };
   const isLive = match.status === 'live';
   const isHalftime = match.status === 'halftime';
   const isScheduled = match.status === 'scheduled';
@@ -528,7 +529,7 @@ export default function OperatorMatchScreen() {
             onPress={() => setSelectedTeamId(match.homeTeamId)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.homeTeam.shortName || match.homeTeam.name}
             </Text>
           </TouchableOpacity>
@@ -550,7 +551,7 @@ export default function OperatorMatchScreen() {
             onPress={() => setSelectedTeamId(match.awayTeamId)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.awayTeam.shortName || match.awayTeam.name}
             </Text>
           </TouchableOpacity>
@@ -562,13 +563,13 @@ export default function OperatorMatchScreen() {
           {isScheduled && (
             <>
               <TouchableOpacity
-                style={[styles.controlBtn, { backgroundColor: '#2196F3' }]}
+                style={[styles.controlBtn, { backgroundColor: '#3B82F6' }]}
                 onPress={() => router.push({ pathname: '/operator/match/setup', params: { matchId: id } })}
               >
                 <Ionicons name="people" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.setupLineup')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#4CAF50' }]} onPress={handleStartMatch}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#22C55E' }]} onPress={handleStartMatch}>
                 <Ionicons name="play" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.startShort')}</Text>
               </TouchableOpacity>
@@ -577,7 +578,7 @@ export default function OperatorMatchScreen() {
           {/* Live: Halftime + Stoppage */}
           {isLive && (
             <>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#FF9800' }]} onPress={handleHalftime}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#F59E0B' }]} onPress={handleHalftime}>
                 <Ionicons name="pause" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.half')}</Text>
               </TouchableOpacity>
@@ -590,15 +591,15 @@ export default function OperatorMatchScreen() {
           {/* Halftime: Second Half + Extra Time + Penalties */}
           {isHalftime && (
             <>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#4CAF50' }]} onPress={handleSecondHalf}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#22C55E' }]} onPress={handleSecondHalf}>
                 <Ionicons name="play" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.secondHalfShort')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#E91E63' }]} onPress={handleStartExtraTime}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#F97316' }]} onPress={handleStartExtraTime}>
                 <Ionicons name="timer" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.extraTime')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#9C27B0' }]} onPress={handleStartPenalties}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#A855F7' }]} onPress={handleStartPenalties}>
                 <Ionicons name="football" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.penalties')}</Text>
               </TouchableOpacity>
@@ -607,11 +608,11 @@ export default function OperatorMatchScreen() {
           {/* Extra Time: ET Halftime + Penalties + Stoppage */}
           {isExtraTime && (
             <>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#FF9800' }]} onPress={handleExtraTimeHalftime}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#F59E0B' }]} onPress={handleExtraTimeHalftime}>
                 <Ionicons name="pause" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.extraTimeHalf')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#9C27B0' }]} onPress={handleStartPenalties}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#A855F7' }]} onPress={handleStartPenalties}>
                 <Ionicons name="football" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.penalties')}</Text>
               </TouchableOpacity>
@@ -624,11 +625,11 @@ export default function OperatorMatchScreen() {
           {/* ET Halftime: Start ET2 + Penalties */}
           {isExtraTimeHalftime && (
             <>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#4CAF50' }]} onPress={handleStartET2}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#22C55E' }]} onPress={handleStartET2}>
                 <Ionicons name="play" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.startET2')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#9C27B0' }]} onPress={handleStartPenalties}>
+              <TouchableOpacity style={[styles.controlBtn, { backgroundColor: '#A855F7' }]} onPress={handleStartPenalties}>
                 <Ionicons name="football" size={14} color="#fff" />
                 <Text style={styles.controlBtnText}>{t('operator.penalties')}</Text>
               </TouchableOpacity>
@@ -677,7 +678,7 @@ export default function OperatorMatchScreen() {
                 <Text style={[
                   styles.possessionBtnText,
                   { color: possessionTeam === 'home' ? '#fff' : colors.text },
-                ]} numberOfLines={1}>
+                ]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                   {match.homeTeam.shortName || match.homeTeam.name}
                 </Text>
                 <Text style={[
@@ -708,7 +709,7 @@ export default function OperatorMatchScreen() {
                 <Text style={[
                   styles.possessionBtnText,
                   { color: possessionTeam === 'away' ? '#fff' : colors.text },
-                ]} numberOfLines={1}>
+                ]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                   {match.awayTeam.shortName || match.awayTeam.name}
                 </Text>
                 <Text style={[
@@ -832,22 +833,22 @@ export default function OperatorMatchScreen() {
                   {t('operator.substituteIn')}
                 </Text>
                 {secondaryPlayer ? (
-                  <View style={[styles.selectedBanner, { backgroundColor: '#2196F3' + '15', borderColor: '#2196F3' }]}>
-                    <View style={[styles.playerBadge, { backgroundColor: '#2196F3' }]}>
+                  <View style={[styles.selectedBanner, { backgroundColor: '#3B82F6' + '15', borderColor: '#3B82F6' }]}>
+                    <View style={[styles.playerBadge, { backgroundColor: '#3B82F6' }]}>
                       <Text style={styles.playerBadgeNum}>{secondaryPlayer.shirtNumber || '-'}</Text>
                     </View>
                     <Text style={[styles.selectedName, { color: colors.text }]}>{secondaryPlayer.name}</Text>
                     <TouchableOpacity onPress={() => setSecondaryPlayer(null)}>
-                      <Ionicons name="close-circle" size={20} color="#2196F3" />
+                      <Ionicons name="close-circle" size={20} color="#3B82F6" />
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity
-                    style={[styles.selectSubBtn, { backgroundColor: colors.surface, borderColor: '#2196F3' }]}
+                    style={[styles.selectSubBtn, { backgroundColor: colors.surface, borderColor: '#3B82F6' }]}
                     onPress={() => { setSelectingSecondary(true); setShowPlayerModal(true); }}
                   >
-                    <Ionicons name="add-circle-outline" size={18} color="#2196F3" />
-                    <Text style={{ color: '#2196F3', fontSize: 12, fontWeight: '600' }}>
+                    <Ionicons name="add-circle-outline" size={18} color="#3B82F6" />
+                    <Text style={{ color: '#3B82F6', fontSize: 12, fontWeight: '600' }}>
                       {t('operator.selectSub')}
                     </Text>
                   </TouchableOpacity>
@@ -885,7 +886,7 @@ export default function OperatorMatchScreen() {
                           {player.shirtNumber || '-'}
                         </Text>
                       </View>
-                      <Text style={[styles.playerCardName, { color: colors.text }]} numberOfLines={1}>
+                      <Text style={[styles.playerCardName, { color: colors.text }]} numberOfLines={2}>
                         {player.name?.split(' ').pop() || player.name}
                       </Text>
                     </TouchableOpacity>
@@ -946,7 +947,7 @@ export default function OperatorMatchScreen() {
                 <View key={event.id || idx} style={[styles.recentEventRow, { backgroundColor: colors.surface, flexDirection }]}>
                   <EventIcon type={event.type} size={16} color={evtConfig?.color || '#607D8B'} />
                   <Text style={[styles.recentEventMinute, { color: colors.textSecondary }]}>{event.minute}'</Text>
-                  <Text style={[styles.recentEventText, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.recentEventText, { color: colors.text }]} numberOfLines={2}>
                     {t(`events.${event.type}`) || evtConfig?.label || event.type}
                     {event.player ? ` - ${event.player.name}` : ''}
                   </Text>
@@ -1371,7 +1372,7 @@ const styles = StyleSheet.create({
   floatingSubmitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#22C55E',
     paddingHorizontal: SPACING.xl,
     height: 40,
     borderRadius: 20,

@@ -10,6 +10,7 @@ import {
   Platform,
   Share,
   ScrollView,
+  InteractionManager,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -46,7 +47,9 @@ export default function MatchDetailScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
 
-  const { currentMatch, fetchMatchById, isLoading } = useMatchStore();
+  const currentMatch = useMatchStore(s => s.currentMatch);
+  const fetchMatchById = useMatchStore(s => s.fetchMatchById);
+  const isLoading = useMatchStore(s => s.isLoadingMatch);
   const { isAuthenticated } = useAuthStore();
   const { joinMatch, leaveMatch } = useSocket();
 
@@ -57,11 +60,13 @@ export default function MatchDetailScreen() {
   const liveTime = useLiveMatchTime(currentMatch);
 
   useEffect(() => {
-    if (id) {
+    if (!id) return;
+    const task = InteractionManager.runAfterInteractions(() => {
       fetchMatchById(id);
       joinMatch(id);
-    }
+    });
     return () => {
+      task.cancel();
       if (id) leaveMatch(id);
     };
   }, [id]);
@@ -172,7 +177,7 @@ export default function MatchDetailScreen() {
         {/* Competition */}
         <View style={styles.competitionBadge}>
           <Ionicons name="trophy" size={11} color="#FFD700" />
-          <Text style={styles.competitionText} numberOfLines={1}>
+          <Text style={styles.competitionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
             {currentMatch.competition?.name || t('match.match')}
           </Text>
         </View>
@@ -187,7 +192,7 @@ export default function MatchDetailScreen() {
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2}>{currentMatch.homeTeam.name}</Text>
+            <Text style={styles.teamName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{currentMatch.homeTeam.name}</Text>
           </View>
 
           {/* Score */}
@@ -228,7 +233,7 @@ export default function MatchDetailScreen() {
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2}>{currentMatch.awayTeam.name}</Text>
+            <Text style={styles.teamName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{currentMatch.awayTeam.name}</Text>
           </View>
         </View>
 
@@ -238,13 +243,13 @@ export default function MatchDetailScreen() {
             {currentMatch.venue && (
               <View style={styles.detailChip}>
                 <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.venue}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2}>{currentMatch.venue}</Text>
               </View>
             )}
             {currentMatch.referee && (
               <View style={styles.detailChip}>
                 <Ionicons name="person-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.referee}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2}>{currentMatch.referee}</Text>
               </View>
             )}
           </View>
@@ -321,7 +326,13 @@ export default function MatchDetailScreen() {
                 }
                 match={currentMatch}
               />
-            ) : null}
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                  {isLive ? t('match.noEventsYet') : t('match.noEvents')}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -444,17 +455,18 @@ const styles = StyleSheet.create({
   },
   teamName: {
     color: 'rgba(255,255,255,0.95)',
-    ...TYPOGRAPHY.labelMedium,
+    ...TYPOGRAPHY.bodyMedium,
     fontWeight: '700',
     textAlign: 'center',
     lineHeight: 18,
+    maxWidth: '100%',
   },
 
   // ── Score ──
   scoreCol: {
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    minWidth: 100,
+    paddingHorizontal: SPACING.xs,
+    minWidth: 80,
   },
   scoreRow: {
     flexDirection: 'row',
@@ -605,28 +617,15 @@ const styles = StyleSheet.create({
 
   // ── Empty State ──
   emptyCard: {
-    padding: SPACING.xxl,
+    padding: SPACING.lg,
     alignItems: 'center',
     borderRadius: RADIUS.xl,
     marginTop: SPACING.md,
   },
-  emptyIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
   emptyTitle: {
     ...TYPOGRAPHY.titleMedium,
-    fontWeight: '700',
-    marginBottom: SPACING.xs,
-  },
-  emptySubtitle: {
-    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 20,
   },
   eventsFilterRow: {
     flexDirection: 'row',

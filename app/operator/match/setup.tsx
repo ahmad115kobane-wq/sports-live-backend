@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Platform,
   StatusBar,
   ActivityIndicator,
@@ -20,6 +19,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { operatorApi } from '@/services/api';
 import { Player } from '@/types';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { getCategoryRules, getFormationPositions } from '@/constants/categoryRules';
 
@@ -38,6 +38,7 @@ export default function MatchSetupScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
 
   const [match, setMatch] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -117,7 +118,7 @@ export default function MatchSetupScreen() {
         }
       }
     } catch (error) {
-      Alert.alert(t('common.error'), t('operator.failedLoadMatch'));
+      alert(t('common.error'), t('operator.failedLoadMatch'));
     } finally {
       setLoading(false);
     }
@@ -293,11 +294,11 @@ export default function MatchSetupScreen() {
       }
 
       Vibration.vibrate(50);
-      Alert.alert(t('common.success'), t('operator.lineupSaved'), [
+      alert(t('common.success'), t('operator.lineupSaved'), [
         { text: t('common.ok'), onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.response?.data?.message || t('operator.failedSaveLineup'));
+      alert(t('common.error'), error.response?.data?.message || t('operator.failedSaveLineup'));
     } finally {
       setSaving(false);
     }
@@ -339,14 +340,14 @@ export default function MatchSetupScreen() {
         <View style={[styles.matchInfo, { flexDirection }]}>
           <View style={styles.matchTeamCol}>
             <TeamLogo team={match.homeTeam} size="small" />
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.homeTeam.shortName}
             </Text>
           </View>
           <Text style={[styles.matchVs, { color: colors.textTertiary }]}>{t('match.vs')}</Text>
           <View style={styles.matchTeamCol}>
             <TeamLogo team={match.awayTeam} size="small" />
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
               {match.awayTeam.shortName}
             </Text>
           </View>
@@ -382,7 +383,7 @@ export default function MatchSetupScreen() {
               onPress={() => setSelectedTeam('home')}
             >
               <TeamLogo team={match.homeTeam} size="small" />
-              <Text style={[styles.teamTabText, { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary }]} numberOfLines={1}>
+              <Text style={[styles.teamTabText, { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {match.homeTeam.shortName}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: selectedTeam === 'home' ? '#3B82F6' : colors.backgroundSecondary }]}>
@@ -397,7 +398,7 @@ export default function MatchSetupScreen() {
               onPress={() => setSelectedTeam('away')}
             >
               <TeamLogo team={match.awayTeam} size="small" />
-              <Text style={[styles.teamTabText, { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary }]} numberOfLines={1}>
+              <Text style={[styles.teamTabText, { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                 {match.awayTeam.shortName}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: selectedTeam === 'away' ? '#EF4444' : colors.backgroundSecondary }]}>
@@ -478,7 +479,7 @@ export default function MatchSetupScreen() {
                     <View style={[styles.shirtNum, { backgroundColor: teamColor }]}>
                       <Text style={styles.shirtNumText}>{sp.player?.shirtNumber || '-'}</Text>
                     </View>
-                    <Text style={[styles.playerRowName, { color: colors.text }]} numberOfLines={1}>{sp.player?.name}</Text>
+                    <Text style={[styles.playerRowName, { color: colors.text }]} numberOfLines={2}>{sp.player?.name}</Text>
                     <TouchableOpacity
                       style={[styles.captainBtn, currentCaptainId === sp.playerId && { backgroundColor: '#FFD700' }]}
                       onPress={() => toggleCaptain(sp.playerId)}
@@ -504,7 +505,7 @@ export default function MatchSetupScreen() {
         <View style={styles.section}>
           <View style={[styles.sectionHeaderRow, { flexDirection }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              <Ionicons name="swap-horizontal" size={16} color="#FF9800" />
+              <Ionicons name="swap-horizontal" size={16} color="#F59E0B" />
               {'  '}{t('operator.substitutes')} ({currentSubs.length})
             </Text>
             {currentSubs.length > 0 && (
@@ -518,13 +519,13 @@ export default function MatchSetupScreen() {
             <View style={styles.playersList}>
               {currentSubs.map((sp) => (
                 <View key={sp.playerId} style={[styles.playerRow, { backgroundColor: colors.surface, flexDirection }]}>
-                  <View style={[styles.posLabel, { backgroundColor: '#FF9800' + '20' }]}>
-                    <Text style={[styles.posLabelText, { color: '#FF9800' }]}>SUB</Text>
+                  <View style={[styles.posLabel, { backgroundColor: '#F59E0B' + '20' }]}>
+                    <Text style={[styles.posLabelText, { color: '#F59E0B' }]}>SUB</Text>
                   </View>
-                  <View style={[styles.shirtNum, { backgroundColor: '#FF9800' }]}>
+                  <View style={[styles.shirtNum, { backgroundColor: '#F59E0B' }]}>
                     <Text style={styles.shirtNumText}>{sp.player?.shirtNumber || '-'}</Text>
                   </View>
-                  <Text style={[styles.playerRowName, { color: colors.text }]} numberOfLines={1}>{sp.player?.name}</Text>
+                  <Text style={[styles.playerRowName, { color: colors.text }]} numberOfLines={2}>{sp.player?.name}</Text>
                   <TouchableOpacity onPress={() => toggleSub(sp.player)}>
                     <Ionicons name="close-circle" size={22} color="#EF4444" />
                   </TouchableOpacity>
@@ -551,7 +552,7 @@ export default function MatchSetupScreen() {
                   <Text style={[styles.shirtNumText, { color: colors.text }]}>{player.shirtNumber || '-'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.playerRowName, { color: colors.text }]} numberOfLines={1}>{player.name}</Text>
+                  <Text style={[styles.playerRowName, { color: colors.text }]} numberOfLines={2}>{player.name}</Text>
                   <Text style={[styles.playerRowPos, { color: colors.textTertiary }]}>
                     {player.position ? t(`positions.${player.position}`) : '-'}
                   </Text>
@@ -565,11 +566,11 @@ export default function MatchSetupScreen() {
                   <Text style={[styles.addBtnLabel, { color: teamColor }]}>{t('operator.starter')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.addSubBtn, { backgroundColor: '#FF9800' + '15', borderColor: '#FF9800' }]}
+                  style={[styles.addSubBtn, { backgroundColor: '#F59E0B' + '15', borderColor: '#F59E0B' }]}
                   onPress={() => toggleSub(player)}
                 >
-                  <Ionicons name="add" size={16} color="#FF9800" />
-                  <Text style={[styles.addBtnLabel, { color: '#FF9800' }]}>{t('operator.sub')}</Text>
+                  <Ionicons name="add" size={16} color="#F59E0B" />
+                  <Text style={[styles.addBtnLabel, { color: '#F59E0B' }]}>{t('operator.sub')}</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   saveBtn: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#22C55E',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,

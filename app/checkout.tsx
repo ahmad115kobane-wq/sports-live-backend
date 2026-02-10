@@ -9,7 +9,6 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Image,
 } from 'react-native';
@@ -18,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCartStore } from '@/store/cartStore';
 import { orderApi } from '@/services/api';
@@ -34,6 +34,7 @@ export default function CheckoutScreen() {
   const { colorScheme, isDark } = useTheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, language } = useRTL();
+  const { alert } = useAlert();
   const { items, getTotal, clearCart } = useCartStore();
 
   const [customerName, setCustomerName] = useState('');
@@ -46,15 +47,15 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (!customerName.trim()) {
-      Alert.alert(t('checkout.alert'), t('checkout.nameRequired'));
+      alert(t('checkout.alert'), t('checkout.nameRequired'));
       return;
     }
     if (!customerPhone.trim() || customerPhone.trim().length < 10) {
-      Alert.alert(t('checkout.alert'), t('checkout.phoneRequired'));
+      alert(t('checkout.alert'), t('checkout.phoneRequired'));
       return;
     }
     if (!customerAddress.trim()) {
-      Alert.alert(t('checkout.alert'), t('checkout.addressRequired'));
+      alert(t('checkout.alert'), t('checkout.addressRequired'));
       return;
     }
 
@@ -79,7 +80,7 @@ export default function CheckoutScreen() {
       });
 
       clearCart();
-      Alert.alert(
+      alert(
         t('checkout.orderSent'),
         t('checkout.orderSentDesc'),
         [
@@ -95,7 +96,7 @@ export default function CheckoutScreen() {
       );
     } catch (error: any) {
       console.error('Place order error:', error);
-      Alert.alert(t('common.error'), t('checkout.orderError'));
+      alert(t('common.error'), t('checkout.orderError'));
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +150,7 @@ export default function CheckoutScreen() {
                   )}
                 </View>
                 <View style={[styles.summaryItemInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                  <Text style={[styles.summaryItemName, { color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.summaryItemName, { color: colors.text }]} numberOfLines={2}>
                     {getLocalizedName(item, language)}
                   </Text>
                   <View style={[styles.summaryItemMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>

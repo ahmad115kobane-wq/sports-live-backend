@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
   Switch,
   RefreshControl,
   Image,
@@ -18,8 +17,8 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
+import { useAlert } from '@/contexts/AlertContext';
 import { storeApi, orderApi } from '@/services/api';
-import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
 import * as ImagePicker from 'expo-image-picker';
 import { API_URL } from '@/constants/config';
@@ -114,6 +113,7 @@ export default function AdminStoreScreen() {
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
   const { t, isRTL, flexDirection } = useRTL();
+  const { alert } = useAlert();
 
   const [activeTab, setActiveTab] = useState<'categories' | 'products' | 'banners' | 'orders'>('categories');
   const [categories, setCategories] = useState<StoreCategory[]>([]);
@@ -132,9 +132,7 @@ export default function AdminStoreScreen() {
   const [editingProduct, setEditingProduct] = useState<StoreProduct | null>(null);
   const [editingBanner, setEditingBanner] = useState<StoreBanner | null>(null);
 
-  // Dialog
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [dialogConfig, setDialogConfig] = useState<any>({ type: 'error', title: '', message: '' });
+
 
   // Category form
   const [catName, setCatName] = useState('');
@@ -216,8 +214,7 @@ export default function AdminStoreScreen() {
   const onRefresh = () => { setRefreshing(true); loadData(); };
 
   const showError = (title: string, message: string) => {
-    setDialogConfig({ type: 'error', title, message });
-    setDialogVisible(true);
+    alert(title, message);
   };
 
   // ─── Category CRUD ───
@@ -264,7 +261,7 @@ export default function AdminStoreScreen() {
   };
 
   const deleteCategory = (cat: StoreCategory) => {
-    Alert.alert('حذف الفئة', `هل أنت متأكد من حذف "${cat.nameAr}"؟`, [
+    alert('حذف الفئة', `هل أنت متأكد من حذف "${cat.nameAr}"؟`, [
       { text: 'إلغاء', style: 'cancel' },
       {
         text: 'حذف', style: 'destructive',
@@ -383,7 +380,7 @@ export default function AdminStoreScreen() {
   };
 
   const deleteProduct = (prod: StoreProduct) => {
-    Alert.alert('حذف المنتج', `هل أنت متأكد من حذف "${prod.nameAr}"؟`, [
+    alert('حذف المنتج', `هل أنت متأكد من حذف "${prod.nameAr}"؟`, [
       { text: 'إلغاء', style: 'cancel' },
       {
         text: 'حذف', style: 'destructive',
@@ -448,7 +445,7 @@ export default function AdminStoreScreen() {
   };
 
   const deleteBanner = (ban: StoreBanner) => {
-    Alert.alert('حذف العرض', `هل أنت متأكد من حذف "${ban.titleAr}"؟`, [
+    alert('حذف العرض', `هل أنت متأكد من حذف "${ban.titleAr}"؟`, [
       { text: 'إلغاء', style: 'cancel' },
       {
         text: 'حذف', style: 'destructive',
@@ -653,8 +650,8 @@ export default function AdminStoreScreen() {
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.listItemTitle, { color: colors.text }]} numberOfLines={1}>{prod.nameAr}</Text>
-                    <Text style={[styles.listItemSub, { color: colors.textTertiary }]} numberOfLines={1}>
+                    <Text style={[styles.listItemTitle, { color: colors.text }]} numberOfLines={2}>{prod.nameAr}</Text>
+                    <Text style={[styles.listItemSub, { color: colors.textTertiary }]} numberOfLines={2}>
                       {prod.name}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
@@ -664,7 +661,7 @@ export default function AdminStoreScreen() {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
                       <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(99,102,241,0.1)' }]}>
-                        <Text style={{ color: '#6366f1', fontSize: 10, fontWeight: '600' }}>{prod.category?.nameAr || '—'}</Text>
+                        <Text style={{ color: '#A8A8A8', fontSize: 10, fontWeight: '600' }}>{prod.category?.nameAr || '—'}</Text>
                       </View>
                       {prod.badge ? <View style={[styles.inactiveBadge, { backgroundColor: prod.badge === 'new' ? 'rgba(16,185,129,0.1)' : prod.badge === 'hot' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)' }]}><Text style={{ color: prod.badge === 'new' ? '#10b981' : prod.badge === 'hot' ? '#f59e0b' : '#ef4444', fontSize: 10, fontWeight: '600' }}>{prod.badge}</Text></View> : null}
                       {prod.isFeatured && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(245,158,11,0.1)' }]}><Ionicons name="star" size={10} color="#f59e0b" /></View>}
@@ -675,7 +672,7 @@ export default function AdminStoreScreen() {
                 </View>
                 <View style={[styles.listItemActions, { flexDirection }]}>
                   <TouchableOpacity onPress={() => openProductModal(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
-                    <Ionicons name="create-outline" size={16} color="#6366f1" />
+                    <Ionicons name="create-outline" size={16} color="#A8A8A8" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteProduct(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                     <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -726,7 +723,7 @@ export default function AdminStoreScreen() {
                   </View>
                   <View style={[styles.listItemActions, { flexDirection, marginTop: SPACING.sm }]}>
                     <TouchableOpacity onPress={() => openBannerModal(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
-                      <Ionicons name="create-outline" size={16} color="#6366f1" />
+                      <Ionicons name="create-outline" size={16} color="#A8A8A8" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteBanner(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                       <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -796,7 +793,7 @@ export default function AdminStoreScreen() {
                   <View style={[styles.orderDetailRows]}>
                     <View style={[styles.orderDetailRow, { flexDirection }]}>
                       <Ionicons name="location-outline" size={13} color={colors.textTertiary} />
-                      <Text style={[styles.orderAddress, { color: colors.textTertiary }]} numberOfLines={1}>{order.customerAddress}</Text>
+                      <Text style={[styles.orderAddress, { color: colors.textTertiary }]} numberOfLines={2}>{order.customerAddress}</Text>
                     </View>
                     <Text style={[styles.orderDate, { color: colors.textTertiary }]}>
                       {new Date(order.createdAt).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -950,7 +947,7 @@ export default function AdminStoreScreen() {
               </View>
               <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
                 <TouchableOpacity onPress={() => pickImage('product')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)', flex: 1 }]} disabled={uploading}>
-                  {uploading ? <ActivityIndicator size="small" color="#6366f1" /> : <><Ionicons name="camera-outline" size={16} color="#6366f1" /><Text style={{ color: '#6366f1', fontSize: 12, fontWeight: '600' }}>تغيير الصورة</Text></>}
+                  {uploading ? <ActivityIndicator size="small" color="#A8A8A8" /> : <><Ionicons name="camera-outline" size={16} color="#A8A8A8" /><Text style={{ color: '#A8A8A8', fontSize: 12, fontWeight: '600' }}>تغيير الصورة</Text></>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setProdImageUrl('')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                   <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -974,8 +971,8 @@ export default function AdminStoreScreen() {
           <View style={{ flexDirection: 'row', gap: SPACING.xs, marginBottom: SPACING.md, flexWrap: 'wrap' }}>
             {BADGE_OPTIONS.map((b) => (
               <TouchableOpacity key={b.value} onPress={() => setProdBadge(b.value)}
-                style={[styles.badgeOption, { backgroundColor: prodBadge === b.value ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(99,102,241,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: prodBadge === b.value ? '#6366f1' : 'transparent' }]}>
-                <Text style={{ color: prodBadge === b.value ? '#6366f1' : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{b.label}</Text>
+                style={[styles.badgeOption, { backgroundColor: prodBadge === b.value ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(99,102,241,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: prodBadge === b.value ? '#A8A8A8' : 'transparent' }]}>
+                <Text style={{ color: prodBadge === b.value ? '#A8A8A8' : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{b.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -987,8 +984,8 @@ export default function AdminStoreScreen() {
               const selected = prodSizes.includes(size);
               return (
                 <TouchableOpacity key={size} onPress={() => toggleSize(size)}
-                  style={[styles.sizeChip, { backgroundColor: selected ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(99,102,241,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: selected ? '#6366f1' : 'transparent' }]}>
-                  <Text style={{ color: selected ? '#6366f1' : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{size}</Text>
+                  style={[styles.sizeChip, { backgroundColor: selected ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(99,102,241,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: selected ? '#A8A8A8' : 'transparent' }]}>
+                  <Text style={{ color: selected ? '#A8A8A8' : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{size}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -1001,7 +998,7 @@ export default function AdminStoreScreen() {
               const selected = prodColors.includes(c.hex);
               return (
                 <TouchableOpacity key={c.hex} onPress={() => toggleColor(c.hex)} style={{ alignItems: 'center', gap: 3 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.hex, borderWidth: selected ? 3 : 2, borderColor: selected ? '#6366f1' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'), alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.hex, borderWidth: selected ? 3 : 2, borderColor: selected ? '#A8A8A8' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'), alignItems: 'center', justifyContent: 'center' }}>
                     {selected && <Ionicons name="checkmark" size={16} color={c.hex === '#FFFFFF' || c.hex === '#F59E0B' ? '#000' : '#fff'} />}
                   </View>
                   <Text style={{ fontSize: 9, color: colors.textTertiary }}>{c.name}</Text>
@@ -1053,7 +1050,7 @@ export default function AdminStoreScreen() {
               </View>
               <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm }}>
                 <TouchableOpacity onPress={() => pickImage('banner')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)', flex: 1 }]} disabled={uploading}>
-                  {uploading ? <ActivityIndicator size="small" color="#6366f1" /> : <><Ionicons name="camera-outline" size={16} color="#6366f1" /><Text style={{ color: '#6366f1', fontSize: 12, fontWeight: '600' }}>تغيير</Text></>}
+                  {uploading ? <ActivityIndicator size="small" color="#A8A8A8" /> : <><Ionicons name="camera-outline" size={16} color="#A8A8A8" /><Text style={{ color: '#A8A8A8', fontSize: 12, fontWeight: '600' }}>تغيير</Text></>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setBanImageUrl('')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                   <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -1274,19 +1271,7 @@ export default function AdminStoreScreen() {
         )}
       </AppModal>
 
-      {/* Dialog */}
-      <AppDialog
-        visible={dialogVisible}
-        type={dialogConfig.type}
-        title={dialogConfig.title}
-        message={dialogConfig.message}
-        onConfirm={() => {
-          setDialogVisible(false);
-          if (dialogConfig.onConfirm) dialogConfig.onConfirm();
-        }}
-        onCancel={() => setDialogVisible(false)}
-        showCancel={dialogConfig.showCancel}
-      />
+      {/* Dialog - now handled by AlertContext */}
     </View>
   );
 }
