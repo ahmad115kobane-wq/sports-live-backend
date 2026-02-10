@@ -1,6 +1,8 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { Server as SocketServer } from 'socket.io';
 import dotenv from 'dotenv';
@@ -47,10 +49,45 @@ const io = new SocketServer(server, {
 // Make io accessible to routes
 app.set('io', io);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ── Security Middleware ──
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// CORS — restrict in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['*'];
+app.use(cors({
+  origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Body size limits (prevent DoS)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ── Rate Limiting ──
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 attempts per window
+  message: { success: false, message: 'Too many attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute
+  message: { success: false, message: 'Too many requests, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting
+app.use('/api/auth', authLimiter);
+app.use('/api/', apiLimiter);
 
 // Serve static files (team logos, etc.)
 app.use('/teams', express.static(path.join(__dirname, '../public/teams')));
@@ -79,7 +116,13 @@ app.use('/api/store', storeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/legal', legalRoutes);
-app.use('/api/seed', seedRoutes);
+// Seed routes — protected by admin auth in production
+if (process.env.NODE_ENV === 'production') {
+  const { authenticate, isAdmin } = require('./middleware/auth.middleware');
+  app.use('/api/seed', authenticate, isAdmin, seedRoutes);
+} else {
+  app.use('/api/seed', seedRoutes);
+}
 
 // Serve news images
 app.use('/news', express.static(path.join(__dirname, '../public/news')));
@@ -96,12 +139,13 @@ app.use('/sliders', express.static(path.join(__dirname, '../public/sliders')));
 // Setup Socket handlers
 setupSocketHandlers(io);
 
-// Error handling middleware
+// Error handling middleware — hide details in production
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err);
+  const isProd = process.env.NODE_ENV === 'production';
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal server error',
+    message: isProd ? 'Internal server error' : (err.message || 'Internal server error'),
   });
 });
 

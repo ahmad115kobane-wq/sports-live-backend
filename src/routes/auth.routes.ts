@@ -212,67 +212,75 @@ router.post('/guest', async (req: any, res: any) => {
   }
 });
 
-// Upgrade guest to full account
-router.post('/upgrade-guest', async (req: any, res: any) => {
-  try {
-    const { guestId, name, email, password } = req.body;
+// Upgrade guest to full account (requires valid guest token)
+router.post(
+  '/upgrade-guest',
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email')
+      .isEmail({ allow_utf8_local_part: true, require_tld: false })
+      .withMessage('Valid email is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  async (req: any, res: any) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+      // Verify caller owns this guest account via JWT
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already registered',
+      const token = authHeader.split(' ')[1];
+      let decoded: { id: string; role: string };
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; role: string };
+      } catch {
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+      }
+
+      // Must be a guest account
+      if (decoded.role !== 'guest') {
+        return res.status(403).json({ success: false, message: 'Only guest accounts can be upgraded' });
+      }
+
+      const { name, email, password } = req.body;
+
+      // Check if email already exists
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'Email already registered' });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const user = await prisma.user.update({
+        where: { id: decoded.id },
+        data: { name, email, passwordHash, role: 'user' },
+        select: { id: true, name: true, email: true, role: true, createdAt: true },
       });
+
+      const newToken = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        process.env.JWT_SECRET!,
+        { expiresIn: '7d' }
+      );
+
+      res.json({
+        success: true,
+        message: 'Account upgraded successfully',
+        data: { user, token: newToken },
+      });
+    } catch (error) {
+      console.error('Upgrade guest error:', error);
+      res.status(500).json({ success: false, message: 'Failed to upgrade account' });
     }
-
-    // Hash new password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Update guest account to full account
-    const user = await prisma.user.update({
-      where: { id: guestId },
-      data: {
-        name,
-        email,
-        passwordHash,
-        role: 'user',
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    });
-
-    // Generate new token
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      success: true,
-      message: 'Account upgraded successfully',
-      data: {
-        user,
-        token,
-      },
-    });
-  } catch (error) {
-    console.error('Upgrade guest error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upgrade account',
-    });
   }
-});
+);
 
 // Delete own account (self-delete)
 router.delete('/delete-account', async (req: any, res: any) => {
