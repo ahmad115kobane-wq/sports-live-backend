@@ -233,14 +233,19 @@ router.get('/competitions', authenticate, isAdmin, async (req, res) => {
 // Create competition
 router.post('/competitions', authenticate, isAdmin, async (req, res) => {
   try {
-    const { name, logoUrl, country, season } = req.body;
+    const { name, shortName, logoUrl, country, season, type, icon, isActive, sortOrder } = req.body;
 
     const competition = await prisma.competition.create({
       data: {
         name,
-        logoUrl,
-        country,
-        season,
+        ...(shortName !== undefined && { shortName }),
+        ...(logoUrl !== undefined && { logoUrl }),
+        ...(country !== undefined && { country }),
+        ...(season !== undefined && { season }),
+        ...(type !== undefined && { type }),
+        ...(icon !== undefined && { icon }),
+        ...(isActive !== undefined && { isActive }),
+        ...(sortOrder !== undefined && { sortOrder }),
       },
     });
 
@@ -254,6 +259,60 @@ router.post('/competitions', authenticate, isAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create competition',
+    });
+  }
+});
+
+// Update competition
+router.put('/competitions/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { name, shortName, logoUrl, country, season, type, icon, isActive, sortOrder } = req.body;
+
+    const competition = await prisma.competition.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(shortName !== undefined && { shortName }),
+        ...(logoUrl !== undefined && { logoUrl }),
+        ...(country !== undefined && { country }),
+        ...(season !== undefined && { season }),
+        ...(type !== undefined && { type }),
+        ...(icon !== undefined && { icon }),
+        ...(isActive !== undefined && { isActive }),
+        ...(sortOrder !== undefined && { sortOrder }),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Competition updated',
+      data: competition,
+    });
+  } catch (error) {
+    console.error('Update competition error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update competition',
+    });
+  }
+});
+
+// Delete competition
+router.delete('/competitions/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    await prisma.competition.delete({
+      where: { id: req.params.id },
+    });
+
+    res.json({
+      success: true,
+      message: 'Competition deleted',
+    });
+  } catch (error) {
+    console.error('Delete competition error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete competition',
     });
   }
 });
