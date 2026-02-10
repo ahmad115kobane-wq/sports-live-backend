@@ -1,7 +1,7 @@
 {
-  "name": "sports-live-backend",
+  "name": "mini-football-backend",
   "version": "1.0.0",
-  "description": "Backend API for Sports Live Events Application",
+  "description": "Backend API for Mini Football Application",
   "main": "dist/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

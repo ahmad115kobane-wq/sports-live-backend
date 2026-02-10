@@ -1,4 +1,4 @@
-// Prisma Schema for Sports Live Application
+// Prisma Schema for Mini Football Application
 generator client {
   provider = "prisma-client-js"
 }
