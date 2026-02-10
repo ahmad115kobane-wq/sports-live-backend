@@ -4,6 +4,58 @@ import bcrypt from 'bcryptjs';
 
 const router = Router();
 
+// POST /api/seed/legal — إضافة الصفحات القانونية فقط
+router.post('/legal', async (req, res) => {
+  try {
+    // حذف الصفحات القانونية الموجودة
+    await prisma.legalPage.deleteMany();
+
+    // إضافة الصفحات القانونية
+    await prisma.legalPage.createMany({
+      data: [
+        {
+          slug: 'privacy-policy',
+          title: 'Privacy Policy',
+          titleAr: 'سياسة الخصوصية',
+          titleKu: 'سیاسەتی تایبەتمەندی',
+          content: 'Privacy Policy\n\nWe respect your privacy and are committed to protecting your personal data.',
+          contentAr: 'سياسة الخصوصية\n\nنحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية.',
+          contentKu: 'سیاسەتی تایبەتمەندی\n\nئێمە ڕێزی تایبەتمەندیت دەگرین.',
+          isActive: true,
+          sortOrder: 1,
+        },
+        {
+          slug: 'terms-of-service',
+          title: 'Terms of Service',
+          titleAr: 'شروط الاستخدام',
+          titleKu: 'مەرجەکانی بەکارهێنان',
+          content: 'Terms of Service\n\nBy using Sports Live, you agree to the following terms.',
+          contentAr: 'شروط الاستخدام\n\nباستخدامك لتطبيق Sports Live، فإنك توافق على الشروط التالية.',
+          contentKu: 'مەرجەکانی بەکارهێنان\n\nبە بەکارهێنانی Sports Live، ڕازی دەبیت بەم مەرجانە.',
+          isActive: true,
+          sortOrder: 2,
+        },
+        {
+          slug: 'about-app',
+          title: 'About App',
+          titleAr: 'حول التطبيق',
+          titleKu: 'دەربارەی ئەپ',
+          content: 'About Sports Live\n\nYour ultimate companion for Iraqi sports.',
+          contentAr: 'حول التطبيق\n\nرفيقك المثالي لمتابعة الرياضة العراقية.',
+          contentKu: 'دەربارەی ئەپ\n\nهاوڕێی تەواوت بۆ وەرزشی عێراقی.',
+          isActive: true,
+          sortOrder: 3,
+        },
+      ],
+    });
+
+    res.json({ success: true, message: 'Legal pages created successfully' });
+  } catch (error: any) {
+    console.error('Create legal pages error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create legal pages: ' + error.message });
+  }
+});
+
 // DELETE /api/seed — مسح جميع البيانات
 router.delete('/', async (req, res) => {
   try {
@@ -369,6 +421,17 @@ router.post('/', async (req, res) => {
           isActive: true,
           sortOrder: 2,
         },
+        {
+          slug: 'about-app',
+          title: 'About App',
+          titleAr: 'حول التطبيق',
+          titleKu: 'دەربارەی ئەپ',
+          content: 'About Sports Live\n\nSports Live is your ultimate companion for following Iraqi sports. Get live match scores, instant notifications, team lineups, and much more.\n\nFeatures:\n- Live match scores and updates\n- Instant goal and event notifications\n- Team lineups and match statistics\n- Follow your favorite teams and competitions\n- Sports store with official merchandise\n- News and articles about Iraqi sports\n\nVersion: 1.0.0\nDeveloper: Sports Live Team\nContact: support@sportslive.app',
+          contentAr: 'حول تطبيق سبورتس لايف\n\nسبورتس لايف هو رفيقك المثالي لمتابعة الرياضة العراقية. احصل على نتائج المباريات المباشرة، إشعارات فورية، تشكيلات الفرق، والمزيد.\n\nالمميزات:\n- نتائج مباشرة وتحديثات فورية\n- إشعارات فورية للأهداف والأحداث\n- تشكيلات الفرق وإحصائيات المباريات\n- تابع فرقك وبطولاتك المفضلة\n- متجر رياضي بمنتجات رسمية\n- أخبار ومقالات عن الرياضة العراقية\n\nالإصدار: 1.0.0\nالمطور: فريق سبورتس لايف\nالتواصل: support@sportslive.app',
+          contentKu: 'دەربارەی ئەپی سپۆرتس لایڤ\n\nسپۆرتس لایڤ هاوەڵی باشترینت بۆ بەدواداگرتنی وەرزشی عێراقی. ئەنجامی ڕاستەوخۆی یارییەکان، ئاگاداری خێرا، ڕیزبەندی تیمەکان، و زۆری تر.\n\nتایبەتمەندییەکان:\n- ئەنجامی ڕاستەوخۆ و نوێکردنەوەی خێرا\n- ئاگاداری خێرا بۆ گۆڵ و ڕووداوەکان\n- ڕیزبەندی تیمەکان و ئامارەکانی یارییەکان\n- تیم و یارییە دڵخوازەکانت بەدواداگرە\n- فرۆشگای وەرزشی بە بەرهەمی فەرمی\n- هەواڵ و بابەتەکان دەربارەی وەرزشی عێراقی\n\nوەشان: 1.0.0\nگەشەپێدەر: تیمی سپۆرتس لایڤ\nپەیوەندی: support@sportslive.app',
+          isActive: true,
+          sortOrder: 3,
+        },
       ],
     });
 
@@ -399,42 +462,55 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/seed/legal — إنشاء الصفحات القانونية فقط
+// POST /api/seed/legal — إنشاء الصفحات القانونية المفقودة فقط
 router.post('/legal', async (req, res) => {
   try {
-    const existing = await prisma.legalPage.count();
-    if (existing > 0) {
-      return res.json({ success: true, message: `Legal pages already exist (${existing} pages)` });
+    const defaultPages = [
+      {
+        slug: 'privacy-policy',
+        title: 'Privacy Policy',
+        titleAr: 'سياسة الخصوصية',
+        titleKu: 'سیاسەتی تایبەتمەندی',
+        content: 'Privacy Policy\n\nWe respect your privacy and are committed to protecting your personal data.\n\n1. Information We Collect\nWe collect information you provide directly, such as your name, email address, and profile information.\n\n2. How We Use Your Information\nWe use your information to provide and improve our services.\n\n3. Data Security\nWe implement appropriate security measures to protect your personal information.\n\n4. Your Rights\nYou have the right to access, update, or delete your personal information at any time.\n\n5. Contact Us\nIf you have questions, please contact us through the app.',
+        contentAr: 'سياسة الخصوصية\n\nنحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية.\n\n1. المعلومات التي نجمعها\nنجمع المعلومات التي تقدمها مباشرة.\n\n2. كيف نستخدم معلوماتك\nنستخدم معلوماتك لتقديم خدماتنا وتحسينها.\n\n3. أمان البيانات\nننفذ تدابير أمنية مناسبة لحماية معلوماتك.\n\n4. حقوقك\nلديك الحق في الوصول إلى معلوماتك أو تحديثها أو حذفها.\n\n5. تواصل معنا\nيرجى التواصل معنا عبر التطبيق.',
+        contentKu: 'سیاسەتی تایبەتمەندی\n\nئێمە ڕێزی تایبەتمەندیت دەگرین و پابەندین بە پاراستنی داتا کەسییەکانت.',
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        slug: 'terms-of-service',
+        title: 'Terms of Service',
+        titleAr: 'شروط الاستخدام',
+        titleKu: 'مەرجەکانی بەکارهێنان',
+        content: 'Terms of Service\n\nBy using Sports Live, you agree to the following terms.\n\n1. Acceptance of Terms\nBy accessing our application, you agree to be bound by these terms.\n\n2. User Accounts\nYou are responsible for maintaining the security of your account.\n\n3. Acceptable Use\nYou agree not to misuse our services.\n\n4. Content\nAll content is for informational purposes.\n\n5. Termination\nWe may terminate your account for violations.\n\n6. Changes\nWe reserve the right to modify these terms at any time.',
+        contentAr: 'شروط الاستخدام\n\nباستخدامك لتطبيق Sports Live، فإنك توافق على الشروط التالية.\n\n1. قبول الشروط\nبالوصول إلى تطبيقنا، توافق على الالتزام بهذه الشروط.\n\n2. حسابات المستخدمين\nأنت مسؤول عن أمان حسابك.\n\n3. الاستخدام المقبول\nتوافق على عدم إساءة استخدام خدماتنا.\n\n4. المحتوى\nجميع المحتويات لأغراض إعلامية.\n\n5. الإنهاء\nيجوز لنا إنهاء حسابك بسبب انتهاك الشروط.\n\n6. التغييرات\nنحتفظ بالحق في تعديل هذه الشروط.',
+        contentKu: 'مەرجەکانی بەکارهێنان\n\nبە بەکارهێنانی ئەپی Sports Live، ڕازی دەبیت بەم مەرجانە.',
+        isActive: true,
+        sortOrder: 2,
+      },
+      {
+        slug: 'about-app',
+        title: 'About App',
+        titleAr: 'حول التطبيق',
+        titleKu: 'دەربارەی ئەپ',
+        content: 'About Sports Live\n\nSports Live is your ultimate companion for following Iraqi sports. Get live match scores, instant notifications, team lineups, and much more.\n\nFeatures:\n- Live match scores and updates\n- Instant goal and event notifications\n- Team lineups and match statistics\n- Follow your favorite teams\n- Sports store with official merchandise\n- News and articles\n\nVersion: 1.0.0\nDeveloper: Sports Live Team\nContact: support@sportslive.app',
+        contentAr: 'حول تطبيق سبورتس لايف\n\nسبورتس لايف هو رفيقك المثالي لمتابعة الرياضة العراقية.\n\nالمميزات:\n- نتائج مباشرة وتحديثات فورية\n- إشعارات فورية للأهداف والأحداث\n- تشكيلات الفرق وإحصائيات المباريات\n- تابع فرقك وبطولاتك المفضلة\n- متجر رياضي بمنتجات رسمية\n- أخبار ومقالات عن الرياضة العراقية\n\nالإصدار: 1.0.0\nالمطور: فريق سبورتس لايف\nالتواصل: support@sportslive.app',
+        contentKu: 'دەربارەی ئەپی سپۆرتس لایڤ\n\nسپۆرتس لایڤ هاوەڵی باشترینت بۆ بەدواداگرتنی وەرزشی عێراقی.\n\nتایبەتمەندییەکان:\n- ئەنجامی ڕاستەوخۆ و نوێکردنەوەی خێرا\n- ئاگاداری خێرا بۆ گۆڵ و ڕووداوەکان\n- ڕیزبەندی تیمەکان و ئامارەکان\n- تیم و یارییە دڵخوازەکانت بەدواداگرە\n- فرۆشگای وەرزشی\n- هەواڵ و بابەتەکان\n\nوەشان: 1.0.0\nگەشەپێدەر: تیمی سپۆرتس لایڤ\nپەیوەندی: support@sportslive.app',
+        isActive: true,
+        sortOrder: 3,
+      },
+    ];
+
+    let created = 0;
+    for (const page of defaultPages) {
+      const exists = await prisma.legalPage.findUnique({ where: { slug: page.slug } });
+      if (!exists) {
+        await prisma.legalPage.create({ data: page });
+        created++;
+      }
     }
 
-    await prisma.legalPage.createMany({
-      data: [
-        {
-          slug: 'privacy-policy',
-          title: 'Privacy Policy',
-          titleAr: 'سياسة الخصوصية',
-          titleKu: 'سیاسەتی تایبەتمەندی',
-          content: 'Privacy Policy\n\nWe respect your privacy and are committed to protecting your personal data.\n\n1. Information We Collect\nWe collect information you provide directly, such as your name, email address, and profile information.\n\n2. How We Use Your Information\nWe use your information to provide and improve our services, send notifications about matches and news, and personalize your experience.\n\n3. Data Security\nWe implement appropriate security measures to protect your personal information.\n\n4. Your Rights\nYou have the right to access, update, or delete your personal information at any time.\n\n5. Contact Us\nIf you have questions, please contact us through the app.',
-          contentAr: 'سياسة الخصوصية\n\nنحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية.\n\n1. المعلومات التي نجمعها\nنجمع المعلومات التي تقدمها مباشرة، مثل اسمك وعنوان بريدك الإلكتروني ومعلومات ملفك الشخصي.\n\n2. كيف نستخدم معلوماتك\nنستخدم معلوماتك لتقديم خدماتنا وتحسينها، وإرسال إشعارات حول المباريات والأخبار، وتخصيص تجربتك.\n\n3. أمان البيانات\nننفذ تدابير أمنية مناسبة لحماية معلوماتك الشخصية.\n\n4. حقوقك\nلديك الحق في الوصول إلى معلوماتك الشخصية أو تحديثها أو حذفها في أي وقت.\n\n5. تواصل معنا\nإذا كانت لديك أسئلة، يرجى التواصل معنا عبر التطبيق.',
-          contentKu: 'سیاسەتی تایبەتمەندی\n\nئێمە ڕێزی تایبەتمەندیت دەگرین و پابەندین بە پاراستنی داتا کەسییەکانت.\n\n1. زانیارییەکانی کۆکراوە\nئەو زانیارییانە کۆ دەکەینەوە کە ڕاستەوخۆ دابین دەکەیت، وەک ناوت و ناونیشانی ئیمەیڵت.\n\n2. چۆن زانیارییەکانت بەکاردەهێنین\nزانیارییەکانت بەکاردەهێنین بۆ دابینکردن و باشترکردنی خزمەتگوزارییەکانمان.\n\n3. ئاسایشی داتا\nئێمە ڕێوشوێنی ئاسایشی گونجاو جێبەجێ دەکەین بۆ پاراستنی زانیاری کەسییەکانت.\n\n4. مافەکانت\nمافی دەستگەیشتن، نوێکردنەوە، یان سڕینەوەی زانیاری کەسییەکانت هەیە لە هەر کاتێکدا.\n\n5. پەیوەندیمان پێوە بکە\nئەگەر پرسیارت هەیە، تکایە پەیوەندیمان پێوە بکە لە ڕێگەی ئەپەکەوە.',
-          isActive: true,
-          sortOrder: 1,
-        },
-        {
-          slug: 'terms-of-service',
-          title: 'Terms of Service',
-          titleAr: 'شروط الاستخدام',
-          titleKu: 'مەرجەکانی بەکارهێنان',
-          content: 'Terms of Service\n\nBy using Sports Live, you agree to the following terms.\n\n1. Acceptance of Terms\nBy accessing our application, you agree to be bound by these terms.\n\n2. User Accounts\nYou are responsible for maintaining the security of your account.\n\n3. Acceptable Use\nYou agree not to misuse our services.\n\n4. Content\nAll content is for informational purposes. Match scores are provided as-is.\n\n5. Termination\nWe may terminate your account for violations of these terms.\n\n6. Changes\nWe reserve the right to modify these terms at any time.',
-          contentAr: 'شروط الاستخدام\n\nباستخدامك لتطبيق Sports Live، فإنك توافق على الشروط التالية.\n\n1. قبول الشروط\nبالوصول إلى تطبيقنا، فإنك توافق على الالتزام بهذه الشروط.\n\n2. حسابات المستخدمين\nأنت مسؤول عن الحفاظ على أمان حسابك.\n\n3. الاستخدام المقبول\nتوافق على عدم إساءة استخدام خدماتنا.\n\n4. المحتوى\nجميع المحتويات لأغراض إعلامية. نتائج المباريات مقدمة كما هي.\n\n5. الإنهاء\nيجوز لنا إنهاء حسابك بسبب انتهاك الشروط.\n\n6. التغييرات\nنحتفظ بالحق في تعديل هذه الشروط في أي وقت.',
-          contentKu: 'مەرجەکانی بەکارهێنان\n\nبە بەکارهێنانی ئەپی Sports Live، ڕازی دەبیت بەم مەرجانە.\n\n1. قبوڵکردنی مەرجەکان\nبە دەستگەیشتن بە ئەپەکەمان، ڕازی دەبیت بە پابەندبوون بەم مەرجانە.\n\n2. ئەکاونتی بەکارهێنەران\nتۆ بەرپرسیت لە پاراستنی ئاسایشی ئەکاونتەکەت.\n\n3. بەکارهێنانی قبوڵکراو\nڕازی دەبیت خزمەتگوزارییەکانمان بە خراپ بەکارنەهێنیت.\n\n4. ناوەڕۆک\nهەموو ناوەڕۆکێک بۆ مەبەستی زانیارییە.\n\n5. کۆتایی\nلەوانەیە ئەکاونتەکەت هەڵبوەشێنینەوە بۆ پێشێلکردنی مەرجەکان.\n\n6. گۆڕانکاری\nمافی گۆڕینی ئەم مەرجانەمان هەیە لە هەر کاتێکدا.',
-          isActive: true,
-          sortOrder: 2,
-        },
-      ],
-    });
-
-    res.json({ success: true, message: 'Legal pages created successfully', count: 2 });
+    res.json({ success: true, message: `Legal pages seeded: ${created} created, ${defaultPages.length - created} already existed`, created });
   } catch (error: any) {
     console.error('Seed legal pages error:', error);
     res.status(500).json({ success: false, message: 'Failed to seed legal pages: ' + error.message });
