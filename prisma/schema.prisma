@@ -377,6 +377,9 @@ model StoreProduct {
 
   @@index([categoryId])
   @@index([isActive])
+  @@index([isFeatured])
+  @@index([badge])
+  @@index([createdAt])
   @@map("store_products")
 }
 

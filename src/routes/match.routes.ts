@@ -47,7 +47,7 @@ const FORMATIONS = [
 // Get all matches
 router.get('/', async (req, res) => {
   try {
-    const { status, date, featured } = req.query;
+    const { status, date, featured, days } = req.query;
 
     const where: any = {};
     
@@ -64,6 +64,15 @@ router.get('/', async (req, res) => {
         gte: startDate,
         lte: endDate,
       };
+    } else {
+      // Default: Today and 7 days ahead
+      const futureDays = parseInt(days as string) || 7;
+      const from = new Date();
+      from.setHours(0, 0, 0, 0); // Start of today
+      const to = new Date();
+      to.setDate(to.getDate() + futureDays);
+      to.setHours(23, 59, 59, 999);
+      where.startTime = { gte: from, lte: to };
     }
 
     if (featured === 'true') {
@@ -73,9 +82,9 @@ router.get('/', async (req, res) => {
     const matches = await prisma.match.findMany({
       where,
       include: {
-        homeTeam: true,
-        awayTeam: true,
-        competition: true,
+        homeTeam: { select: { id: true, name: true, nameAr: true, nameKu: true, shortName: true, logo: true, category: true } },
+        awayTeam: { select: { id: true, name: true, nameAr: true, nameKu: true, shortName: true, logo: true, category: true } },
+        competition: { select: { id: true, name: true, nameAr: true, nameKu: true, shortName: true, logo: true, icon: true } },
       },
       orderBy: { startTime: 'asc' },
     });

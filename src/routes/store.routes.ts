@@ -73,7 +73,7 @@ router.get('/products', async (req, res) => {
 
     const where: any = { isActive: true };
     if (categoryId) where.categoryId = categoryId as string;
-    if (featured === 'true') where.isFeatured = true;
+    if (featured === 'true' || featured === true) where.isFeatured = true;
     if (badge) where.badge = badge as string;
     if (search) {
       where.OR = [
@@ -87,7 +87,14 @@ router.get('/products', async (req, res) => {
       prisma.storeProduct.findMany({
         where,
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        include: { category: true },
+        select: {
+          id: true, categoryId: true, name: true, nameAr: true, nameKu: true,
+          price: true, originalPrice: true, discount: true,
+          imageUrl: true, emoji: true, badge: true,
+          rating: true, reviewsCount: true,
+          colors: true, sizes: true,
+          inStock: true, isFeatured: true, sortOrder: true, createdAt: true,
+        },
         skip,
         take: limit,
       }),
