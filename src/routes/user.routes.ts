@@ -2,29 +2,14 @@ import { Router } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
-import path from 'path';
-import fs from 'fs';
+import { uploadToImgBB } from '../services/imgbb.service';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
 
-// Setup multer for avatar uploads
-const avatarStorage = multer.diskStorage({
-  destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(process.cwd(), 'public/avatars');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req: any, file: any, cb: any) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
+// Setup multer with memory storage for ImgBB upload
 const avatarUpload = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
   fileFilter: (req: any, file: any, cb: any) => {
     if (file.mimetype.startsWith('image/')) {
@@ -406,10 +391,6 @@ router.post('/avatar', authenticate, avatarUpload.single('avatar'), async (req: 
   try {
     // Only publisher and admin can set avatar
     if (req.user!.role !== 'publisher' && req.user!.role !== 'admin') {
-      // Delete uploaded file if unauthorized
-      if ((req as any).file) {
-        fs.unlinkSync((req as any).file.path);
-      }
       return res.status(403).json({
         success: false,
         message: 'Only publishers and admins can set an avatar',
@@ -423,24 +404,18 @@ router.post('/avatar', authenticate, avatarUpload.single('avatar'), async (req: 
       });
     }
 
-    const avatarPath = `/avatars/${(req as any).file.filename}`;
-
-    // Delete old avatar file if exists
-    const currentUser = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: { avatar: true },
-    });
-
-    if (currentUser?.avatar) {
-      const oldPath = path.join(process.cwd(), 'public', currentUser.avatar);
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-      }
+    // Upload to ImgBB
+    const avatarUrl = await uploadToImgBB((req as any).file.buffer, `avatar-${req.user!.id}-${Date.now()}`);
+    if (!avatarUrl) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upload avatar image',
+      });
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user!.id },
-      data: { avatar: avatarPath },
+      data: { avatar: avatarUrl },
       select: {
         id: true,
         name: true,

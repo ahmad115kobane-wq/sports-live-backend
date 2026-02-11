@@ -1,27 +1,23 @@
 import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
-import path from 'path';
-import fs from 'fs';
+import { uploadToImgBB } from '../services/imgbb.service';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
 
-// Setup multer for slider image uploads
-const sliderStorage = multer.diskStorage({
-  destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(process.cwd(), 'public/sliders');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+// Setup multer with memory storage for ImgBB upload
+const uploadSlider = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req: any, file: any, cb: any) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
     }
-    cb(null, dir);
-  },
-  filename: (req: any, file: any, cb: any) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `slider-${Date.now()}${ext}`);
   },
 });
-const uploadSlider = multer({ storage: sliderStorage });
 
 const router = Router();
 
@@ -66,7 +62,11 @@ router.post('/admin', authenticate, isAdmin, uploadSlider.single('image'), async
       return res.status(400).json({ success: false, message: 'Image is required' });
     }
 
-    const imageUrl = `/sliders/${file.filename}`;
+    // Upload to ImgBB
+    const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`);
+    if (!imageUrl) {
+      return res.status(500).json({ success: false, message: 'Failed to upload image' });
+    }
 
     const slider = await prisma.homeSlider.create({
       data: {
@@ -99,13 +99,9 @@ router.put('/admin/:id', authenticate, isAdmin, uploadSlider.single('image'), as
     if (sortOrder !== undefined) data.sortOrder = parseInt(sortOrder);
 
     if (file) {
-      // Delete old image
-      const old = await prisma.homeSlider.findUnique({ where: { id } });
-      if (old?.imageUrl) {
-        const oldPath = path.join(process.cwd(), 'public', old.imageUrl);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      data.imageUrl = `/sliders/${file.filename}`;
+      // Upload new image to ImgBB
+      const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`);
+      if (imageUrl) data.imageUrl = imageUrl;
     }
 
     const slider = await prisma.homeSlider.update({
@@ -125,12 +121,7 @@ router.delete('/admin/:id', authenticate, isAdmin, async (req: AuthRequest, res)
   try {
     const { id } = req.params;
 
-    // Delete image file
-    const slider = await prisma.homeSlider.findUnique({ where: { id } });
-    if (slider?.imageUrl) {
-      const imgPath = path.join(process.cwd(), 'public', slider.imageUrl);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-    }
+    // ImgBB images are cloud-hosted, no local file to delete
 
     await prisma.homeSlider.delete({ where: { id } });
     res.json({ success: true, message: 'Slider deleted' });

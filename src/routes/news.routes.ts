@@ -1,38 +1,20 @@
 import { Router, Request } from 'express';
 import { authenticate, isPublisher, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
-import path from 'path';
-import fs from 'fs';
 import admin from 'firebase-admin';
+import { uploadToImgBB } from '../services/imgbb.service';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
 
 const router = Router();
 
-// Setup multer for image uploads
-const storage = multer.diskStorage({
-  destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(process.cwd(), 'public/news');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req: any, file: any, cb: any) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
+// Setup multer with memory storage for ImgBB upload
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req: any, file: any, cb: any) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
+    if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
       cb(new Error('Only image files are allowed'));
@@ -131,7 +113,8 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
 
     let imageUrl: string | undefined;
     if ((req as any).file) {
-      imageUrl = `/news/${(req as any).file.filename}`;
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
+      if (uploaded) imageUrl = uploaded;
     }
 
     const article = await (prisma as any).newsArticle.create({
@@ -156,10 +139,8 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
     res.status(201).json({ success: true, message: 'Article published', data: article });
 
     // Send push notification to ALL users (fire-and-forget, after response)
-    // ملاحظة: imageUrl في FCM يتطلب رابط عام (https://yourdomain.com/news/image.jpg)
-    // على خادم محلي (192.168.x.x) لن تظهر الصورة — ستعمل فقط على خادم حقيقي
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const fullImageUrl = imageUrl ? `${baseUrl}${imageUrl}` : undefined;
+    // ImgBB URLs are already full public URLs
+    const fullImageUrl = imageUrl || undefined;
 
     (async () => {
       try {
@@ -254,7 +235,10 @@ router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req
     if (title) updateData.title = title;
     if (content) updateData.content = content;
     if (isPublished !== undefined) updateData.isPublished = isPublished === 'true' || isPublished === true;
-    if ((req as any).file) updateData.imageUrl = `/news/${(req as any).file.filename}`;
+    if ((req as any).file) {
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
+      if (uploaded) updateData.imageUrl = uploaded;
+    }
 
     const updated = await (prisma as any).newsArticle.update({
       where: { id },
@@ -287,13 +271,7 @@ router.delete('/:id', authenticate, isPublisher, async (req: AuthRequest, res) =
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    // Delete image file if exists
-    if (article.imageUrl) {
-      const imagePath = path.join(process.cwd(), 'public', article.imageUrl);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
-    }
+    // ImgBB images are cloud-hosted, no local file to delete
 
     await (prisma as any).newsArticle.delete({ where: { id } });
 

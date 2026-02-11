@@ -1,29 +1,14 @@
 import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
-import path from 'path';
-import fs from 'fs';
+import { uploadToImgBB } from '../services/imgbb.service';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
 
-// Setup multer for store image uploads
-const storeImageStorage = multer.diskStorage({
-  destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(process.cwd(), 'public/store');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req: any, file: any, cb: any) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
+// Setup multer with memory storage for ImgBB upload
 const storeImageUpload = multer({
-  storage: storeImageStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req: any, file: any, cb: any) => {
     if (file.mimetype.startsWith('image/')) {
@@ -487,8 +472,11 @@ router.post('/admin/upload', authenticate, isAdmin, storeImageUpload.single('ima
       return res.status(400).json({ success: false, message: 'No image file provided' });
     }
     const file = (req as any).file;
-    const imageUrl = `/store/${file.filename}`;
-    res.json({ success: true, data: { imageUrl, filename: file.filename } });
+    const imageUrl = await uploadToImgBB(file.buffer, `store-${Date.now()}`);
+    if (!imageUrl) {
+      return res.status(500).json({ success: false, message: 'Failed to upload image' });
+    }
+    res.json({ success: true, data: { imageUrl } });
   } catch (error) {
     console.error('Upload store image error:', error);
     res.status(500).json({ success: false, message: 'Failed to upload image' });
