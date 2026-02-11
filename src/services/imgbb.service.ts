@@ -1,16 +1,28 @@
 /**
  * Media Upload Service
- * Uploads images to the dedicated media server instead of ImgBB.
- * The media server uses Railway Persistent Volume for permanent storage.
+ * Uploads images/videos to Cloudflare R2 for permanent storage.
  */
 
-import FormData from 'form-data';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import crypto from 'crypto';
 
-const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'http://localhost:4000';
-const MEDIA_API_KEY = process.env.MEDIA_API_KEY || 'media-server-secret-key';
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '';
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '';
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '';
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'iqdd';
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
+
+const s3 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+});
 
 /**
- * Upload an image buffer to the media server.
+ * Upload an image buffer to Cloudflare R2.
  * @param buffer - Image file buffer
  * @param name - Filename hint (used to determine folder)
  * @returns Full public URL of the uploaded image, or null on failure
@@ -24,51 +36,42 @@ export async function uploadToImgBB(buffer: Buffer, name: string): Promise<strin
     else if (name.startsWith('store')) folder = 'store';
     else if (name.startsWith('slider')) folder = 'sliders';
 
-    const formData = new FormData();
-    formData.append('image', buffer, { filename: `${name}.jpg`, contentType: 'image/jpeg' });
-    formData.append('folder', folder);
+    const uniqueId = crypto.randomBytes(16).toString('hex');
+    const ext = name.includes('.') ? name.split('.').pop() : 'jpg';
+    const key = `${folder}/${uniqueId}.${ext}`;
 
-    const response = await new Promise<any>((resolve, reject) => {
-      const http = MEDIA_SERVER_URL.startsWith('https') ? require('https') : require('http');
-      const url = new URL(`${MEDIA_SERVER_URL}/upload`);
+    await s3.send(new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: `image/${ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : ext === 'gif' ? 'gif' : 'jpeg'}`,
+    }));
 
-      const req = http.request(
-        {
-          hostname: url.hostname,
-          port: url.port,
-          path: url.pathname,
-          method: 'POST',
-          headers: {
-            ...formData.getHeaders(),
-            'x-api-key': MEDIA_API_KEY,
-          },
-        },
-        (res: any) => {
-          let data = '';
-          res.on('data', (chunk: string) => (data += chunk));
-          res.on('end', () => {
-            try {
-              resolve(JSON.parse(data));
-            } catch {
-              reject(new Error(`Invalid response: ${data}`));
-            }
-          });
-        }
-      );
-
-      req.on('error', reject);
-      formData.pipe(req);
-    });
-
-    if (response.success && response.data?.imageUrl) {
-      // Return full URL: MEDIA_SERVER_URL + imageUrl path
-      return `${MEDIA_SERVER_URL}${response.data.imageUrl}`;
-    }
-
-    console.error('Media server upload failed:', response);
-    return null;
+    const publicUrl = `${R2_PUBLIC_URL}/${key}`;
+    console.log(`✅ Uploaded to R2: ${publicUrl} (${(buffer.length / 1024).toFixed(2)} KB)`);
+    return publicUrl;
   } catch (error) {
-    console.error('Upload to media server error:', error);
+    console.error('Upload to R2 error:', error);
     return null;
+  }
+}
+
+/**
+ * Delete an image from Cloudflare R2.
+ * @param imageUrl - Full public URL of the image
+ */
+export async function deleteFromR2(imageUrl: string): Promise<boolean> {
+  try {
+    if (!imageUrl || !imageUrl.includes(R2_PUBLIC_URL)) return false;
+    const key = imageUrl.replace(`${R2_PUBLIC_URL}/`, '');
+    await s3.send(new DeleteObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+    }));
+    console.log(`🗑️ Deleted from R2: ${key}`);
+    return true;
+  } catch (error) {
+    console.error('Delete from R2 error:', error);
+    return false;
   }
 }
