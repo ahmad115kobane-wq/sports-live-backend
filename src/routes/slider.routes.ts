@@ -10,7 +10,7 @@ const multer = require('multer');
 // Setup multer for slider image uploads
 const sliderStorage = multer.diskStorage({
   destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(__dirname, '../../public/sliders');
+    const dir = path.join(process.cwd(), 'public/sliders');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -102,7 +102,7 @@ router.put('/admin/:id', authenticate, isAdmin, uploadSlider.single('image'), as
       // Delete old image
       const old = await prisma.homeSlider.findUnique({ where: { id } });
       if (old?.imageUrl) {
-        const oldPath = path.join(__dirname, '../../public', old.imageUrl);
+        const oldPath = path.join(process.cwd(), 'public', old.imageUrl);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       data.imageUrl = `/sliders/${file.filename}`;
@@ -128,7 +128,7 @@ router.delete('/admin/:id', authenticate, isAdmin, async (req: AuthRequest, res)
     // Delete image file
     const slider = await prisma.homeSlider.findUnique({ where: { id } });
     if (slider?.imageUrl) {
-      const imgPath = path.join(__dirname, '../../public', slider.imageUrl);
+      const imgPath = path.join(process.cwd(), 'public', slider.imageUrl);
       if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
 

@@ -11,7 +11,7 @@ const multer = require('multer');
 // Setup multer for avatar uploads
 const avatarStorage = multer.diskStorage({
   destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(__dirname, '../../public/avatars');
+    const dir = path.join(process.cwd(), 'public/avatars');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -432,7 +432,7 @@ router.post('/avatar', authenticate, avatarUpload.single('avatar'), async (req: 
     });
 
     if (currentUser?.avatar) {
-      const oldPath = path.join(__dirname, '../../public', currentUser.avatar);
+      const oldPath = path.join(process.cwd(), 'public', currentUser.avatar);
       if (fs.existsSync(oldPath)) {
         fs.unlinkSync(oldPath);
       }

@@ -91,8 +91,8 @@ app.use('/api/auth', authLimiter);
 app.use('/api/', apiLimiter);
 
 // Serve static files (team logos, etc.)
-app.use('/teams', express.static(path.join(__dirname, '../public/teams')));
-app.use('/static', express.static(path.join(__dirname, '../public')));
+app.use('/teams', express.static(path.join(process.cwd(), 'public/teams')));
+app.use('/static', express.static(path.join(process.cwd(), 'public')));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -126,16 +126,16 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Serve news images
-app.use('/news', express.static(path.join(__dirname, '../public/news')));
+app.use('/news', express.static(path.join(process.cwd(), 'public/news')));
 
 // Serve avatar images
-app.use('/avatars', express.static(path.join(__dirname, '../public/avatars')));
+app.use('/avatars', express.static(path.join(process.cwd(), 'public/avatars')));
 
 // Serve store images
-app.use('/store', express.static(path.join(__dirname, '../public/store')));
+app.use('/store', express.static(path.join(process.cwd(), 'public/store')));
 
 // Serve slider images
-app.use('/sliders', express.static(path.join(__dirname, '../public/sliders')));
+app.use('/sliders', express.static(path.join(process.cwd(), 'public/sliders')));
 
 // Setup Socket handlers
 setupSocketHandlers(io);

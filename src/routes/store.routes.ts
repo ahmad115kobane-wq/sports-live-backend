@@ -10,7 +10,7 @@ const multer = require('multer');
 // Setup multer for store image uploads
 const storeImageStorage = multer.diskStorage({
   destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(__dirname, '../../public/store');
+    const dir = path.join(process.cwd(), 'public/store');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

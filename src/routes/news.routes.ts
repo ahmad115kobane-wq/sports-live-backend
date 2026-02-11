@@ -13,7 +13,7 @@ const router = Router();
 // Setup multer for image uploads
 const storage = multer.diskStorage({
   destination: (req: any, file: any, cb: any) => {
-    const dir = path.join(__dirname, '../../public/news');
+    const dir = path.join(process.cwd(), 'public/news');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -289,7 +289,7 @@ router.delete('/:id', authenticate, isPublisher, async (req: AuthRequest, res) =
 
     // Delete image file if exists
     if (article.imageUrl) {
-      const imagePath = path.join(__dirname, '../../public', article.imageUrl);
+      const imagePath = path.join(process.cwd(), 'public', article.imageUrl);
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
       }
