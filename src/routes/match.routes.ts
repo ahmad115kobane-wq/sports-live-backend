@@ -82,9 +82,9 @@ router.get('/', async (req, res) => {
     const matches = await prisma.match.findMany({
       where,
       include: {
-        homeTeam: { select: { id: true, name: true, nameAr: true, nameKu: true, shortName: true, logo: true, category: true } },
-        awayTeam: { select: { id: true, name: true, nameAr: true, nameKu: true, shortName: true, logo: true, category: true } },
-        competition: { select: { id: true, name: true, nameAr: true, nameKu: true, shortName: true, logo: true, icon: true } },
+        homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, category: true } },
+        awayTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, category: true } },
+        competition: { select: { id: true, name: true, shortName: true, logoUrl: true, icon: true } },
       },
       orderBy: { startTime: 'asc' },
     });

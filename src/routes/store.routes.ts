@@ -73,7 +73,7 @@ router.get('/products', async (req, res) => {
 
     const where: any = { isActive: true };
     if (categoryId) where.categoryId = categoryId as string;
-    if (featured === 'true' || featured === true) where.isFeatured = true;
+    if (featured === 'true' || featured === 'TRUE') where.isFeatured = true;
     if (badge) where.badge = badge as string;
     if (search) {
       where.OR = [
