@@ -463,6 +463,36 @@ router.delete('/admin/banners/:id', authenticate, isAdmin, async (req: AuthReque
   }
 });
 
+// Clean dead image URLs (admin) - removes old broken image links
+router.post('/admin/clean-images', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
+    // Clear imageUrl for products where URL doesn't point to R2
+    const products = await prisma.storeProduct.updateMany({
+      where: {
+        imageUrl: { not: { startsWith: R2_PUBLIC_URL || 'https://pub-' } },
+        NOT: { imageUrl: null },
+      },
+      data: { imageUrl: null },
+    });
+    // Clear imageUrl for banners where URL doesn't point to R2
+    const banners = await prisma.storeBanner.updateMany({
+      where: {
+        imageUrl: { not: { startsWith: R2_PUBLIC_URL || 'https://pub-' } },
+        NOT: { imageUrl: null },
+      },
+      data: { imageUrl: null },
+    });
+    res.json({
+      success: true,
+      message: `Cleaned ${products.count} products and ${banners.count} banners`,
+    });
+  } catch (error) {
+    console.error('Clean images error:', error);
+    res.status(500).json({ success: false, message: 'Failed to clean images' });
+  }
+});
+
 // ==================== IMAGE UPLOAD ====================
 
 // Upload store image (admin)
