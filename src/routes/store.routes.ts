@@ -295,7 +295,7 @@ router.post('/admin/products', authenticate, isAdmin, async (req: AuthRequest, r
         descriptionKu: descriptionKu || null,
         price,
         originalPrice: originalPrice || null,
-        discount: discount || null,
+        discount: (discount === '' || discount === undefined) ? null : discount,
         imageUrl: imageUrl || null,
         emoji: emoji || '📦',
         badge: badge || null,
@@ -333,7 +333,12 @@ router.put('/admin/products/:id', authenticate, isAdmin, async (req: AuthRequest
 
     for (const field of fields) {
       if (req.body[field] !== undefined) {
-        data[field] = req.body[field];
+        // Convert empty string to null for numeric fields
+        if ((field === 'discount' || field === 'originalPrice') && req.body[field] === '') {
+          data[field] = null;
+        } else {
+          data[field] = req.body[field];
+        }
       }
     }
 
