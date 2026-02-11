@@ -9,9 +9,6 @@ import FormData from 'form-data';
 const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'http://localhost:4000';
 const MEDIA_API_KEY = process.env.MEDIA_API_KEY || 'media-server-secret-key';
 
-// Debug: log config on startup
-console.log(`📸 Media config: URL=${MEDIA_SERVER_URL}, KEY=${MEDIA_API_KEY ? MEDIA_API_KEY.substring(0, 4) + '***' : 'NOT SET'}`);
-
 /**
  * Upload an image buffer to the media server.
  * @param buffer - Image file buffer
