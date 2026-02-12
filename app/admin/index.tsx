@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
   Platform,
   StatusBar,
+  Image,
+  Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as DocumentPicker from 'expo-document-picker';
-import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
@@ -77,7 +78,8 @@ export default function AdminScreen() {
   const [videoAdMandatorySeconds, setVideoAdMandatorySeconds] = useState(5);
   const [videoAdIsActive, setVideoAdIsActive] = useState(true);
   const [videoAdCreating, setVideoAdCreating] = useState(false);
-  const [videoFile, setVideoFile] = useState<DocumentPicker.DocumentPickerResult | null>(null);
+  const [videoAdFile, setVideoAdFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [videoAdThumbnail, setVideoAdThumbnail] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
   // Pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -97,37 +99,13 @@ export default function AdminScreen() {
     setDialogVisible(true);
   };
 
-  const pickVideo = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['video/mp4', 'video/webm', 'video/quicktime'],
-        copyToCacheDirectory: true,
-      });
-      
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setVideoFile(result);
-      }
-    } catch (error) {
-      console.error('Error picking video:', error);
-      showError('خطأ', 'فشل اختيار الفيديو');
-    }
-  };
-
   useEffect(() => {
-    if (!isAuthenticated) {
-      showError('غير مصرح', 'يجب تسجيل الدخول أولاً');
-      setTimeout(() => router.back(), 1500);
+    if (!isAuthenticated || user?.role !== 'admin') {
+      showError(t('admin.unauthorized'), t('admin.unauthorizedDesc'));
       return;
     }
-    
-    if (user?.role !== 'admin') {
-      showError('غير مصرح', 'هذه الصفحة للمدراء فقط');
-      setTimeout(() => router.back(), 1500);
-      return;
-    }
-    
     loadData();
-  }, [isAuthenticated, user]);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -192,14 +170,36 @@ export default function AdminScreen() {
     }
   };
 
+  const pickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'],
+      quality: 0.8,
+      videoMaxDuration: 120,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setVideoAdFile(result.assets[0]);
+    }
+  };
+
+  const pickThumbnail = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [16, 9],
+    });
+    if (!result.canceled && result.assets[0]) {
+      setVideoAdThumbnail(result.assets[0]);
+    }
+  };
+
   const handleCreateVideoAd = async () => {
     if (!videoAdTitle) {
       showError('خطأ', 'يجب إدخال عنوان الإعلان');
       return;
     }
-
-    if (!videoFile || videoFile.canceled || !videoFile.assets || videoFile.assets.length === 0) {
-      showError('خطأ', 'يجب اختيار ملف الفيديو');
+    if (!videoAdFile) {
+      showError('خطأ', 'يجب اختيار ملف فيديو');
       return;
     }
 
@@ -210,14 +210,26 @@ export default function AdminScreen() {
       formData.append('mandatorySeconds', String(videoAdMandatorySeconds));
       formData.append('isActive', String(videoAdIsActive));
       if (videoAdClickUrl) formData.append('clickUrl', videoAdClickUrl);
-      
-      // Add video file
-      const videoAsset = videoFile.assets[0];
+
+      // Append video file
+      const videoUri = videoAdFile.uri;
+      const videoName = videoUri.split('/').pop() || 'video.mp4';
       formData.append('video', {
-        uri: videoAsset.uri,
-        type: videoAsset.mimeType || 'video/mp4',
-        name: videoAsset.name,
+        uri: videoUri,
+        name: videoName,
+        type: videoAdFile.mimeType || 'video/mp4',
       } as any);
+
+      // Append thumbnail if selected
+      if (videoAdThumbnail) {
+        const thumbUri = videoAdThumbnail.uri;
+        const thumbName = thumbUri.split('/').pop() || 'thumb.jpg';
+        formData.append('thumbnail', {
+          uri: thumbUri,
+          name: thumbName,
+          type: videoAdThumbnail.mimeType || 'image/jpeg',
+        } as any);
+      }
 
       await videoAdApi.adminCreate(formData);
       
@@ -226,7 +238,8 @@ export default function AdminScreen() {
       setVideoAdClickUrl('');
       setVideoAdMandatorySeconds(5);
       setVideoAdIsActive(true);
-      setVideoFile(null);
+      setVideoAdFile(null);
+      setVideoAdThumbnail(null);
       
       showError('نجاح', 'تم إنشاء الإعلان بنجاح');
     } catch (error) {
@@ -494,7 +507,7 @@ export default function AdminScreen() {
           <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>عنوان الإعلان *</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={videoAdTitle}
               onChangeText={setVideoAdTitle}
               placeholder="أدخل عنوان الإعلان"
@@ -503,21 +516,37 @@ export default function AdminScreen() {
             />
           </View>
 
-          {/* Video File */}
+          {/* Video Picker */}
           <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>ملف الفيديو *</Text>
             <TouchableOpacity
-              style={[styles.filePicker, { backgroundColor: colors.background, borderColor: colors.border }]}
+              style={[styles.filePicker, { backgroundColor: colors.background, borderColor: videoAdFile ? colors.success : colors.border }]}
               onPress={pickVideo}
               activeOpacity={0.7}
             >
-              <View style={styles.filePickerInner}>
-                <Ionicons name="videocam" size={20} color={videoFile?.assets ? colors.accent : colors.textTertiary} />
-                <Text style={[styles.filePickerText, { color: videoFile?.assets ? colors.text : colors.textTertiary }]}>
-                  {videoFile?.assets && !videoFile.canceled ? videoFile.assets[0].name : 'اختر ملف الفيديو'}
-                </Text>
-              </View>
-              <Ionicons name="folder-open" size={18} color={colors.textTertiary} />
+              <Ionicons name={videoAdFile ? 'checkmark-circle' : 'cloud-upload-outline'} size={24} color={videoAdFile ? colors.success : colors.textTertiary} />
+              <Text style={[styles.filePickerText, { color: videoAdFile ? colors.text : colors.textTertiary }]}>
+                {videoAdFile ? `✓ تم اختيار الفيديو (${Math.round((videoAdFile.fileSize || 0) / 1024 / 1024)}MB)` : 'اضغط لاختيار فيديو'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Thumbnail Picker */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>صورة مصغرة (اختياري)</Text>
+            <TouchableOpacity
+              style={[styles.filePicker, { backgroundColor: colors.background, borderColor: videoAdThumbnail ? colors.success : colors.border }]}
+              onPress={pickThumbnail}
+              activeOpacity={0.7}
+            >
+              {videoAdThumbnail ? (
+                <Image source={{ uri: videoAdThumbnail.uri }} style={styles.thumbPreview} />
+              ) : (
+                <Ionicons name="image-outline" size={24} color={colors.textTertiary} />
+              )}
+              <Text style={[styles.filePickerText, { color: videoAdThumbnail ? colors.text : colors.textTertiary }]}>
+                {videoAdThumbnail ? '✓ تم اختيار الصورة' : 'اضغط لاختيار صورة'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -525,7 +554,7 @@ export default function AdminScreen() {
           <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>رابط عند النقر (اختياري)</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={videoAdClickUrl}
               onChangeText={setVideoAdClickUrl}
               placeholder="https://example.com"
@@ -539,7 +568,7 @@ export default function AdminScreen() {
           <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الوقت الإجباري (ثانية)</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={String(videoAdMandatorySeconds)}
               onChangeText={(text) => setVideoAdMandatorySeconds(Number(text) || 5)}
               placeholder="5"
@@ -564,7 +593,6 @@ export default function AdminScreen() {
             </View>
           </TouchableOpacity>
 
-          
           {/* Submit */}
           <TouchableOpacity
             style={[styles.submitButton, videoAdCreating && { opacity: 0.6 }]}
@@ -958,27 +986,6 @@ const styles = StyleSheet.create({
   toggleDotActive: {
     transform: [{ translateX: 20 }],
   },
-  filePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.sm,
-  },
-  filePickerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    flex: 1,
-  },
-  filePickerText: {
-    ...TYPOGRAPHY.bodyMedium,
-    flex: 1,
-  },
   noteBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -994,6 +1001,27 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     flex: 1,
     lineHeight: 18,
+  },
+  filePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginHorizontal: SPACING.lg,
+  },
+  filePickerText: {
+    ...TYPOGRAPHY.bodySmall,
+    flex: 1,
+    fontWeight: '500',
+  },
+  thumbPreview: {
+    width: 48,
+    height: 28,
+    borderRadius: RADIUS.sm,
   },
   submitButton: {
     marginHorizontal: SPACING.lg,

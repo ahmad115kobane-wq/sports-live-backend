@@ -10,8 +10,8 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
-  Image,
 } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { videoAdApi } from '@/services/api';
 
@@ -36,8 +36,13 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(0);
   const [canSkip, setCanSkip] = useState(false);
-  const [videoOpened, setVideoOpened] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const player = useVideoPlayer(ad?.videoUrl || '', (p) => {
+    p.loop = false;
+    p.muted = false;
+  });
 
   const fetchAd = useCallback(async () => {
     try {
@@ -46,7 +51,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
         setAd(res.data.data);
         setCountdown(res.data.data.mandatorySeconds);
         setCanSkip(false);
-        setVideoOpened(false);
+        setVideoReady(false);
       } else {
         onClose();
       }
@@ -62,7 +67,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
       setLoading(true);
       setAd(null);
       setCanSkip(false);
-      setVideoOpened(false);
+      setVideoReady(false);
       fetchAd();
     }
     return () => {
@@ -70,18 +75,30 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
     };
   }, [visible, fetchAd]);
 
-  // Start countdown after a short delay
+  // Listen to player status changes
   useEffect(() => {
-    if (ad && visible && !videoOpened) {
-      const startDelay = setTimeout(() => {
-        setVideoOpened(true);
-      }, 1500);
-      return () => clearTimeout(startDelay);
-    }
-  }, [ad, visible, videoOpened]);
+    if (!player || !ad) return;
 
+    const statusSub = player.addListener('statusChange', (payload) => {
+      if (payload.status === 'readyToPlay') {
+        setVideoReady(true);
+        player.play();
+      }
+    });
+
+    const endSub = player.addListener('playToEnd', () => {
+      onClose();
+    });
+
+    return () => {
+      statusSub.remove();
+      endSub.remove();
+    };
+  }, [player, ad, onClose]);
+
+  // Start countdown when video is ready
   useEffect(() => {
-    if (videoOpened && countdown > 0) {
+    if (videoReady && countdown > 0) {
       timerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -96,7 +113,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [videoOpened, countdown]);
+  }, [videoReady, countdown]);
 
   const handleAdClick = () => {
     if (ad?.clickUrl) {
@@ -107,15 +124,8 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
   const handleSkip = () => {
     if (canSkip) {
       if (timerRef.current) clearInterval(timerRef.current);
+      try { player.pause(); } catch {}
       onClose();
-    }
-  };
-
-  const handlePlayVideo = () => {
-    if (ad?.videoUrl) {
-      Linking.openURL(ad.videoUrl).catch(() => {});
-      // Close after opening video
-      setTimeout(() => onClose(), 1000);
     }
   };
 
@@ -138,29 +148,19 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
           </View>
         ) : ad ? (
           <>
-            {/* Video thumbnail with play button */}
-            <TouchableOpacity
-              activeOpacity={0.95}
-              onPress={handlePlayVideo}
-              style={styles.videoContainer}
-            >
-              {ad.thumbnailUrl ? (
-                <Image
-                  source={{ uri: ad.thumbnailUrl }}
-                  style={styles.thumbnail}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.placeholder}>
-                  <Ionicons name="play-circle" size={80} color="rgba(255,255,255,0.6)" />
-                </View>
-              )}
-              
-              {/* Play button overlay */}
-              <View style={styles.playButtonOverlay}>
-                <Ionicons name="play" size={60} color="#fff" />
+            <VideoView
+              player={player}
+              style={styles.video}
+              nativeControls={false}
+              contentFit="contain"
+            />
+
+            {!videoReady && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.loadingText}>جاري تحميل الإعلان...</Text>
               </View>
-            </TouchableOpacity>
+            )}
 
             {/* Ad badge */}
             <View style={styles.adBadge}>
@@ -215,30 +215,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  videoContainer: {
+  video: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  thumbnail: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
-  placeholder: {
-    flex: 1,
-    width: SCREEN_WIDTH,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#000',
   },
-  playButtonOverlay: {
-    position: 'absolute',
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 12,
   },
   adBadge: {
     position: 'absolute',

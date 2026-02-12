@@ -110,8 +110,6 @@ export default function AdminLayout() {
         <Stack.Screen name="matches" />
         <Stack.Screen name="users" />
         <Stack.Screen name="store" />
-        <Stack.Screen name="sliders" />
-        <Stack.Screen name="legal" />
       </Stack>
     </View>
   );
