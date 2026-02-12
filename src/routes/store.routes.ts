@@ -479,19 +479,27 @@ router.delete('/admin/banners/:id', authenticate, isAdmin, async (req: AuthReque
 router.post('/admin/clean-images', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
     const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
-    // Clear imageUrl for products where URL doesn't point to R2
+    // Clear imageUrl for products where URL is broken (not R2 and not local path)
     const products = await prisma.storeProduct.updateMany({
       where: {
-        imageUrl: { not: { startsWith: R2_PUBLIC_URL || 'https://pub-' } },
         NOT: { imageUrl: null },
+        AND: [
+          { imageUrl: { not: { startsWith: R2_PUBLIC_URL || 'https://pub-' } } },
+          { imageUrl: { not: { startsWith: '/store/' } } },
+          { imageUrl: { not: { startsWith: '/sliders/' } } },
+        ],
       },
       data: { imageUrl: null },
     });
-    // Clear imageUrl for banners where URL doesn't point to R2
+    // Clear imageUrl for banners where URL is broken (not R2 and not local path)
     const banners = await prisma.storeBanner.updateMany({
       where: {
-        imageUrl: { not: { startsWith: R2_PUBLIC_URL || 'https://pub-' } },
         NOT: { imageUrl: null },
+        AND: [
+          { imageUrl: { not: { startsWith: R2_PUBLIC_URL || 'https://pub-' } } },
+          { imageUrl: { not: { startsWith: '/store/' } } },
+          { imageUrl: { not: { startsWith: '/sliders/' } } },
+        ],
       },
       data: { imageUrl: null },
     });
