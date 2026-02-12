@@ -129,7 +129,6 @@ export default function FavoritesScreen() {
         const teamIds = preferences.favoriteTeams || [];
         const compIds = preferences.favoriteCompetitions || [];
         
-        console.log('✅ Loaded preferences from backend:', { teamIds, compIds });
         
         setFavoriteTeamIds(teamIds);
         setFavoriteCompetitionIds(compIds);
@@ -140,7 +139,6 @@ export default function FavoritesScreen() {
         
         await loadFavorites(teamIds);
       } catch (backendError) {
-        console.log('⚠️ Backend failed, loading from local storage:', backendError);
         // Fallback to local storage
         const teamsJson = await AsyncStorage.getItem('favoriteTeams');
         const competitionsJson = await AsyncStorage.getItem('favoriteCompetitions');
@@ -218,7 +216,6 @@ export default function FavoritesScreen() {
 
   const fetchTeamsForCompetitions = async (compIds: string[]) => {
     try {
-      console.log('🔍 Fetching teams for competitions:', compIds);
       
       if (compIds.length === 0) {
         setAllTeams([]);
@@ -243,8 +240,6 @@ export default function FavoritesScreen() {
       
       const uniqueTeams = Array.from(allTeamsMap.values());
       
-      console.log('✅ Teams loaded for favorites:', uniqueTeams.length);
-      console.log('📊 Team names:', uniqueTeams.map(t => t.name));
       
       setAllTeams(uniqueTeams);
     } catch (error) {
@@ -287,7 +282,6 @@ export default function FavoritesScreen() {
           favoriteTeams: selectedTeams,
           favoriteCompetitions: selectedCompetitions,
         });
-        console.log('✅ Preferences saved to backend');
       } catch (backendError) {
         console.error('⚠️ Failed to save to backend:', backendError);
       }

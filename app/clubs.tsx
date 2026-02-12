@@ -317,7 +317,7 @@ export default function ClubsScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
           }
-          ListEmptyComponent={
+          ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <View style={[styles.emptyIconWrap, { backgroundColor: colors.accent + '10' }]}>
                 <Ionicons name="shield-outline" size={48} color={colors.accent} />
@@ -329,7 +329,7 @@ export default function ClubsScreen() {
                 {t('clubs.noClubsDesc')}
               </Text>
             </View>
-          }
+          )}
         />
       )}
     </View>

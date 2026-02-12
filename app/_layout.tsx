@@ -10,7 +10,7 @@ import { RTLProvider, useRTL } from '@/contexts/RTLContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { AlertProvider } from '@/contexts/AlertContext';
 import { registerForPushNotifications, handleNotificationTap } from '@/services/notifications';
-import { setupForegroundNotificationHandler } from '@/services/firebase';
+import { requestNotificationPermission, setupForegroundNotificationHandler } from '@/services/firebase';
 import AnimatedSplash from '@/components/AnimatedSplash';
 import '@/i18n';
 
@@ -32,7 +32,12 @@ function RootLayoutContent() {
     loadStoredAuth();
   }, []);
 
-  // Setup push notifications
+  // Request notification permission immediately on app start (regardless of auth)
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  // Setup push notifications (token registration requires auth)
   useEffect(() => {
     if (isAuthenticated) {
       // Register for push notifications
@@ -71,9 +76,11 @@ function RootLayoutContent() {
 
     const inWelcomeScreen = segments[0] === 'welcome';
     const inAuthGroup = segments[0] === 'auth';
+    const inLegalPage = segments[0] === 'legal';
 
     // If user is NOT authenticated (not logged in, not guest) → go to welcome
-    if (!isAuthenticated && !inWelcomeScreen && !inAuthGroup) {
+    // Allow legal pages (terms/privacy) to be viewed without auth
+    if (!isAuthenticated && !inWelcomeScreen && !inAuthGroup && !inLegalPage) {
       router.replace('/welcome');
     }
     // If user IS authenticated and still on welcome screen → go to tabs
@@ -116,20 +123,20 @@ function RootLayoutContent() {
           freezeOnBlur: true,
         }}
       >
-        <Stack.Screen 
-          name="welcome" 
-          options={{ 
+        <Stack.Screen
+          name="welcome"
+          options={{
             headerShown: false,
             animation: 'fade',
             animationDuration: 150,
-          }} 
+          }}
         />
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
+        <Stack.Screen
+          name="(tabs)"
+          options={{
             headerShown: false,
             animation: 'none',
-          }} 
+          }}
         />
         <Stack.Screen
           name="match/[id]"
@@ -172,18 +179,48 @@ function RootLayoutContent() {
         <Stack.Screen
           name="auth/login"
           options={{
-            title: t('auth.login'),
-            presentation: 'modal',
             headerShown: false,
+            presentation: 'modal',
             animation: 'slide_from_bottom',
           }}
         />
         <Stack.Screen
           name="auth/register"
           options={{
-            title: t('auth.register'),
-            presentation: 'modal',
             headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="auth/forgot-password"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="auth/verify-email"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="auth/reset-password"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="auth/select-favorites"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
             animation: 'slide_from_bottom',
           }}
         />

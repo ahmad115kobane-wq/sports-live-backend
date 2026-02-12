@@ -2,8 +2,6 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@/constants/config';
 
-if (__DEV__) console.log('🌐 API URL configured:', API_URL);
-
 const api = axios.create({
   baseURL: API_URL,
   timeout: 10000,
@@ -39,7 +37,7 @@ api.interceptors.response.use(
           await AsyncStorage.removeItem('user');
         }
       } catch (e) {
-        if (__DEV__) console.log('Error clearing auth data:', e);
+        
       }
     }
     return Promise.reject(error);
@@ -289,6 +287,10 @@ export const competitionApi = {
     logoUrl?: string;
   }) => api.put(`/competitions/${id}`, data),
   delete: (id: string) => api.delete(`/competitions/${id}`),
+};
+
+export const videoAdApi = {
+  getRandom: () => api.get('/video-ads/random'),
 };
 
 export const legalApi = {

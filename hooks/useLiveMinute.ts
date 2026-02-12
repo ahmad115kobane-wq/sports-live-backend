@@ -204,8 +204,8 @@ export function useCountdowns(matches: Match[]): Map<string, string> {
       if (diff <= 0 || diff > DAY) continue;
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
-      // Show HH:MM only (no seconds) to reduce re-renders
-      map.set(match.id, `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      const s = Math.floor((diff % 60000) / 1000);
+      map.set(match.id, `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
     }
     // Only update state if values actually changed
     const prev = prevResultRef.current;
@@ -234,8 +234,8 @@ export function useCountdowns(matches: Match[]): Map<string, string> {
     });
     if (!hasUpcoming) return;
 
-    // Tick every 60s — minute-level countdown is sufficient
-    const interval = setInterval(computeAndSet, 60000);
+    // Tick every second for HH:MM:SS countdown
+    const interval = setInterval(computeAndSet, 1000);
     return () => clearInterval(interval);
   }, [matches, computeAndSet]);
 
@@ -271,7 +271,7 @@ export function useLiveMatchTimes(matches: Match[]): Map<string, MatchTime> {
     let changed = false;
     for (const [id, time] of map) {
       const p = prev.get(id);
-      if (!p || p.minute !== time.minute || p.displayMinute !== time.displayMinute) {
+      if (!p || p.minute !== time.minute || p.seconds !== time.seconds || p.display !== time.display) {
         changed = true;
         break;
       }
@@ -288,8 +288,8 @@ export function useLiveMatchTimes(matches: Match[]): Map<string, MatchTime> {
     const hasTicking = matches.some(m => TICKING_STATUSES.includes(m.status));
     if (!hasTicking) return;
 
-    // Tick every 30s — minute-level precision is enough for card display
-    const interval = setInterval(computeAndSet, 30000);
+    // Tick every 1s for live MM:SS display on home page cards
+    const interval = setInterval(computeAndSet, 1000);
     return () => clearInterval(interval);
   }, [matches, computeAndSet]);
 

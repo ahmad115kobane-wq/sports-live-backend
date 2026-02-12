@@ -145,7 +145,7 @@ export default function AdminScreen() {
         try {
           await matchApi.assignOperator(response.data.data.id, selectedOperator);
         } catch (assignError) {
-          console.log('Operator assignment handled in create');
+          
         }
       }
 

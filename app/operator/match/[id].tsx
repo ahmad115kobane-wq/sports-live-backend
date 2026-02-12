@@ -491,8 +491,56 @@ export default function OperatorMatchScreen() {
   const canAddEvents = isLive || isHalftime || isExtraTime || isExtraTimeHalftime || isPenalties;
 
   const currentTeam = selectedTeamId === match.homeTeamId ? match.homeTeam :
-                     selectedTeamId === match.awayTeamId ? match.awayTeam : null;
+    selectedTeamId === match.awayTeamId ? match.awayTeam : null;
   const teamPlayers = currentTeam?.players || [];
+
+  // ── Lineup-aware: starters vs substitutes ──
+  const currentLineup = match.lineups?.find(l => l.teamId === selectedTeamId);
+  const starterIds = new Set(
+    currentLineup?.players?.filter(lp => lp.isStarter).map(lp => lp.playerId) || []
+  );
+  const subIds = new Set(
+    currentLineup?.players?.filter(lp => !lp.isStarter).map(lp => lp.playerId) || []
+  );
+  const hasLineup = currentLineup && currentLineup.players && currentLineup.players.length > 0;
+
+  // Players who were substituted OUT (already left the field)
+  const substitutedOutIds = new Set(
+    (match.events || [])
+      .filter(e => e.type === 'substitution' && e.teamId === selectedTeamId && e.playerId)
+      .map(e => e.playerId!)
+  );
+  // Players who were substituted IN (now on the field, no longer bench)
+  const substitutedInIds = new Set(
+    (match.events || [])
+      .filter(e => e.type === 'substitution' && e.teamId === selectedTeamId && e.secondaryPlayerId)
+      .map(e => e.secondaryPlayerId!)
+  );
+
+  // ── Red-carded players: cannot be selected ──
+  const redCardedIds = new Set(
+    (match.events || [])
+      .filter(e => e.type === 'red_card' && e.playerId)
+      .map(e => e.playerId!)
+  );
+
+  // Current on-field players: (starters - substituted out + substituted in) - red carded
+  const onFieldPlayers = hasLineup
+    ? teamPlayers.filter(p =>
+      ((starterIds.has(p.id) && !substitutedOutIds.has(p.id)) || substitutedInIds.has(p.id))
+      && !redCardedIds.has(p.id)
+    )
+    : teamPlayers.filter(p => !redCardedIds.has(p.id));
+
+  // Bench players: (subs - already substituted in)
+  const benchPlayers: Player[] = hasLineup
+    ? teamPlayers.filter(p => subIds.has(p.id) && !substitutedInIds.has(p.id))
+    : teamPlayers;
+
+  // Which list to show in the inline horizontal row
+  const displayPlayers = (selectedEventType === 'substitution')
+    ? onFieldPlayers   // For substitution: pick player going OUT from on-field
+    : teamPlayers.filter(p => !redCardedIds.has(p.id));  // Other events: all minus red carded
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -842,6 +890,37 @@ export default function OperatorMatchScreen() {
                       <Ionicons name="close-circle" size={20} color="#3B82F6" />
                     </TouchableOpacity>
                   </View>
+                ) : benchPlayers.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.playersScroll}>
+                    {benchPlayers.map((player: Player) => {
+                      const isActive = secondaryPlayer?.id === player.id;
+                      return (
+                        <TouchableOpacity
+                          key={player.id}
+                          activeOpacity={0.6}
+                          style={[
+                            styles.playerCard,
+                            { backgroundColor: isActive ? '#3B82F6' + '20' : colors.surface },
+                            isActive && { borderColor: '#3B82F6', borderWidth: 1.5 },
+                          ]}
+                          onPress={() => {
+                            setSecondaryPlayer(player);
+                            setSelectingSecondary(false);
+                            Vibration.vibrate(10);
+                          }}
+                        >
+                          <View style={[styles.playerNum, { backgroundColor: isActive ? '#3B82F6' : '#3B82F6' + '20' }]}>
+                            <Text style={[styles.playerNumText, { color: isActive ? '#fff' : '#3B82F6' }]}>
+                              {player.shirtNumber || '-'}
+                            </Text>
+                          </View>
+                          <Text style={[styles.playerCardName, { color: colors.text }]} numberOfLines={2}>
+                            {player.name?.split(' ').pop() || player.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 ) : (
                   <TouchableOpacity
                     style={[styles.selectSubBtn, { backgroundColor: colors.surface, borderColor: '#3B82F6' }]}
@@ -857,18 +936,21 @@ export default function OperatorMatchScreen() {
             )}
 
             {/* Horizontal Players List */}
-            {teamPlayers.length > 0 ? (
+            {displayPlayers.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.playersScroll}>
-                {teamPlayers.map((player: Player) => {
+                {displayPlayers.map((player: Player) => {
                   const isActive = selectedPlayer?.id === player.id;
+                  const isRedCarded = redCardedIds.has(player.id);
                   return (
                     <TouchableOpacity
                       key={player.id}
-                      activeOpacity={0.6}
+                      activeOpacity={isRedCarded ? 1 : 0.6}
+                      disabled={isRedCarded}
                       style={[
                         styles.playerCard,
                         { backgroundColor: isActive ? colors.accent + '20' : colors.surface },
                         isActive && { borderColor: colors.accent, borderWidth: 1.5 },
+                        isRedCarded && { opacity: 0.35 },
                       ]}
                       onPress={() => {
                         if (selectingSecondary) {
@@ -889,6 +971,11 @@ export default function OperatorMatchScreen() {
                       <Text style={[styles.playerCardName, { color: colors.text }]} numberOfLines={2}>
                         {player.name?.split(' ').pop() || player.name}
                       </Text>
+                      {isRedCarded && (
+                        <View style={{ position: 'absolute', top: 4, right: 4 }}>
+                          <Ionicons name="close-circle" size={14} color="#EF4444" />
+                        </View>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -1016,6 +1103,7 @@ export default function OperatorMatchScreen() {
               awayTeam={match.awayTeam}
               selectedTeamId={selectedTeamId}
               onSelect={handleSelectPlayer}
+              disabledPlayerIds={redCardedIds}
             />
           </View>
         </View>

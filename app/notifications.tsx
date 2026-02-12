@@ -301,7 +301,7 @@ export default function NotificationsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={48} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {t('common.noResults')}
+              لا يوجد نتائج
             </Text>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               لا يوجد إشعارات
@@ -400,14 +400,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: SPACING.xl * 4,
+    paddingVertical: SPACING.xl * 2,
   },
   emptyTitle: {
-    ...TYPOGRAPHY.titleLarge,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     marginTop: SPACING.lg,
     marginBottom: SPACING.xs,
-    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   emptyText: {
     ...TYPOGRAPHY.bodyMedium,

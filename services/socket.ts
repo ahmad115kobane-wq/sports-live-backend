@@ -20,7 +20,7 @@ export const useSocket = () => {
   useEffect(() => {
     // Initialize socket connection
     if (!socketRef.current && connectionAttempts < MAX_CONNECTION_ATTEMPTS) {
-      console.log('🔌 Attempting socket connection to:', SOCKET_URL);
+      
       
       socketRef.current = io(SOCKET_URL, {
         auth: { token },

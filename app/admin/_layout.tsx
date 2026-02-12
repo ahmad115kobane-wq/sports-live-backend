@@ -57,13 +57,10 @@ export default function AdminLayout() {
         compact
         rightContent={
           <TouchableOpacity
-            style={styles.logoutBtn}
-            onPress={() => {
-              useAuthStore.getState().logout();
-              router.replace('/');
-            }}
+            style={styles.backBtn}
+            onPress={() => router.replace('/(tabs)/profile' as any)}
           >
-            <Ionicons name="log-out-outline" size={18} color={colors.text} />
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={18} color={colors.text} />
           </TouchableOpacity>
         }
       >
@@ -122,15 +119,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  logoutBtn: {
+  backBtn: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(220,38,38,0.08)',
+    backgroundColor: 'rgba(128,128,128,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(220,38,38,0.12)',
+    borderColor: 'rgba(128,128,128,0.12)',
   },
   tabsContainer: {
     paddingHorizontal: SPACING.lg,

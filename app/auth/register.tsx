@@ -24,35 +24,61 @@ import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { competitionApi, teamApi, matchApi } from '@/services/api';
 import { Competition, Team, Match } from '@/types';
+import AppIcon from '@/components/AppIcon';
 
-// Cities list
-const CITIES = [
-  'Baghdad', 'Basra', 'Erbil', 'Sulaymaniyah', 'Mosul', 'Kirkuk', 
-  'Najaf', 'Karbala', 'Nasiriyah', 'Amarah', 'Diwaniyah', 'Hillah',
-  'Duhok', 'Samawah', 'Kut', 'Ramadi', 'Fallujah', 'Tikrit'
-];
+// Cities list with localized names
+const getCities = (language: string) => {
+  const cities = [
+    { en: 'Baghdad', ar: 'بغداد', ku: 'بەغدا' },
+    { en: 'Basra', ar: 'البصرة', ku: 'بەصرە' },
+    { en: 'Erbil', ar: 'أربيل', ku: 'هەولێر' },
+    { en: 'Sulaymaniyah', ar: 'السليمانية', ku: 'سلێمانی' },
+    { en: 'Mosul', ar: 'الموصل', ku: 'مووسڵ' },
+    { en: 'Kirkuk', ar: 'كركوك', ku: 'کەرکووک' },
+    { en: 'Najaf', ar: 'النجف', ku: 'نەجەف' },
+    { en: 'Karbala', ar: 'كربلاء', ku: 'کەربەلا' },
+    { en: 'Nasiriyah', ar: 'الناصرية', ku: 'ناصریە' },
+    { en: 'Amarah', ar: 'العمارة', ku: 'ئامارە' },
+    { en: 'Diwaniyah', ar: 'الديوانية', ku: 'دیوانیە' },
+    { en: 'Hillah', ar: 'الحلة', ku: 'حەڵە' },
+    { en: 'Duhok', ar: 'دهوك', ku: 'دهۆک' },
+    { en: 'Samawah', ar: 'السماوة', ku: 'سەماوە' },
+    { en: 'Kut', ar: 'الكوت', ku: 'کوت' },
+    { en: 'Ramadi', ar: 'الرمادي', ku: 'ڕەمادی' },
+    { en: 'Fallujah', ar: 'الفلوجة', ku: 'فەلووجە' },
+    { en: 'Tikrit', ar: 'تكريت', ku: 'تیکریت' }
+  ];
+
+  return cities.map(city => {
+    switch (language) {
+      case 'ar': return city.ar;
+      case 'ku': return city.ku;
+      default: return city.en;
+    }
+  });
+};
 
 export default function RegisterScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
-  const { t, isRTL, flexDirection } = useRTL();
+  const { t, isRTL, flexDirection, languageInfo } = useRTL();
   const { alert } = useAlert();
-  
+
   // Form state - Step 1
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
   const [city, setCity] = useState('');
   const [showCityPicker, setShowCityPicker] = useState(false);
-  
+
   // Form state - Step 2
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Form state - Step 3 (Favorites)
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -61,7 +87,7 @@ export default function RegisterScreen() {
   const [loadingCompetitions, setLoadingCompetitions] = useState(false);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
-  
+
   // UI state
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -104,24 +130,24 @@ export default function RegisterScreen() {
       // Get matches for selected competitions to extract teams
       const matchesResponse = await matchApi.getAll();
       const allMatches: Match[] = matchesResponse.data.data || [];
-      
+
       // Filter matches by selected competitions
-      const filteredMatches = allMatches.filter(match => 
+      const filteredMatches = allMatches.filter(match =>
         match.competitionId && selectedCompetitions.includes(match.competitionId)
       );
-      
+
       // Extract unique team IDs from filtered matches
       const teamIdsSet = new Set<string>();
       filteredMatches.forEach(match => {
         teamIdsSet.add(match.homeTeamId);
         teamIdsSet.add(match.awayTeamId);
       });
-      
+
       // Get all teams and filter by extracted IDs
       const teamsResponse = await teamApi.getAll();
       const allTeams: Team[] = teamsResponse.data.data || [];
       const filteredTeams = allTeams.filter(team => teamIdsSet.has(team.id));
-      
+
       setTeams(filteredTeams);
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -131,13 +157,13 @@ export default function RegisterScreen() {
   };
 
   const toggleCompetition = (id: string) => {
-    setSelectedCompetitions(prev => 
+    setSelectedCompetitions(prev =>
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
     );
   };
 
   const toggleTeam = (id: string) => {
-    setSelectedTeams(prev => 
+    setSelectedTeams(prev =>
       prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
     );
   };
@@ -225,7 +251,7 @@ export default function RegisterScreen() {
       if (selectedCompetitions.length > 0) {
         await AsyncStorage.setItem('favoriteCompetitions', JSON.stringify(selectedCompetitions));
       }
-      
+
       router.replace('/(tabs)');
     } catch (error: any) {
       alert(t('common.error'), error.message || t('common.error'));
@@ -354,11 +380,11 @@ export default function RegisterScreen() {
           </Text>
           <Ionicons name={showCityPicker ? "chevron-up" : "chevron-down"} size={20} color={colors.textTertiary} />
         </TouchableOpacity>
-        
+
         {showCityPicker && (
           <View style={[styles.cityPickerContainer, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
             <ScrollView style={styles.cityPicker} nestedScrollEnabled>
-              {CITIES.map((c) => (
+              {getCities(languageInfo?.code || 'ar').map((c) => (
                 <TouchableOpacity
                   key={c}
                   style={[
@@ -472,18 +498,18 @@ export default function RegisterScreen() {
             onFocus={() => setFocusedInput('password')}
             onBlur={() => setFocusedInput(null)}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.eyeButton}
             onPress={() => setShowPassword(!showPassword)}
           >
-            <Ionicons 
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-              size={20} 
-              color={colors.textTertiary} 
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textTertiary}
             />
           </TouchableOpacity>
         </View>
-        
+
         {/* Password Strength */}
         {passwordStrength && (
           <View style={styles.strengthContainer}>
@@ -524,26 +550,26 @@ export default function RegisterScreen() {
             onFocus={() => setFocusedInput('confirm')}
             onBlur={() => setFocusedInput(null)}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.eyeButton}
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
           >
-            <Ionicons 
-              name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} 
-              size={20} 
-              color={colors.textTertiary} 
+            <Ionicons
+              name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textTertiary}
             />
           </TouchableOpacity>
         </View>
-        
+
         {confirmPassword && password && (
           <View style={[styles.matchIndicator, { flexDirection }]}>
-            <Ionicons 
-              name={confirmPassword === password ? "checkmark-circle" : "close-circle"} 
-              size={16} 
-              color={confirmPassword === password ? colors.success : colors.error} 
+            <Ionicons
+              name={confirmPassword === password ? "checkmark-circle" : "close-circle"}
+              size={16}
+              color={confirmPassword === password ? colors.success : colors.error}
             />
-            <Text style={{ 
+            <Text style={{
               color: confirmPassword === password ? colors.success : colors.error,
               fontSize: 12,
               marginLeft: isRTL ? 0 : 6,
@@ -744,7 +770,7 @@ export default function RegisterScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      
+
       {/* Full Screen Gradient Background */}
       <LinearGradient
         colors={colors.gradients.dark}
@@ -754,7 +780,7 @@ export default function RegisterScreen() {
       />
 
       {/* Back Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.navBackButton, { backgroundColor: colors.surfacePressed }, isRTL && styles.navBackButtonRTL]}
         onPress={() => router.back()}
       >
@@ -765,7 +791,7 @@ export default function RegisterScreen() {
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -774,14 +800,7 @@ export default function RegisterScreen() {
           <View style={styles.headerSection}>
             {/* Logo */}
             <View style={styles.logoWrapper}>
-              <LinearGradient
-                colors={colors.gradients.accent}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.logoGradient, { shadowColor: colors.accent }]}
-              >
-                <Ionicons name="person-add" size={28} color={colors.textInverse} />
-              </LinearGradient>
+              <AppIcon size={60} showBackground={false} />
             </View>
 
             <Text style={[styles.welcomeText, { color: colors.text }]}>{t('auth.createAccount')}</Text>

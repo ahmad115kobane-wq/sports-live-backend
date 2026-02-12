@@ -63,7 +63,7 @@ export default function CartScreen() {
       {items.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={[styles.emptyIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
-            <Ionicons name="bag-outline" size={52} color={colors.textTertiary} />
+            <Ionicons name="bag-outline" size={28} color={colors.textTertiary} />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>
             {t('store.emptyCart')}
@@ -72,21 +72,11 @@ export default function CartScreen() {
             {t('store.emptyCartDesc')}
           </Text>
           <TouchableOpacity
-            style={styles.browseBtn}
+            style={[styles.browseBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)', borderColor: colors.border }]}
             onPress={() => router.back()}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <LinearGradient
-              colors={isDark ? ['#4a4a4a', '#3a3a3a'] : ['#333333', '#1a1a1a']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.browseBtnGradient}
-            >
-              <Ionicons name="storefront-outline" size={18} color="#fff" />
-              <Text style={styles.browseBtnText}>
-                {t('store.continueShopping')}
-              </Text>
-            </LinearGradient>
+            <Text style={[styles.browseBtnText, { color: colors.accent }]}>{t('store.continueShopping')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -262,40 +252,38 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   emptyIconWrap: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.sm,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: SPACING.md,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 11,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 18,
     paddingHorizontal: SPACING.lg,
   },
   browseBtn: {
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
-    marginTop: SPACING.xl,
-  },
-  browseBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xxl,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    marginTop: SPACING.md,
+    borderWidth: 1,
   },
   browseBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   cartItem: {
     borderRadius: RADIUS.xl,

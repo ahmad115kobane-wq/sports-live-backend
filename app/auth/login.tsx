@@ -20,6 +20,7 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
+import AppIcon from '@/components/AppIcon';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -62,7 +63,7 @@ export default function LoginScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      
+
       {/* Full Screen Gradient Background */}
       <LinearGradient
         colors={colors.gradients.dark}
@@ -72,7 +73,7 @@ export default function LoginScreen() {
       />
 
       {/* Back Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.backButton, { backgroundColor: colors.surfacePressed }, isRTL && styles.backButtonRTL]}
         onPress={() => router.back()}
       >
@@ -83,7 +84,7 @@ export default function LoginScreen() {
         style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -93,14 +94,7 @@ export default function LoginScreen() {
           <View style={styles.headerSection}>
             {/* Logo */}
             <View style={styles.logoWrapper}>
-              <LinearGradient
-                colors={colors.gradients.accent}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.logoGradient, { shadowColor: colors.accent }]}
-              >
-                <Ionicons name="football" size={30} color={colors.textInverse} />
-              </LinearGradient>
+              <AppIcon size={60} showBackground={false} />
             </View>
 
             <Text style={[styles.welcomeText, { color: colors.text }]}>{t('auth.welcomeBack')}</Text>
@@ -162,21 +156,21 @@ export default function LoginScreen() {
                   onFocus={() => setFocusedInput('password')}
                   onBlur={() => setFocusedInput(null)}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Ionicons 
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                    size={20} 
-                    color={colors.textTertiary} 
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.textTertiary}
                   />
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Forgot Password */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.forgotButton, { alignSelf: isRTL ? 'flex-start' : 'flex-end' }]}
               onPress={() => router.push('/auth/forgot-password')}
             >

@@ -123,7 +123,7 @@ export default function OrdersScreen() {
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={colors.text} />
             </TouchableOpacity>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>{t('orders.trackOrders')}</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{t('orders.trackOrders')}</Text>
             </View>
             <View style={{ width: 40 }} />
           </View>
@@ -142,7 +142,7 @@ export default function OrdersScreen() {
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>{t('orders.trackOrders')}</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{t('orders.trackOrders')}</Text>
             {orders.length > 0 && (
               <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>{orders.length} {t('orders.orderCount')}</Text>
             )}
@@ -154,7 +154,7 @@ export default function OrdersScreen() {
       {orders.length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={[styles.emptyIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
-            <Ionicons name="receipt-outline" size={48} color={colors.textTertiary} />
+            <Ionicons name="receipt-outline" size={28} color={colors.textTertiary} />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('orders.noOrders')}</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
@@ -165,7 +165,6 @@ export default function OrdersScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="storefront-outline" size={18} color={colors.accent} />
             <Text style={[styles.shopBtnText, { color: colors.accent }]}>{t('orders.browseStore')}</Text>
           </TouchableOpacity>
         </View>
@@ -314,35 +313,37 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   emptyIconWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.sm,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: SPACING.md,
+    textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
   },
   shopBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderRadius: RADIUS.full,
     marginTop: SPACING.md,
     borderWidth: 1,
   },
   shopBtnText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
+    textAlign: 'center',
   },
   orderCard: {
     borderRadius: RADIUS.xl,

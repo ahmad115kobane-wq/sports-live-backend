@@ -21,7 +21,6 @@ import { useAlert } from '@/contexts/AlertContext';
 import { storeApi, orderApi } from '@/services/api';
 import AppModal from '@/components/ui/AppModal';
 import * as ImagePicker from 'expo-image-picker';
-import { API_URL } from '@/constants/config';
 
 // ─── Types ───
 interface StoreCategory {
@@ -360,7 +359,7 @@ export default function AdminStoreScreen() {
         name: asset.fileName || `store-${Date.now()}.jpg`,
       } as any);
       const res = await storeApi.adminUploadImage(formData);
-      const imageUrl = `${API_URL.replace('/api', '')}${res.data.data.imageUrl}`;
+      const imageUrl = res.data.data.imageUrl;
       if (target === 'product') setProdImageUrl(imageUrl);
       else setBanImageUrl(imageUrl);
     } catch (error) {
@@ -557,274 +556,274 @@ export default function AdminStoreScreen() {
 
         {/* Tab Content */}
         <View style={{ padding: SPACING.lg }}>
-        {activeTab === 'categories' ? (
-          <>
-            {/* Add Category Button */}
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
-              onPress={() => openCategoryModal()}
-            >
-              <Ionicons name="add-circle" size={20} color={colors.accent} />
-              <Text style={[styles.addBtnText, { color: colors.accent }]}>إضافة فئة جديدة</Text>
-            </TouchableOpacity>
-
-            {/* Categories List */}
-            {categories.map((cat) => (
-              <View key={cat.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                <View style={[styles.listItemLeft, { flexDirection }]}>
-                  <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                    <Ionicons name={(cat.icon || 'grid') as any} size={18} color={colors.text} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.listItemTitle, { color: colors.text }]}>{cat.nameAr}</Text>
-                    <Text style={[styles.listItemSub, { color: colors.textTertiary }]}>
-                      {cat.name} • {cat.productCount || 0} منتج
-                    </Text>
-                  </View>
-                  {!cat.isActive && (
-                    <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                      <Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>معطل</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={[styles.listItemActions, { flexDirection }]}>
-                  <TouchableOpacity onPress={() => openCategoryModal(cat)} style={styles.actionBtn}>
-                    <Ionicons name="create-outline" size={18} color={colors.accent} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteCategory(cat)} style={styles.actionBtn}>
-                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-            {categories.length === 0 && (
-              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد فئات بعد</Text>
-            )}
-          </>
-        ) : activeTab === 'products' ? (
-          <>
-            {/* Add Product Button */}
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
-              onPress={() => openProductModal()}
-            >
-              <Ionicons name="add-circle" size={20} color={colors.accent} />
-              <Text style={[styles.addBtnText, { color: colors.accent }]}>إضافة منتج جديد</Text>
-            </TouchableOpacity>
-
-            {/* Category Filter */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: SPACING.sm, gap: SPACING.xs }}>
+          {activeTab === 'categories' ? (
+            <>
+              {/* Add Category Button */}
               <TouchableOpacity
-                style={[styles.catFilterTab, productCategoryFilter === 'all' && { backgroundColor: colors.accent }, { borderColor: colors.border }]}
-                onPress={() => setProductCategoryFilter('all')}
+                style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
+                onPress={() => openCategoryModal()}
               >
-                <Text style={[styles.catFilterText, { color: productCategoryFilter === 'all' ? '#fff' : colors.textSecondary }]}>
-                  الكل ({products.length})
-                </Text>
+                <Ionicons name="add-circle" size={20} color={colors.accent} />
+                <Text style={[styles.addBtnText, { color: colors.accent }]}>إضافة فئة جديدة</Text>
               </TouchableOpacity>
-              {categories.map((cat) => {
-                const count = products.filter(p => p.categoryId === cat.id).length;
-                return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.catFilterTab, productCategoryFilter === cat.id && { backgroundColor: colors.accent }, { borderColor: colors.border }]}
-                    onPress={() => setProductCategoryFilter(cat.id)}
-                  >
-                    <Text style={[styles.catFilterText, { color: productCategoryFilter === cat.id ? '#fff' : colors.textSecondary }]}>
-                      {cat.nameAr} ({count})
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
 
-            {/* Products List */}
-            {products.filter(p => productCategoryFilter === 'all' || p.categoryId === productCategoryFilter).map((prod) => (
-              <View key={prod.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                <View style={[styles.listItemLeft, { flexDirection }]}>
-                  {prod.imageUrl ? (
-                    <Image source={{ uri: prod.imageUrl }} style={styles.prodImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.prodEmojiWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
-                      <Text style={{ fontSize: 26 }}>{prod.emoji || '📦'}</Text>
+              {/* Categories List */}
+              {categories.map((cat) => (
+                <View key={cat.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  <View style={[styles.listItemLeft, { flexDirection }]}>
+                    <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                      <Ionicons name={(cat.icon || 'grid') as any} size={18} color={colors.text} />
                     </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.listItemTitle, { color: colors.text }]} numberOfLines={2}>{prod.nameAr}</Text>
-                    <Text style={[styles.listItemSub, { color: colors.textTertiary }]} numberOfLines={2}>
-                      {prod.name}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                      <Text style={{ color: '#10b981', fontSize: 13, fontWeight: '800' }}>${prod.price}</Text>
-                      {prod.originalPrice ? <Text style={{ color: colors.textTertiary, fontSize: 11, textDecorationLine: 'line-through' }}>${prod.originalPrice}</Text> : null}
-                      {prod.discount ? <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>-{prod.discount}%</Text></View> : null}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.listItemTitle, { color: colors.text }]}>{cat.nameAr}</Text>
+                      <Text style={[styles.listItemSub, { color: colors.textTertiary }]}>
+                        {cat.name} • {cat.productCount || 0} منتج
+                      </Text>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                      <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(99,102,241,0.1)' }]}>
-                        <Text style={{ color: '#A8A8A8', fontSize: 10, fontWeight: '600' }}>{prod.category?.nameAr || '—'}</Text>
-                      </View>
-                      {prod.badge ? <View style={[styles.inactiveBadge, { backgroundColor: prod.badge === 'new' ? 'rgba(16,185,129,0.1)' : prod.badge === 'hot' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)' }]}><Text style={{ color: prod.badge === 'new' ? '#10b981' : prod.badge === 'hot' ? '#f59e0b' : '#ef4444', fontSize: 10, fontWeight: '600' }}>{prod.badge}</Text></View> : null}
-                      {prod.isFeatured && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(245,158,11,0.1)' }]}><Ionicons name="star" size={10} color="#f59e0b" /></View>}
-                      {!prod.inStock && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>نفذ</Text></View>}
-                      {!prod.isActive && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>معطل</Text></View>}
-                    </View>
-                  </View>
-                </View>
-                <View style={[styles.listItemActions, { flexDirection }]}>
-                  <TouchableOpacity onPress={() => openProductModal(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
-                    <Ionicons name="create-outline" size={16} color="#A8A8A8" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteProduct(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
-                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-            {products.filter(p => productCategoryFilter === 'all' || p.categoryId === productCategoryFilter).length === 0 && (
-              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
-                {productCategoryFilter === 'all' ? 'لا توجد منتجات بعد' : 'لا توجد منتجات في هذا القسم'}
-              </Text>
-            )}
-          </>
-        ) : activeTab === 'banners' ? (
-          <>
-            {/* Add Banner Button */}
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
-              onPress={() => openBannerModal()}
-            >
-              <Ionicons name="add-circle" size={20} color={colors.accent} />
-              <Text style={[styles.addBtnText, { color: colors.accent }]}>إضافة إعلان جديد</Text>
-            </TouchableOpacity>
-
-            {/* Banners List */}
-            {banners.map((ban) => (
-              <View key={ban.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder, overflow: 'hidden', padding: 0 }]}>
-                {/* Banner Preview */}
-                {ban.imageUrl ? (
-                  <Image source={{ uri: ban.imageUrl }} style={styles.bannerPreview} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.bannerPreview, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                    <Ionicons name="image-outline" size={24} color={colors.textTertiary} />
-                  </View>
-                )}
-                <View style={{ padding: SPACING.md }}>
-                  <Text style={[styles.listItemTitle, { color: colors.text }]}>{ban.titleAr}</Text>
-                  <Text style={[styles.listItemSub, { color: colors.textTertiary }]}>
-                    {ban.title}
-                    {ban.discount ? ` • ${ban.discount}` : ''}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                    {!ban.isActive && (
+                    {!cat.isActive && (
                       <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
                         <Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>معطل</Text>
                       </View>
                     )}
                   </View>
-                  <View style={[styles.listItemActions, { flexDirection, marginTop: SPACING.sm }]}>
-                    <TouchableOpacity onPress={() => openBannerModal(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
+                  <View style={[styles.listItemActions, { flexDirection }]}>
+                    <TouchableOpacity onPress={() => openCategoryModal(cat)} style={styles.actionBtn}>
+                      <Ionicons name="create-outline" size={18} color={colors.accent} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteCategory(cat)} style={styles.actionBtn}>
+                      <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              {categories.length === 0 && (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد فئات بعد</Text>
+              )}
+            </>
+          ) : activeTab === 'products' ? (
+            <>
+              {/* Add Product Button */}
+              <TouchableOpacity
+                style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
+                onPress={() => openProductModal()}
+              >
+                <Ionicons name="add-circle" size={20} color={colors.accent} />
+                <Text style={[styles.addBtnText, { color: colors.accent }]}>إضافة منتج جديد</Text>
+              </TouchableOpacity>
+
+              {/* Category Filter */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: SPACING.sm, gap: SPACING.xs }}>
+                <TouchableOpacity
+                  style={[styles.catFilterTab, productCategoryFilter === 'all' && { backgroundColor: colors.accent }, { borderColor: colors.border }]}
+                  onPress={() => setProductCategoryFilter('all')}
+                >
+                  <Text style={[styles.catFilterText, { color: productCategoryFilter === 'all' ? '#fff' : colors.textSecondary }]}>
+                    الكل ({products.length})
+                  </Text>
+                </TouchableOpacity>
+                {categories.map((cat) => {
+                  const count = products.filter(p => p.categoryId === cat.id).length;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[styles.catFilterTab, productCategoryFilter === cat.id && { backgroundColor: colors.accent }, { borderColor: colors.border }]}
+                      onPress={() => setProductCategoryFilter(cat.id)}
+                    >
+                      <Text style={[styles.catFilterText, { color: productCategoryFilter === cat.id ? '#fff' : colors.textSecondary }]}>
+                        {cat.nameAr} ({count})
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Products List */}
+              {products.filter(p => productCategoryFilter === 'all' || p.categoryId === productCategoryFilter).map((prod) => (
+                <View key={prod.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                  <View style={[styles.listItemLeft, { flexDirection }]}>
+                    {prod.imageUrl ? (
+                      <Image source={{ uri: prod.imageUrl }} style={styles.prodImage} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.prodEmojiWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+                        <Text style={{ fontSize: 26 }}>{prod.emoji || '📦'}</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.listItemTitle, { color: colors.text }]} numberOfLines={2}>{prod.nameAr}</Text>
+                      <Text style={[styles.listItemSub, { color: colors.textTertiary }]} numberOfLines={2}>
+                        {prod.name}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                        <Text style={{ color: '#10b981', fontSize: 13, fontWeight: '800' }}>${prod.price}</Text>
+                        {prod.originalPrice ? <Text style={{ color: colors.textTertiary, fontSize: 11, textDecorationLine: 'line-through' }}>${prod.originalPrice}</Text> : null}
+                        {prod.discount ? <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>-{prod.discount}%</Text></View> : null}
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                        <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(99,102,241,0.1)' }]}>
+                          <Text style={{ color: '#A8A8A8', fontSize: 10, fontWeight: '600' }}>{prod.category?.nameAr || '—'}</Text>
+                        </View>
+                        {prod.badge ? <View style={[styles.inactiveBadge, { backgroundColor: prod.badge === 'new' ? 'rgba(16,185,129,0.1)' : prod.badge === 'hot' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)' }]}><Text style={{ color: prod.badge === 'new' ? '#10b981' : prod.badge === 'hot' ? '#f59e0b' : '#ef4444', fontSize: 10, fontWeight: '600' }}>{prod.badge}</Text></View> : null}
+                        {prod.isFeatured && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(245,158,11,0.1)' }]}><Ionicons name="star" size={10} color="#f59e0b" /></View>}
+                        {!prod.inStock && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>نفذ</Text></View>}
+                        {!prod.isActive && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>معطل</Text></View>}
+                      </View>
+                    </View>
+                  </View>
+                  <View style={[styles.listItemActions, { flexDirection }]}>
+                    <TouchableOpacity onPress={() => openProductModal(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
                       <Ionicons name="create-outline" size={16} color="#A8A8A8" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => deleteBanner(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
+                    <TouchableOpacity onPress={() => deleteProduct(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                       <Ionicons name="trash-outline" size={16} color="#ef4444" />
                     </TouchableOpacity>
                   </View>
                 </View>
-              </View>
-            ))}
-            {banners.length === 0 && (
-              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد إعلانات بعد</Text>
-            )}
-          </>
-        ) : activeTab === 'orders' ? (
-          <>
-            {/* Order Filter Chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
-              {[
-                { key: 'all', label: `الكل (${orderCounts.total})` },
-                { key: 'pending', label: `جديد (${orderCounts.pending})` },
-                { key: 'approved', label: `مقبول (${orderCounts.approved})` },
-                { key: 'rejected', label: `مرفوض (${orderCounts.rejected})` },
-                { key: 'delivered', label: `تم التوصيل (${orderCounts.delivered})` },
-              ].map((f) => (
-                <TouchableOpacity
-                  key={f.key}
-                  style={[
-                    styles.orderFilterChip,
-                    { borderColor: orderFilter === f.key ? colors.accent : colors.border },
-                    orderFilter === f.key && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
-                  ]}
-                  onPress={() => setOrderFilter(f.key)}
-                >
-                  <Text style={[styles.orderFilterText, { color: orderFilter === f.key ? colors.text : colors.textTertiary }]}>
-                    {f.label}
-                  </Text>
-                </TouchableOpacity>
               ))}
-            </ScrollView>
+              {products.filter(p => productCategoryFilter === 'all' || p.categoryId === productCategoryFilter).length === 0 && (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                  {productCategoryFilter === 'all' ? 'لا توجد منتجات بعد' : 'لا توجد منتجات في هذا القسم'}
+                </Text>
+              )}
+            </>
+          ) : activeTab === 'banners' ? (
+            <>
+              {/* Add Banner Button */}
+              <TouchableOpacity
+                style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
+                onPress={() => openBannerModal()}
+              >
+                <Ionicons name="add-circle" size={20} color={colors.accent} />
+                <Text style={[styles.addBtnText, { color: colors.accent }]}>إضافة إعلان جديد</Text>
+              </TouchableOpacity>
 
-            {/* Orders List */}
-            {filteredOrders.map((order: any) => {
-              const statusLabels: Record<string, string> = { pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض', delivered: 'تم التوصيل' };
-              const statusIcons: Record<string, string> = { pending: 'time', approved: 'checkmark-circle', rejected: 'close-circle', delivered: 'cube' };
-
-              return (
-                <TouchableOpacity
-                  key={order.id}
-                  style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-                  onPress={() => openOrderModal(order)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.orderCardHeader, { flexDirection }]}>
-                    <View style={[styles.orderStatusBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                      <Ionicons name={(statusIcons[order.status] || 'ellipse') as any} size={18} color={colors.accent} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.listItemTitle, { color: colors.text }]}>{order.customerName}</Text>
-                      <Text style={[styles.listItemSub, { color: colors.textTertiary }]}>
-                        {order.customerPhone} {'\u2022'} {order.items?.length || 0} منتج
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[styles.orderPrice, { color: colors.text }]}>{formatPrice(order.totalAmount)}</Text>
-                      <Text style={[styles.orderStatusLabel, { color: colors.textSecondary }]}>{statusLabels[order.status]}</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.orderDetailRows]}>
-                    <View style={[styles.orderDetailRow, { flexDirection }]}>
-                      <Ionicons name="location-outline" size={13} color={colors.textTertiary} />
-                      <Text style={[styles.orderAddress, { color: colors.textTertiary }]} numberOfLines={2}>{order.customerAddress}</Text>
-                    </View>
-                    <Text style={[styles.orderDate, { color: colors.textTertiary }]}>
-                      {new Date(order.createdAt).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </View>
-                  {order.status === 'pending' && (
-                    <View style={[styles.orderQuickActions, { flexDirection }]}>
-                      <TouchableOpacity
-                        style={[styles.orderQuickBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
-                        onPress={(e) => { e.stopPropagation(); openOrderModal(order); }}
-                      >
-                        <Ionicons name="checkmark" size={16} color={colors.text} />
-                        <Text style={{ color: colors.text, fontSize: 12, fontWeight: '700' }}>قبول</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.orderQuickBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
-                        onPress={(e) => { e.stopPropagation(); openOrderModal(order); }}
-                      >
-                        <Ionicons name="close" size={16} color={colors.textSecondary} />
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '700' }}>رفض</Text>
-                      </TouchableOpacity>
+              {/* Banners List */}
+              {banners.map((ban) => (
+                <View key={ban.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder, overflow: 'hidden', padding: 0 }]}>
+                  {/* Banner Preview */}
+                  {ban.imageUrl ? (
+                    <Image source={{ uri: ban.imageUrl }} style={styles.bannerPreview} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.bannerPreview, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                      <Ionicons name="image-outline" size={24} color={colors.textTertiary} />
                     </View>
                   )}
-                </TouchableOpacity>
-              );
-            })}
-            {filteredOrders.length === 0 && (
-              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد طلبات</Text>
-            )}
-          </>
-        ) : null}
+                  <View style={{ padding: SPACING.md }}>
+                    <Text style={[styles.listItemTitle, { color: colors.text }]}>{ban.titleAr}</Text>
+                    <Text style={[styles.listItemSub, { color: colors.textTertiary }]}>
+                      {ban.title}
+                      {ban.discount ? ` • ${ban.discount}` : ''}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                      {!ban.isActive && (
+                        <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
+                          <Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>معطل</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={[styles.listItemActions, { flexDirection, marginTop: SPACING.sm }]}>
+                      <TouchableOpacity onPress={() => openBannerModal(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
+                        <Ionicons name="create-outline" size={16} color="#A8A8A8" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteBanner(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
+                        <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ))}
+              {banners.length === 0 && (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد إعلانات بعد</Text>
+              )}
+            </>
+          ) : activeTab === 'orders' ? (
+            <>
+              {/* Order Filter Chips */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
+                {[
+                  { key: 'all', label: `الكل (${orderCounts.total})` },
+                  { key: 'pending', label: `جديد (${orderCounts.pending})` },
+                  { key: 'approved', label: `مقبول (${orderCounts.approved})` },
+                  { key: 'rejected', label: `مرفوض (${orderCounts.rejected})` },
+                  { key: 'delivered', label: `تم التوصيل (${orderCounts.delivered})` },
+                ].map((f) => (
+                  <TouchableOpacity
+                    key={f.key}
+                    style={[
+                      styles.orderFilterChip,
+                      { borderColor: orderFilter === f.key ? colors.accent : colors.border },
+                      orderFilter === f.key && { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' },
+                    ]}
+                    onPress={() => setOrderFilter(f.key)}
+                  >
+                    <Text style={[styles.orderFilterText, { color: orderFilter === f.key ? colors.text : colors.textTertiary }]}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Orders List */}
+              {filteredOrders.map((order: any) => {
+                const statusLabels: Record<string, string> = { pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض', delivered: 'تم التوصيل' };
+                const statusIcons: Record<string, string> = { pending: 'time', approved: 'checkmark-circle', rejected: 'close-circle', delivered: 'cube' };
+
+                return (
+                  <TouchableOpacity
+                    key={order.id}
+                    style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                    onPress={() => openOrderModal(order)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.orderCardHeader, { flexDirection }]}>
+                      <View style={[styles.orderStatusBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                        <Ionicons name={(statusIcons[order.status] || 'ellipse') as any} size={18} color={colors.accent} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.listItemTitle, { color: colors.text }]}>{order.customerName}</Text>
+                        <Text style={[styles.listItemSub, { color: colors.textTertiary }]}>
+                          {order.customerPhone} {'\u2022'} {order.items?.length || 0} منتج
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[styles.orderPrice, { color: colors.text }]}>{formatPrice(order.totalAmount)}</Text>
+                        <Text style={[styles.orderStatusLabel, { color: colors.textSecondary }]}>{statusLabels[order.status]}</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.orderDetailRows]}>
+                      <View style={[styles.orderDetailRow, { flexDirection }]}>
+                        <Ionicons name="location-outline" size={13} color={colors.textTertiary} />
+                        <Text style={[styles.orderAddress, { color: colors.textTertiary }]} numberOfLines={2}>{order.customerAddress}</Text>
+                      </View>
+                      <Text style={[styles.orderDate, { color: colors.textTertiary }]}>
+                        {new Date(order.createdAt).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                    {order.status === 'pending' && (
+                      <View style={[styles.orderQuickActions, { flexDirection }]}>
+                        <TouchableOpacity
+                          style={[styles.orderQuickBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
+                          onPress={(e) => { e.stopPropagation(); openOrderModal(order); }}
+                        >
+                          <Ionicons name="checkmark" size={16} color={colors.text} />
+                          <Text style={{ color: colors.text, fontSize: 12, fontWeight: '700' }}>قبول</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.orderQuickBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: colors.border }]}
+                          onPress={(e) => { e.stopPropagation(); openOrderModal(order); }}
+                        >
+                          <Ionicons name="close" size={16} color={colors.textSecondary} />
+                          <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '700' }}>رفض</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+              {filteredOrders.length === 0 && (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد طلبات</Text>
+              )}
+            </>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -1385,7 +1384,7 @@ const styles = StyleSheet.create({
 
   // Banner preview
   bannerPreview: {
-    height: 100, alignItems: 'center', justifyContent: 'center',
+    width: '100%', height: 140, alignItems: 'center', justifyContent: 'center',
   },
   bannerPreviewCard: {
     height: 160, borderRadius: RADIUS.xl, overflow: 'hidden',

@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.4",
     "@react-native-firebase/app": "^21.8.1",
@@ -21,6 +20,7 @@
     "axios": "^1.6.7",
     "date-fns": "^3.3.1",
     "expo": "~54.0.33",
+    "expo-av": "~16.0.8",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",
@@ -54,19 +54,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
-    "@expo/config-plugins": "^54.0.4",
     "@types/react": "~19.1.0",
     "sharp": "^0.34.5",
     "typescript": "~5.9.2"
   },
-  "private": true,
-  "expo": {
-    "doctor": {
-      "reactNativeDirectoryCheck": {
-        "exclude": [
-          "@expo/config-plugins"
-        ]
-      }
-    }
-  }
+  "private": true
 }

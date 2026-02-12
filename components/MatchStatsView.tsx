@@ -127,7 +127,7 @@ export default function MatchStatsView({ match }: MatchStatsViewProps) {
         setStats(res.data.data);
       }
     } catch (error) {
-      console.log('Failed to fetch stats:', error);
+      
     } finally {
       setLoading(false);
     }

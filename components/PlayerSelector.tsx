@@ -16,6 +16,7 @@ interface PlayerSelectorProps {
   awayTeam: Team;
   selectedTeamId: string | null;
   onSelect: (player: Player) => void;
+  disabledPlayerIds?: Set<string>;
 }
 
 export default function PlayerSelector({
@@ -23,6 +24,7 @@ export default function PlayerSelector({
   awayTeam,
   selectedTeamId,
   onSelect,
+  disabledPlayerIds,
 }: PlayerSelectorProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
@@ -169,25 +171,35 @@ export default function PlayerSelector({
       {/* Player List */}
       <ScrollView style={styles.playerList}>
         {filteredPlayers.length > 0 ? (
-          filteredPlayers.map((player) => (
-            <TouchableOpacity
-              key={player.id}
-              style={styles.playerItem}
-              onPress={() => onSelect(player)}
-            >
-              <View style={styles.playerNumber}>
-                <Text style={styles.playerNumberText}>
-                  {player.shirtNumber || '-'}
-                </Text>
-              </View>
-              <View style={styles.playerInfo}>
-                <Text style={styles.playerName}>{player.name}</Text>
-                <Text style={styles.playerPosition}>
-                  {player.position || 'Player'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))
+          filteredPlayers.map((player) => {
+            const isDisabled = disabledPlayerIds?.has(player.id) ?? false;
+            return (
+              <TouchableOpacity
+                key={player.id}
+                style={[styles.playerItem, isDisabled && { opacity: 0.35 }]}
+                onPress={() => !isDisabled && onSelect(player)}
+                disabled={isDisabled}
+                activeOpacity={isDisabled ? 1 : 0.7}
+              >
+                <View style={styles.playerNumber}>
+                  <Text style={styles.playerNumberText}>
+                    {player.shirtNumber || '-'}
+                  </Text>
+                </View>
+                <View style={styles.playerInfo}>
+                  <Text style={styles.playerName}>{player.name}</Text>
+                  <Text style={styles.playerPosition}>
+                    {player.position || 'Player'}
+                  </Text>
+                </View>
+                {isDisabled && (
+                  <View style={{ marginLeft: 8 }}>
+                    <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: '700' }}>🟥</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>

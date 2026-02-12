@@ -24,6 +24,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { useSocket } from '@/services/socket';
 import { matchApi, sliderApi } from '@/services/api';
+import VideoAdOverlay from '@/components/VideoAdOverlay';
 import { getUnreadCount } from '@/services/notifications';
 import MatchCard from '@/components/MatchCard';
 import EmptyState from '@/components/ui/EmptyState';
@@ -278,6 +279,7 @@ export default function HomeScreen() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [sliders, setSliders] = useState<any[]>([]);
+  const [showVideoAd, setShowVideoAd] = useState(true);
 
   // Only pass relevant matches to timer hooks (not ALL matches)
   const activeMatches = useMemo(() => {
@@ -449,6 +451,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <VideoAdOverlay visible={showVideoAd} onClose={() => setShowVideoAd(false)} />
       <PageHeader
         title={t('home.title')}
         logo={colorScheme === 'dark' ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}

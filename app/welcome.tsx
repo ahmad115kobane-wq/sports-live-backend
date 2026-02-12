@@ -230,25 +230,31 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
 
         {/* Terms Agreement Checkbox */}
-        <TouchableOpacity
-          style={[styles.termsRow, { flexDirection }]}
-          onPress={() => setAgreedToTerms(!agreedToTerms)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.checkbox, { borderColor: agreedToTerms ? colors.accent : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'), backgroundColor: agreedToTerms ? colors.accent : 'transparent' }]}>
-            {agreedToTerms && <Ionicons name="checkmark" size={14} color="#fff" />}
+        <View style={[styles.termsRow, { flexDirection }]}>
+          <TouchableOpacity
+            onPress={() => setAgreedToTerms(!agreedToTerms)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <View style={[styles.checkbox, { borderColor: agreedToTerms ? colors.accent : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'), backgroundColor: agreedToTerms ? colors.accent : 'transparent' }]}>
+              {agreedToTerms && <Ionicons name="checkmark" size={14} color="#fff" />}
+            </View>
+          </TouchableOpacity>
+          <View style={[styles.termsTextWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={[styles.termsText, { color: colors.textSecondary }]}>
+              {t('welcome.agreeToTerms')}{' '}
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/legal/terms-of-service' as any)} activeOpacity={0.6}>
+              <Text style={[styles.termsLink, { color: colors.accent }]}>{t('settings.terms')}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.termsText, { color: colors.textSecondary }]}>
+              {' '}{t('welcome.andText')}{' '}
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/legal/privacy-policy' as any)} activeOpacity={0.6}>
+              <Text style={[styles.termsLink, { color: colors.accent }]}>{t('settings.privacy')}</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={[styles.termsText, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('welcome.agreeToTerms')}{' '}
-            <Text style={[styles.termsLink, { color: colors.accent }]} onPress={() => router.push('/legal/terms-of-service' as any)}>
-              {t('settings.terms')}
-            </Text>
-            {' '}{t('welcome.andText')}{' '}
-            <Text style={[styles.termsLink, { color: colors.accent }]} onPress={() => router.push('/legal/privacy-policy' as any)}>
-              {t('settings.privacy')}
-            </Text>
-          </Text>
-        </TouchableOpacity>
+        </View>
       </Animated.View>
     </View>
   );
@@ -376,12 +382,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  termsText: {
+  termsTextWrap: {
     flex: 1,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  termsText: {
     fontSize: 12,
     lineHeight: 18,
   },
   termsLink: {
+    fontSize: 12,
+    lineHeight: 18,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

@@ -146,7 +146,7 @@ export default function SearchScreen() {
         <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons 
-              name={isRTL ? "arrow-back" : "arrow-forward"}
+              name={isRTL ? "chevron-back" : "chevron-forward"}
               size={24} 
               color={colors.textSecondary} 
             />
@@ -154,7 +154,7 @@ export default function SearchScreen() {
           
           <TextInput
             ref={inputRef}
-            style={[styles.searchInput, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}
+            style={[styles.searchInput, { color: colors.text, textAlign: 'center', writingDirection: isRTL ? 'rtl' : 'ltr' }]}
             placeholder={t('search.placeholder')}
             placeholderTextColor={colors.textTertiary}
             value={searchQuery}

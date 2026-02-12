@@ -404,7 +404,7 @@ export default function StoreScreen() {
       setGridHasMore(pagination?.hasMore ?? newProducts.length >= PAGE_SIZE);
       setGridTotal(pagination?.total ?? 0);
     } catch (error) {
-      if (__DEV__) console.log('Store: failed to load grid products', error);
+      
     } finally {
       setLoadingMore(false);
       setLoadingGrid(false);
@@ -630,24 +630,31 @@ export default function StoreScreen() {
               <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.md }}>
                 <RotatingBanners banners={banners} colors={colors} isDark={isDark} t={t} language={language} />
               </View>
-              {/* Categories */}
+              {/* Categories with back button */}
               <View style={{ paddingTop: SPACING.lg }}>
                 <View style={[styles.sectionHeader, { paddingHorizontal: SPACING.xl }]}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('store.categories')}</Text>
                 </View>
-                <ScrollView
-                  ref={categoryScrollRef}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingHorizontal: SPACING.xl, gap: SPACING.sm }}
-                  style={{ marginTop: SPACING.sm }}
-                >
-                  {categories.map((item) => renderCategoryItem({ item }))}
-                </ScrollView>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', marginTop: SPACING.sm }}>
+                  <TouchableOpacity
+                    onPress={() => handleSelectCategory('all')}
+                    style={[styles.gridBackBtn, { backgroundColor: colors.accent, marginStart: SPACING.xl }]}
+                  >
+                    <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={16} color="#fff" />
+                  </TouchableOpacity>
+                  <ScrollView
+                    ref={categoryScrollRef}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: SPACING.sm, gap: SPACING.sm }}
+                  >
+                    {categories.map((item) => renderCategoryItem({ item }))}
+                  </ScrollView>
+                </View>
               </View>
               {/* Section title */}
               <View style={{ paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.sm }}>
-                <View style={styles.sectionHeader}>
+                <View style={[styles.sectionHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
                     {getGridTitle()}
                   </Text>
@@ -1224,6 +1231,13 @@ const styles = StyleSheet.create({
   },
   productCount: {
     ...TYPOGRAPHY.bodySmall,
+  },
+  gridBackBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   categoryChip: {
     flexDirection: 'row',

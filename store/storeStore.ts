@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { storeApi } from '@/services/api';
 import { Product, Category } from '@/constants/storeData';
+import { getImageUrl } from '@/constants/config';
 
 interface Banner {
   id: string;
@@ -25,7 +26,7 @@ function mapApiProduct(p: any): Product {
   return {
     id: p.id, name: p.name, nameAr: p.nameAr, nameKu: p.nameKu,
     price: p.price, originalPrice: p.originalPrice || undefined,
-    discount: p.discount || undefined, image: p.emoji || '📦', imageUrl: p.imageUrl || undefined,
+    discount: p.discount || undefined, image: p.emoji || '📦', imageUrl: getImageUrl(p.imageUrl) || undefined,
     category: p.categoryId, rating: p.rating || 0, reviews: p.reviewsCount || 0,
     badge: p.badge || undefined, inStock: p.inStock !== false,
     colors: p.colors ? (typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors) : undefined,
@@ -93,12 +94,12 @@ export const useStoreStore = create<StoreState>((set, get) => ({
       const apiCats = (catRes.data.data || []).map(mapApiCategory);
       set({
         categories: [ALL_CATEGORY, ...apiCats],
-        banners: bannerRes.data.data || [],
+        banners: (bannerRes.data.data || []).map((b: any) => ({ ...b, imageUrl: getImageUrl(b.imageUrl) || undefined })),
         shellFetchedAt: Date.now(),
         hasCache: true,
       });
     } catch (error) {
-      if (__DEV__) console.log('StoreStore: failed to load shell', error);
+      
     } finally {
       set({ shellLoading: false });
     }
@@ -130,7 +131,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
         hasCache: true,
       });
     } catch (error) {
-      if (__DEV__) console.log('StoreStore: failed to load overview', error);
+      
     } finally {
       set({ overviewLoading: false });
     }

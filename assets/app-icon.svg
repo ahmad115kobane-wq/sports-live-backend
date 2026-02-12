@@ -1,54 +1,20 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="bs" cx="420" cy="340" r="380" fx="420" fy="340" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="0.5" stop-color="#E0E0E0"/>
-      <stop offset="0.8" stop-color="#B0B0B0"/>
-      <stop offset="1" stop-color="#707070"/>
-    </radialGradient>
-    <radialGradient id="bh" cx="380" cy="300" r="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="sg" cx="530" cy="800" rx="220" ry="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#000" stop-opacity="0.5"/>
-      <stop offset="1" stop-color="#000" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="pg" x1="80" y1="720" x2="944" y2="720" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#A8A8A8" stop-opacity="0"/>
-      <stop offset="0.15" stop-color="#A8A8A8"/>
-      <stop offset="0.85" stop-color="#A8A8A8"/>
-      <stop offset="1" stop-color="#A8A8A8" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="pgw" x1="80" y1="720" x2="944" y2="720" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#A8A8A8" stop-opacity="0"/>
-      <stop offset="0.15" stop-color="#A8A8A8" stop-opacity="0.2"/>
-      <stop offset="0.85" stop-color="#A8A8A8" stop-opacity="0.2"/>
-      <stop offset="1" stop-color="#A8A8A8" stop-opacity="0"/>
-    </linearGradient>
-    <clipPath id="bc">
-      <circle cx="512" cy="440" r="300"/>
-    </clipPath>
-  </defs>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Solid Background using dark mode color #080808 -->
+  <rect width="512" height="512" rx="80" fill="#080808"/>
+  
+  <!-- Outer Circle/Ball Outline - slightly smaller (r=160) -->
+  <circle cx="256" cy="256" r="144" stroke="#F5F5F5" stroke-width="12" fill="#080808"/>
 
-  <rect width="1024" height="1024" rx="224" fill="#0A0A0A"/>
-  <ellipse cx="530" cy="800" rx="200" ry="30" fill="url(#sg)"/>
-  <circle cx="512" cy="440" r="300" fill="url(#bs)"/>
-
-  <g clip-path="url(#bc)">
-    <path d="M512 370L564 400L548 460H476L460 400Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M512 170L560 198L546 254H478L464 198Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M700 260L744 292L726 348H670L656 292Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M324 260L368 292L354 348H298L280 292Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M670 530L714 562L698 618H644L628 562Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M354 530L396 562L380 618H326L310 562Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M512 650L558 678L544 734H480L466 678Z" fill="#1A1A1A" stroke="#2A2A2A" stroke-width="3"/>
-    <path d="M512 254L512 370M546 254L564 400M478 254L460 400M464 198L368 292M560 198L656 292M656 292L700 260M368 292L324 260M564 400L670 530M460 400L354 530M548 460L670 530M476 460L354 530M548 460L558 678M476 460L466 678M628 562L714 562M310 562L396 562" stroke="#C0C0C0" stroke-width="4" stroke-opacity="0.4" stroke-linecap="round"/>
+  <!-- Minimalist Clean Soccer Ball Pattern (Pentagon Center) -->
+  <g stroke="#F5F5F5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Center Pentagon -->
+    <path d="M256 206 L305 242 L287 305 L225 305 L207 242 Z" fill="none"/>
+    
+    <!-- Lines from pentagon to edge -->
+    <line x1="256" y1="206" x2="256" y2="134"/>
+    <line x1="305" y1="242" x2="368" y2="222"/>
+    <line x1="287" y1="305" x2="332" y2="358"/>
+    <line x1="225" y1="305" x2="180" y2="358"/>
+    <line x1="207" y1="242" x2="144" y2="222"/>
   </g>
-
-  <circle cx="380" cy="300" r="180" fill="url(#bh)"/>
-  <circle cx="512" cy="440" r="300" stroke="#FFF" stroke-width="4" stroke-opacity="0.06" fill="none"/>
-
-  <path d="M80 720L280 720C300 720 310 720 330 690C350 660 360 640 380 600C400 560 410 550 420 580C430 610 440 660 460 720C480 780 490 790 500 760C510 730 520 660 530 600C540 540 550 530 560 570C570 610 580 660 590 690C600 720 610 720 630 720L944 720" stroke="url(#pgw)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M80 720L280 720C300 720 310 720 330 690C350 660 360 640 380 600C400 560 410 550 420 580C430 610 440 660 460 720C480 780 490 790 500 760C510 730 520 660 530 600C540 540 550 530 560 570C570 610 580 660 590 690C600 720 610 720 630 720L944 720" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

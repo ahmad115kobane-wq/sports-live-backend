@@ -28,6 +28,15 @@ const getSocketUrl = () => {
 export const API_URL = getApiUrl();
 export const SOCKET_URL = getSocketUrl();
 
+// Helper to add cache-busting timestamp to image URLs
+export const getImageUrl = (imageUrl: string | null | undefined): string | null => {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith('http')) return imageUrl;
+  // Add timestamp to bust cache
+  const timestamp = Math.floor(Date.now() / (1000 * 60 * 60)); // Changes every hour
+  return `${SOCKET_URL}${imageUrl}?t=${timestamp}`;
+};
+
 // App Configuration
 export const APP_CONFIG = {
   name: 'Mini Football',

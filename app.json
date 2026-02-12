@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mini Football",
-    "slug": "mini-football-app",
+    "slug": "sports-live-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,14 +10,14 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#050505"
+      "backgroundColor": "#080808"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.minifootball.app",
+      "bundleIdentifier": "com.sportslive.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -27,9 +27,9 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#050505"
+        "backgroundColor": "#080808"
       },
-      "package": "com.minifootball.app",
+      "package": "com.sportslive.app",
       "permissions": [
         "NOTIFICATIONS",
         "VIBRATE"

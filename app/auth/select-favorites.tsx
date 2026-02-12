@@ -55,68 +55,45 @@ export default function SelectFavoritesScreen() {
   const fetchTeams = async () => {
     setLoadingTeams(true);
     try {
-      console.log('🔍 fetchTeams called');
-      console.log('📊 Selected competitions:', selectedCompetitions);
-      
       // If no competitions selected, show all teams
       if (selectedCompetitions.length === 0) {
-        console.log('⚠️ No competitions selected, fetching all teams...');
         const teamsResponse = await teamApi.getAll();
         const allTeams: Team[] = teamsResponse.data.data || [];
-        console.log('✅ All teams loaded:', allTeams.length);
-        console.log('📋 Teams:', allTeams.map(t => t.name));
         setTeams(allTeams);
         setLoadingTeams(false);
         return;
       }
       
-      console.log('🔄 Fetching teams for competitions:', selectedCompetitions);
-      
       // Get teams for each selected competition
       const teamsPromises = selectedCompetitions.map(compId => {
-        console.log('📡 Fetching teams for competition:', compId);
         return teamApi.getByCompetition(compId);
       });
       
       const teamsResponses = await Promise.all(teamsPromises);
       
-      console.log('📥 Received responses:', teamsResponses.length);
-      
       // Combine and deduplicate teams
       const allTeamsMap = new Map<string, Team>();
-      teamsResponses.forEach((response, index) => {
-        console.log(`📦 Response ${index}:`, response.data);
+      teamsResponses.forEach((response) => {
         const teams: Team[] = response.data.data || [];
-        console.log(`  - Teams count: ${teams.length}`);
         teams.forEach(team => {
-          console.log(`  - Adding team: ${team.name}`);
           allTeamsMap.set(team.id, team);
         });
       });
       
       const uniqueTeams = Array.from(allTeamsMap.values());
       
-      console.log('✅ Total unique teams:', uniqueTeams.length);
-      console.log('📊 Team names:', uniqueTeams.map(t => t.name));
-      
       setTeams(uniqueTeams);
     } catch (error) {
-      console.error('❌ Error fetching teams:', error);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       // Fallback: show all teams
       try {
-        console.log('🔄 Trying fallback: fetching all teams...');
         const teamsResponse = await teamApi.getAll();
         const allTeams: Team[] = teamsResponse.data.data || [];
-        console.log('✅ Fallback teams loaded:', allTeams.length);
         setTeams(allTeams);
       } catch (fallbackError) {
-        console.error('❌ Fallback also failed:', fallbackError);
         setTeams([]);
       }
     } finally {
       setLoadingTeams(false);
-      console.log('🏁 fetchTeams completed');
     }
   };
 
@@ -155,7 +132,6 @@ export default function SelectFavoritesScreen() {
           favoriteTeams: selectedTeams,
           favoriteCompetitions: selectedCompetitions,
         });
-        console.log('✅ Preferences saved to backend');
       }
       
       // Also save locally as backup

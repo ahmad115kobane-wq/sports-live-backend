@@ -36,11 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email: string, password: string) => {
     try {
-      console.log('🔐 Login attempt:', { email, password: '***' });
-      console.log('📡 API URL:', api.defaults.baseURL);
-      
       const response = await api.post('/auth/login', { email, password });
-      console.log('✅ Login response:', response.data);
       
       const { user, token, requiresVerification } = response.data.data;
       
@@ -52,30 +48,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (requiresVerification) {
         set({ hasSeenWelcome: true });
-        console.log('✅ Login - email verification required');
         throw { requiresVerification: true, email: user.email };
       }
       
       set({ user, token, isAuthenticated: true, isGuest: false, hasSeenWelcome: true });
-      console.log('✅ Login successful, user set');
     } catch (error: any) {
       if (error?.requiresVerification) {
         throw error;
       }
-      console.log('❌ Login error:', error);
-      console.log('❌ Error response:', error.response?.data);
-      console.log('❌ Error message:', error.message);
       throw new Error(error.response?.data?.message || 'Login failed');
     }
   },
 
   register: async (name: string, email: string, password: string) => {
     try {
-      console.log('📝 Register attempt:', { name, email, password: '***' });
-      console.log('📡 API URL:', api.defaults.baseURL);
-      
       const response = await api.post('/auth/register', { name, email, password });
-      console.log('✅ Register response:', response.data);
       
       const { user, token, requiresVerification } = response.data.data;
       
@@ -89,19 +76,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // If email verification is required, don't fully authenticate yet
       if (requiresVerification) {
         set({ hasSeenWelcome: true });
-        console.log('✅ Register successful - verification required');
         throw { requiresVerification: true, email };
       }
       
       set({ user, token, isAuthenticated: true, isGuest: false, hasSeenWelcome: true });
-      console.log('✅ Register successful');
     } catch (error: any) {
       if (error?.requiresVerification) {
         throw error; // Re-throw verification redirect
       }
-      console.log('❌ Register error:', error);
-      console.log('❌ Error response:', error.response?.data);
-      console.log('❌ Error message:', error.message);
       throw new Error(error.response?.data?.message || 'Registration failed');
     }
   },
@@ -197,7 +179,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             AsyncStorage.setItem('user', JSON.stringify(validUser));
           }
         }).catch(() => {
-          console.log('⚠️ Stored token is invalid, clearing auth');
           AsyncStorage.removeItem('token');
           AsyncStorage.removeItem('user');
           AsyncStorage.removeItem('isGuest');
