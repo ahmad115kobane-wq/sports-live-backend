@@ -496,6 +496,7 @@ const styles = StyleSheet.create({
   },
   expandButton: {
     marginTop: SPACING.sm,
+    marginLeft: SPACING.lg,
     alignSelf: 'flex-start',
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
