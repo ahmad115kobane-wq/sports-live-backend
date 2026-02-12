@@ -81,6 +81,12 @@ export default function AdminScreen() {
   const [videoAdFile, setVideoAdFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [videoAdThumbnail, setVideoAdThumbnail] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
+  // Video Ads list state
+  const [videoAds, setVideoAds] = useState<any[]>([]);
+  const [videoAdsLoading, setVideoAdsLoading] = useState(false);
+  const [editingAd, setEditingAd] = useState<any>(null);
+  const [showVideoAdForm, setShowVideoAdForm] = useState(false);
+
   // Pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -105,7 +111,20 @@ export default function AdminScreen() {
       return;
     }
     loadData();
+    loadVideoAds();
   }, []);
+
+  const loadVideoAds = async () => {
+    try {
+      setVideoAdsLoading(true);
+      const res = await videoAdApi.adminGetAll();
+      setVideoAds(res.data?.data || []);
+    } catch (error) {
+      console.error('Error loading video ads:', error);
+    } finally {
+      setVideoAdsLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -231,7 +250,11 @@ export default function AdminScreen() {
         } as any);
       }
 
-      await videoAdApi.adminCreate(formData);
+      if (editingAd) {
+        await videoAdApi.adminUpdate(editingAd.id, formData);
+      } else {
+        await videoAdApi.adminCreate(formData);
+      }
       
       // Reset form
       setVideoAdTitle('');
@@ -240,13 +263,56 @@ export default function AdminScreen() {
       setVideoAdIsActive(true);
       setVideoAdFile(null);
       setVideoAdThumbnail(null);
+      setEditingAd(null);
+      setShowVideoAdForm(false);
+      loadVideoAds();
       
-      showError('نجاح', 'تم إنشاء الإعلان بنجاح');
+      showError('نجاح', editingAd ? 'تم تحديث الإعلان بنجاح' : 'تم إنشاء الإعلان بنجاح');
     } catch (error) {
       console.error('Error creating video ad:', error);
       showError('خطأ', 'فشل إنشاء الإعلان');
     } finally {
       setVideoAdCreating(false);
+    }
+  };
+
+  const handleEditAd = (ad: any) => {
+    setEditingAd(ad);
+    setVideoAdTitle(ad.title || '');
+    setVideoAdClickUrl(ad.clickUrl || '');
+    setVideoAdMandatorySeconds(ad.mandatorySeconds || 5);
+    setVideoAdIsActive(ad.isActive !== false);
+    setVideoAdFile(null);
+    setVideoAdThumbnail(null);
+    setShowVideoAdForm(true);
+  };
+
+  const handleDeleteAd = (ad: any) => {
+    setDialogConfig({
+      type: 'confirm',
+      title: 'حذف الإعلان',
+      message: `هل تريد حذف الإعلان "${ad.title}"؟`,
+      onConfirm: async () => {
+        try {
+          await videoAdApi.adminDelete(ad.id);
+          loadVideoAds();
+          showError('نجاح', 'تم حذف الإعلان');
+        } catch {
+          showError('خطأ', 'فشل حذف الإعلان');
+        }
+      },
+    });
+    setDialogVisible(true);
+  };
+
+  const handleToggleAd = async (ad: any) => {
+    try {
+      const fd = new FormData();
+      fd.append('isActive', String(!ad.isActive));
+      await videoAdApi.adminUpdate(ad.id, fd);
+      loadVideoAds();
+    } catch {
+      showError('خطأ', 'فشل تحديث الإعلان');
     }
   };
 
@@ -496,12 +562,86 @@ export default function AdminScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Create Video Ad Card ── */}
-        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* ── Video Ads Management ── */}
+        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: SPACING.lg }]}>
           <View style={[styles.formCardHeader, { borderBottomColor: colors.divider }]}>
             <Ionicons name="videocam" size={22} color={colors.accent} />
-            <Text style={[styles.formCardTitle, { color: colors.text }]}>إنشاء إعلان فيديو</Text>
+            <Text style={[styles.formCardTitle, { color: colors.text, flex: 1 }]}>إعلانات الفيديو</Text>
+            <TouchableOpacity
+              style={{ backgroundColor: colors.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.md }}
+              onPress={() => {
+                setEditingAd(null);
+                setVideoAdTitle('');
+                setVideoAdClickUrl('');
+                setVideoAdMandatorySeconds(5);
+                setVideoAdIsActive(true);
+                setVideoAdFile(null);
+                setVideoAdThumbnail(null);
+                setShowVideoAdForm(!showVideoAdForm);
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                {showVideoAdForm ? 'إلغاء' : '+ إضافة'}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Existing Ads List */}
+          {videoAdsLoading ? (
+            <View style={{ padding: SPACING.lg, alignItems: 'center' }}>
+              <ActivityIndicator color={colors.accent} />
+            </View>
+          ) : videoAds.length > 0 ? (
+            <View style={{ paddingHorizontal: SPACING.md, paddingTop: SPACING.sm }}>
+              {videoAds.map((ad: any) => (
+                <View
+                  key={ad.id}
+                  style={[
+                    styles.adItem,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                  ]}
+                >
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={[styles.adTitle, { color: colors.text }]}>{ad.title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+                        ⏱ {ad.mandatorySeconds}ث
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+                        👁 {ad.views || 0}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <TouchableOpacity onPress={() => handleToggleAd(ad)}>
+                      <View style={[
+                        styles.adStatusBadge,
+                        { backgroundColor: ad.isActive ? '#22C55E20' : colors.border + '40' },
+                      ]}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: ad.isActive ? '#22C55E' : colors.textTertiary }}>
+                          {ad.isActive ? 'نشط' : 'متوقف'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleEditAd(ad)} style={styles.adActionBtn}>
+                      <Ionicons name="create-outline" size={16} color={colors.accent} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDeleteAd(ad)} style={styles.adActionBtn}>
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={{ padding: SPACING.lg, alignItems: 'center' }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 13 }}>لا توجد إعلانات فيديو</Text>
+            </View>
+          )}
+
+          {/* Create/Edit Form (collapsible) */}
+          {showVideoAdForm && (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.divider, marginTop: SPACING.sm }}>
 
           {/* Title */}
           <View style={styles.field}>
@@ -611,11 +751,13 @@ export default function AdminScreen() {
               ) : (
                 <>
                   <Ionicons name="videocam-outline" size={20} color="#fff" />
-                  <Text style={styles.submitText}>إنشاء الإعلان</Text>
+                  <Text style={styles.submitText}>{editingAd ? 'تحديث الإعلان' : 'إنشاء الإعلان'}</Text>
                 </>
               )}
             </LinearGradient>
           </TouchableOpacity>
+          </View>
+          )}
         </View>
 
         <View style={{ height: 40 }} />
@@ -779,9 +921,14 @@ export default function AdminScreen() {
         type={dialogConfig.type}
         title={dialogConfig.title}
         message={dialogConfig.message}
-        confirmText={t('admin.ok')}
-        showCancel={false}
-        onConfirm={() => setDialogVisible(false)}
+        confirmText={dialogConfig.onConfirm ? 'تأكيد' : t('admin.ok')}
+        showCancel={!!dialogConfig.onConfirm}
+        cancelText="إلغاء"
+        onCancel={() => setDialogVisible(false)}
+        onConfirm={() => {
+          setDialogVisible(false);
+          if (dialogConfig.onConfirm) dialogConfig.onConfirm();
+        }}
       />
     </View>
   );
@@ -1089,5 +1236,27 @@ const styles = StyleSheet.create({
   emptyText: {
     ...TYPOGRAPHY.bodyMedium,
     textAlign: 'center',
+  },
+  adItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    marginBottom: SPACING.sm,
+  },
+  adTitle: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '600',
+  },
+  adStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  adActionBtn: {
+    padding: 6,
+    borderRadius: RADIUS.sm,
   },
 });
