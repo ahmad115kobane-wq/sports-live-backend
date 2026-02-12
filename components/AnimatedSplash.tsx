@@ -27,12 +27,13 @@ export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 250,
+    height: 250,
   },
 });
