@@ -25,6 +25,7 @@ import { matchApi, teamApi, competitionApi, adminApi, videoAdApi } from '@/servi
 import TeamLogo from '@/components/ui/TeamLogo';
 import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
+import { Video as VideoCompressor } from 'react-native-compressor';
 
 interface Team {
   id: string;
@@ -80,6 +81,8 @@ export default function AdminScreen() {
   const [videoAdCreating, setVideoAdCreating] = useState(false);
   const [videoAdFile, setVideoAdFile] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [videoAdThumbnail, setVideoAdThumbnail] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
 
   // Video Ads list state
   const [videoAds, setVideoAds] = useState<any[]>([]);
@@ -195,11 +198,33 @@ export default function AdminScreen() {
   const pickVideo = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['videos'],
-      quality: 0.8,
+      quality: 1,
       videoMaxDuration: 120,
     });
     if (!result.canceled && result.assets[0]) {
-      setVideoAdFile(result.assets[0]);
+      const asset = result.assets[0];
+      try {
+        setCompressing(true);
+        setCompressionProgress(0);
+        const compressedUri = await VideoCompressor.compress(
+          asset.uri,
+          {
+            compressionMethod: 'auto',
+            maxSize: 1280,
+            minimumFileSizeForCompress: 0,
+          },
+          (progress) => {
+            setCompressionProgress(Math.round(progress * 100));
+          }
+        );
+        setVideoAdFile({ ...asset, uri: compressedUri });
+      } catch (err) {
+        console.error('Video compression failed:', err);
+        setVideoAdFile(asset);
+      } finally {
+        setCompressing(false);
+        setCompressionProgress(0);
+      }
     }
   };
 
@@ -689,13 +714,22 @@ export default function AdminScreen() {
           <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>ملف الفيديو *</Text>
             <TouchableOpacity
-              style={[styles.filePicker, { backgroundColor: colors.background, borderColor: videoAdFile ? colors.success : colors.border }]}
+              style={[styles.filePicker, { backgroundColor: colors.background, borderColor: compressing ? colors.warning : videoAdFile ? colors.success : colors.border }]}
               onPress={pickVideo}
               activeOpacity={0.7}
+              disabled={compressing}
             >
-              <Ionicons name={videoAdFile ? 'checkmark-circle' : 'cloud-upload-outline'} size={24} color={videoAdFile ? colors.success : colors.textTertiary} />
-              <Text style={[styles.filePickerText, { color: videoAdFile ? colors.text : colors.textTertiary }]}>
-                {videoAdFile ? `✓ تم اختيار الفيديو (${Math.round((videoAdFile.fileSize || 0) / 1024 / 1024)}MB)` : 'اضغط لاختيار فيديو'}
+              {compressing ? (
+                <ActivityIndicator size="small" color={colors.warning} />
+              ) : (
+                <Ionicons name={videoAdFile ? 'checkmark-circle' : 'cloud-upload-outline'} size={24} color={videoAdFile ? colors.success : colors.textTertiary} />
+              )}
+              <Text style={[styles.filePickerText, { color: compressing ? colors.warning : videoAdFile ? colors.text : colors.textTertiary }]}>
+                {compressing
+                  ? `جاري ضغط الفيديو... ${compressionProgress}%`
+                  : videoAdFile
+                    ? `✓ تم اختيار وضغط الفيديو`
+                    : 'اضغط لاختيار فيديو'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -764,9 +798,9 @@ export default function AdminScreen() {
 
           {/* Submit */}
           <TouchableOpacity
-            style={[styles.submitButton, videoAdCreating && { opacity: 0.6 }]}
+            style={[styles.submitButton, (videoAdCreating || compressing) && { opacity: 0.6 }]}
             onPress={handleCreateVideoAd}
-            disabled={videoAdCreating}
+            disabled={videoAdCreating || compressing}
             activeOpacity={0.8}
           >
             <LinearGradient
