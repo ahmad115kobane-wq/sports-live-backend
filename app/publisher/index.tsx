@@ -423,7 +423,7 @@ export default function PublisherScreen() {
                 )}
                 <View style={styles.articleBody}>
                   <Text style={[styles.articleTitle, { color: colors.text }]}>{article.title}</Text>
-                  <Text style={[styles.articleContent, { color: colors.textSecondary }]} numberOfLines={2}>
+                  <Text style={[styles.articleContent, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                     {article.content}
                   </Text>
                   <View style={[styles.articleFooter, { flexDirection }]}>

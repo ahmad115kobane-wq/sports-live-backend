@@ -177,7 +177,7 @@ function TeamLogo({
               marginLeft: namePosition === 'right' ? SPACING.md : 0,
             },
           ]}
-          numberOfLines={2}
+          numberOfLines={2} ellipsizeMode="tail"
         >
           {team.name}
         </Text>

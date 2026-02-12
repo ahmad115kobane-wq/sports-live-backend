@@ -144,7 +144,7 @@ export default function PlayerProfileScreen() {
           </View>
 
           {/* Player Name */}
-          <Text style={styles.playerName} numberOfLines={2}>
+          <Text style={styles.playerName} numberOfLines={2} ellipsizeMode="tail">
             {player?.name}
           </Text>
 
@@ -234,11 +234,11 @@ export default function PlayerProfileScreen() {
                     <Text style={[styles.goalMinuteText, { color: colors.success }]}>{goal.minute}'</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.goalMatchText, { color: colors.text }]} numberOfLines={2}>
+                    <Text style={[styles.goalMatchText, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
                       {goal.match?.homeTeam?.shortName || goal.match?.homeTeam?.name} - {goal.match?.awayTeam?.shortName || goal.match?.awayTeam?.name}
                     </Text>
                     {goal.match?.competition && (
-                      <Text style={[styles.goalCompText, { color: colors.textSecondary }]} numberOfLines={2}>
+                      <Text style={[styles.goalCompText, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                         {goal.match.competition.name}
                       </Text>
                     )}

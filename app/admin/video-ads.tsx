@@ -268,6 +268,7 @@ const styles = StyleSheet.create({
   videoPickerText: {
     fontSize: 15,
     fontWeight: '600',
+    flex: 1,
   },
   toggle: {
     flexDirection: 'row',
@@ -286,6 +287,7 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 15,
     fontWeight: '600',
+    flex: 1,
   },
   toggleSwitch: {
     width: 50,

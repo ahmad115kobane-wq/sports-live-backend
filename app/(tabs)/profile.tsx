@@ -176,7 +176,7 @@ export default function ProfileScreen() {
         activeOpacity={0.7}
       >
         <Ionicons name={icon} size={16} color={active ? '#fff' : colors.textTertiary} />
-        <Text style={[styles.themePillText, { color: active ? '#fff' : colors.textSecondary }]} numberOfLines={1}>{label}</Text>
+        <Text style={[styles.themePillText, { color: active ? '#fff' : colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">{label}</Text>
       </TouchableOpacity>
     );
   };

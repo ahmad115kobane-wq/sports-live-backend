@@ -77,7 +77,7 @@ export default function PageHeader({
                 {title}
               </Text>
               {subtitle ? (
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                   {subtitle}
                 </Text>
               ) : null}

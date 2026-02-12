@@ -184,6 +184,7 @@ export default function AppModal({
                   <Text
                     style={[styles.title, { color: colors.text }]}
                     numberOfLines={2}
+                    ellipsizeMode="tail"
                   >
                     {title}
                   </Text>
@@ -191,6 +192,7 @@ export default function AppModal({
                     <Text
                       style={[styles.subtitle, { color: colors.textSecondary }]}
                       numberOfLines={2}
+                      ellipsizeMode="tail"
                     >
                       {subtitle}
                     </Text>

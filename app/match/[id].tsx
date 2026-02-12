@@ -192,7 +192,7 @@ export default function MatchDetailScreen() {
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2}>{currentMatch.homeTeam.name}</Text>
+            <Text style={styles.teamName} numberOfLines={2} ellipsizeMode="tail">{currentMatch.homeTeam.name}</Text>
           </View>
 
           {/* Score */}
@@ -233,7 +233,7 @@ export default function MatchDetailScreen() {
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2}>{currentMatch.awayTeam.name}</Text>
+            <Text style={styles.teamName} numberOfLines={2} ellipsizeMode="tail">{currentMatch.awayTeam.name}</Text>
           </View>
         </View>
 
@@ -243,7 +243,7 @@ export default function MatchDetailScreen() {
             {currentMatch.venue && (
               <View style={styles.detailChip}>
                 <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2}>{currentMatch.venue}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.venue}</Text>
               </View>
             )}
             {currentMatch.referee && (

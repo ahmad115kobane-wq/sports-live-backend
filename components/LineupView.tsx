@@ -417,7 +417,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                     <View style={styles.playerNameContainer}>
                       <Text
                         style={[styles.playerNameText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                        numberOfLines={2}
+                        numberOfLines={2} ellipsizeMode="tail"
                       >
                         {getPlayerLastName(player.player?.name)}
                       </Text>
@@ -451,7 +451,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                     </View>
                     <Text
                       style={[styles.substituteName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={2}
+                      numberOfLines={2} ellipsizeMode="tail"
                     >
                       {player.player?.name}
                     </Text>
@@ -489,7 +489,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                     </View>
                     <Text
                       style={[styles.noLineupName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={2}
+                      numberOfLines={2} ellipsizeMode="tail"
                     >
                       {player.name}
                     </Text>

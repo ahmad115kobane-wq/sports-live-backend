@@ -136,7 +136,7 @@ function MatchCard({
                 { color: colors.text },
                 match.homeScore > match.awayScore && isFinished && styles.winnerName
               ]} 
-              numberOfLines={2}
+              numberOfLines={2} ellipsizeMode="tail"
             >
               {match.homeTeam.name}
             </Text>
@@ -194,7 +194,7 @@ function MatchCard({
                 { color: colors.text },
                 match.awayScore > match.homeScore && isFinished && styles.winnerName
               ]} 
-              numberOfLines={2}
+              numberOfLines={2} ellipsizeMode="tail"
             >
               {match.awayTeam.name}
             </Text>

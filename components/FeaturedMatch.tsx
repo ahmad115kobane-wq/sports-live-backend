@@ -124,7 +124,7 @@ function FeaturedMatch({ match, liveMinute, liveTime }: FeaturedMatchProps) {
                   <View style={[styles.winIndicator, { backgroundColor: colors.success }]} />
                 )}
               </View>
-              <Text style={styles.teamName} numberOfLines={2}>
+              <Text style={styles.teamName} numberOfLines={2} ellipsizeMode="tail">
                 {match.homeTeam.name}
               </Text>
             </View>
@@ -175,7 +175,7 @@ function FeaturedMatch({ match, liveMinute, liveTime }: FeaturedMatchProps) {
                   <View style={[styles.winIndicator, { backgroundColor: colors.success }]} />
                 )}
               </View>
-              <Text style={styles.teamName} numberOfLines={2}>
+              <Text style={styles.teamName} numberOfLines={2} ellipsizeMode="tail">
                 {match.awayTeam.name}
               </Text>
             </View>

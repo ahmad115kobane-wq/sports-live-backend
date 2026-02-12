@@ -113,7 +113,7 @@ export default function EventItem({ event, isLastEvent }: EventItemProps) {
         <Text style={[styles.eventType, { color: eventColors.text }]}>
           {eventConfig.label}
         </Text>
-        <Text style={[styles.description, { color: colors.text }]} numberOfLines={2}>
+        <Text style={[styles.description, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
           {getEventDescription()}
         </Text>
         

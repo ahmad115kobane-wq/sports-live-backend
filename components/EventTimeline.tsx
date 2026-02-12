@@ -121,24 +121,24 @@ function TimelineEventRow({ event, match, colors, isRTL }: { event: MatchEvent; 
         <>
           <View style={[styles.subRow, { flexDirection: showOnRight ? 'row-reverse' : 'row' }]}>  
             <Ionicons name="arrow-up" size={12} color="#22C55E" style={{ marginHorizontal: 3 }} />
-            <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2}>
+            <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
               {playerInfo.primary}
             </Text>
           </View>
           <View style={[styles.subRow, { flexDirection: showOnRight ? 'row-reverse' : 'row' }]}>
             <Ionicons name="arrow-down" size={12} color="#EF4444" style={{ marginHorizontal: 3 }} />
-            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2}>
+            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
               {playerInfo.secondary}
             </Text>
           </View>
         </>
       ) : (
         <>
-          <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2}>
+          <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
             {playerInfo.primary}
           </Text>
           {playerInfo.secondary ? (
-            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2}>
+            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
               {playerInfo.secondary}
             </Text>
           ) : null}
