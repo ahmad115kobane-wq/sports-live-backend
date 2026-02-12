@@ -197,7 +197,6 @@ export default function AppDialog({
                             { color: textColor },
                             isDefault && styles.btnTextBold,
                           ]}
-                          numberOfLines={1}
                         >
                           {btn.text}
                         </Text>
@@ -285,6 +284,7 @@ const styles = StyleSheet.create({
   btn: {
     flex: 1,
     paddingVertical: 13,
+    paddingHorizontal: 12,
     borderRadius: RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',

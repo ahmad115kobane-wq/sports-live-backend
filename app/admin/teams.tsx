@@ -451,7 +451,7 @@ export default function TeamsManagementScreen() {
             )}
           </View>
           <View style={styles.teamDetails}>
-            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{team.name}</Text>
+            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2}>{team.name}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 2 }}>
               <Text style={[styles.teamShortName, { color: colors.textSecondary }]}>{team.shortName}</Text>
               <View style={[styles.categoryBadge, { backgroundColor: colors.accent + '20' }]}>
@@ -505,7 +505,7 @@ export default function TeamsManagementScreen() {
                 <View style={[styles.playerNumber, { backgroundColor: team.primaryColor || colors.accent }]}>
                   <Text style={styles.playerNumberText}>{player.shirtNumber}</Text>
                 </View>
-                <Text style={[styles.playerChipName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                <Text style={[styles.playerChipName, { color: colors.text }]} numberOfLines={1}>
                   {player.name}
                 </Text>
               </View>
@@ -1087,12 +1087,15 @@ const styles = StyleSheet.create({
   },
   teamCardHeader: {
     padding: SPACING.md,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   teamInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    gap: SPACING.sm,
   },
   teamLogoContainer: {
     width: 50,
@@ -1199,7 +1202,7 @@ const styles = StyleSheet.create({
   },
   playerChipName: {
     fontSize: 12,
-    maxWidth: 80,
+    maxWidth: 120,
   },
   morePlayersText: {
     fontSize: 12,
