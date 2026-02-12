@@ -87,6 +87,9 @@ export default function AdminScreen() {
   const [editingAd, setEditingAd] = useState<any>(null);
   const [showVideoAdForm, setShowVideoAdForm] = useState(false);
 
+  // Tab navigation
+  const [activeTab, setActiveTab] = useState<'match' | 'videoAds'>('match');
+
   // Pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -356,11 +359,33 @@ export default function AdminScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* ── Top Tab Navigation ── */}
+      <View style={[styles.tabBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}> 
+        <TouchableOpacity
+          style={[styles.tabItem, activeTab === 'match' && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
+          onPress={() => setActiveTab('match')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="football-outline" size={18} color={activeTab === 'match' ? colors.accent : colors.textTertiary} />
+          <Text style={[styles.tabText, { color: activeTab === 'match' ? colors.accent : colors.textTertiary }]}>إنشاء مباراة</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabItem, activeTab === 'videoAds' && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
+          onPress={() => setActiveTab('videoAds')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="videocam-outline" size={18} color={activeTab === 'videoAds' ? colors.accent : colors.textTertiary} />
+          <Text style={[styles.tabText, { color: activeTab === 'videoAds' ? colors.accent : colors.textTertiary }]}>إعلانات الفيديو</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        {activeTab === 'match' && (
+        <>
         {/* ── Dashboard Summary Cards ── */}
         <View style={styles.dashCards}>
           <View style={[styles.dashCard, { backgroundColor: colors.surface }]}>
@@ -561,9 +586,13 @@ export default function AdminScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+        </>
+        )}
 
+        {activeTab === 'videoAds' && (
+        <>
         {/* ── Video Ads Management ── */}
-        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: SPACING.lg }]}>
+        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.formCardHeader, { borderBottomColor: colors.divider }]}>
             <Ionicons name="videocam" size={22} color={colors.accent} />
             <Text style={[styles.formCardTitle, { color: colors.text, flex: 1 }]}>إعلانات الفيديو</Text>
@@ -759,6 +788,8 @@ export default function AdminScreen() {
           </View>
           )}
         </View>
+        </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -943,6 +974,26 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: SPACING.lg,
+  },
+  // ── Tab Bar ──
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    paddingTop: SPACING.xs,
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabText: {
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
   },
   // ── Dashboard Cards ──
   dashCards: {
