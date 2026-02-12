@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
@@ -113,12 +114,20 @@ export default function AdminScreen() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'admin') {
-      showError(t('admin.unauthorized'), t('admin.unauthorizedDesc'));
+    if (!isAuthenticated) {
+      showError('غير مصرح', 'يجب تسجيل الدخول أولاً');
+      setTimeout(() => router.back(), 1500);
       return;
     }
+    
+    if (user?.role !== 'admin') {
+      showError('غير مصرح', 'هذه الصفحة للمدراء فقط');
+      setTimeout(() => router.back(), 1500);
+      return;
+    }
+    
     loadData();
-  }, []);
+  }, [isAuthenticated, user]);
 
   const loadData = async () => {
     try {
