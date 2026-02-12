@@ -44,11 +44,13 @@ router.get('/random', async (req, res) => {
       data: { views: { increment: 1 } },
     }).catch(() => {});
 
+    // Video URL: return direct R2 URL (video players need Range/Content-Length which proxy doesn't support)
+    // Thumbnail URL: proxy is fine for images
     res.json({
       success: true,
       data: {
         ...ad,
-        videoUrl: resolveImageUrl(ad.videoUrl),
+        videoUrl: ad.videoUrl,
         thumbnailUrl: resolveImageUrl(ad.thumbnailUrl),
       },
     });

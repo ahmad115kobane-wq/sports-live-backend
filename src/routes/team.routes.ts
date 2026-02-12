@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
-import { resolveTeamImages, resolvePlayerImages } from '../utils/imageUrl';
 
 const router = Router();
 
@@ -51,11 +50,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: teams.map((t: any) => {
-        const resolved = resolveTeamImages(t);
-        if (resolved.players) resolved.players = resolved.players.map(resolvePlayerImages);
-        return resolved;
-      }),
+      data: teams,
     });
   } catch (error) {
     console.error('Get teams error:', error);
@@ -93,11 +88,9 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    const resolved = resolveTeamImages(team);
-    if (resolved.players) resolved.players = resolved.players.map(resolvePlayerImages);
     res.json({
       success: true,
-      data: resolved,
+      data: team,
     });
   } catch (error) {
     console.error('Get team error:', error);

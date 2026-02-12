@@ -3,7 +3,6 @@ import { authenticate, isPublisher, isAdmin, AuthRequest } from '../middleware/a
 import prisma from '../utils/prisma';
 import admin from 'firebase-admin';
 import { uploadToImgBB } from '../services/imgbb.service';
-import { resolveImageUrl } from '../utils/imageUrl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -46,11 +45,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: articles.map((a: any) => ({
-        ...a,
-        imageUrl: resolveImageUrl(a.imageUrl),
-        author: a.author ? { ...a.author, avatar: resolveImageUrl(a.author.avatar) } : a.author,
-      })),
+      data: articles,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -118,7 +113,7 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
 
     let imageUrl: string | undefined;
     if ((req as any).file) {
-      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`, (req as any).file.mimetype);
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
       if (uploaded) imageUrl = uploaded;
     }
 
@@ -241,7 +236,7 @@ router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req
     if (content) updateData.content = content;
     if (isPublished !== undefined) updateData.isPublished = isPublished === 'true' || isPublished === true;
     if ((req as any).file) {
-      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`, (req as any).file.mimetype);
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
       if (uploaded) updateData.imageUrl = uploaded;
     }
 
