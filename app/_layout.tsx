@@ -100,7 +100,7 @@ function RootLayoutContent() {
 
   return (
     <>
-      <StatusBar style={showSplash ? 'light' : (isDark ? 'light' : 'dark')} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       {showSplash && <AnimatedSplash onFinish={() => setShowSplash(false)} />}
       <Stack
         screenOptions={{
