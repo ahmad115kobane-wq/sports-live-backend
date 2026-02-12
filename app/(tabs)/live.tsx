@@ -111,6 +111,7 @@ export default function NewsScreen() {
 
   const isPublisher = user?.role === 'publisher';
   const [loadingMore, setLoadingMore] = useState(false);
+  const [expandedArticles, setExpandedArticles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const shimmer = Animated.loop(
@@ -184,6 +185,18 @@ export default function NewsScreen() {
     outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
   });
 
+  const toggleExpanded = (articleId: string) => {
+    setExpandedArticles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(articleId)) {
+        newSet.delete(articleId);
+      } else {
+        newSet.add(articleId);
+      }
+      return newSet;
+    });
+  };
+
   const renderArticle = ({ item }: { item: NewsArticle }) => {
     const imgUrl = getImageUrl(item.imageUrl);
     return (
@@ -223,12 +236,25 @@ export default function NewsScreen() {
         </Text>
 
         {/* Content Preview */}
-        <Text
-          style={[styles.articleContent, { color: colors.textSecondary }]}
-          numberOfLines={3}
-        >
-          {item.content}
-        </Text>
+        <View>
+          <Text
+            style={[styles.articleContent, { color: colors.textSecondary }]}
+            numberOfLines={expandedArticles.has(item.id) ? undefined : 5}
+          >
+            {item.content}
+          </Text>
+          {item.content.split('\n').length > 5 && (
+            <TouchableOpacity
+              onPress={() => toggleExpanded(item.id)}
+              style={styles.expandButton}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.expandText, { color: colors.accent }]}>
+                {expandedArticles.has(item.id) ? 'عرض أقل' : 'عرض المزيد'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Image */}
         {imgUrl && <AutoImage uri={imgUrl} colors={colors} />}
@@ -462,9 +488,16 @@ const styles = StyleSheet.create({
   },
   articleContent: {
     ...TYPOGRAPHY.bodyMedium,
-    paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.lg,
-    opacity: 0.8,
+    lineHeight: 22,
+    marginTop: SPACING.sm,
+  },
+  expandButton: {
+    marginTop: SPACING.xs,
+    alignSelf: 'flex-start',
+  },
+  expandText: {
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
   },
   articleFooter: {
     flexDirection: 'row',
