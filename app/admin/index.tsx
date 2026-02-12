@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as DocumentPicker from 'expo-document-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
@@ -75,6 +76,7 @@ export default function AdminScreen() {
   const [videoAdMandatorySeconds, setVideoAdMandatorySeconds] = useState(5);
   const [videoAdIsActive, setVideoAdIsActive] = useState(true);
   const [videoAdCreating, setVideoAdCreating] = useState(false);
+  const [videoFile, setVideoFile] = useState<DocumentPicker.DocumentPickerResult | null>(null);
 
   // Pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -92,6 +94,22 @@ export default function AdminScreen() {
   const showError = (title: string, message: string) => {
     setDialogConfig({ type: 'error', title, message });
     setDialogVisible(true);
+  };
+
+  const pickVideo = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['video/mp4', 'video/webm', 'video/quicktime'],
+        copyToCacheDirectory: true,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setVideoFile(result);
+      }
+    } catch (error) {
+      console.error('Error picking video:', error);
+      showError('خطأ', 'فشل اختيار الفيديو');
+    }
   };
 
   useEffect(() => {
@@ -171,6 +189,11 @@ export default function AdminScreen() {
       return;
     }
 
+    if (!videoFile || videoFile.canceled || !videoFile.assets || videoFile.assets.length === 0) {
+      showError('خطأ', 'يجب اختيار ملف الفيديو');
+      return;
+    }
+
     try {
       setVideoAdCreating(true);
       const formData = new FormData();
@@ -178,9 +201,15 @@ export default function AdminScreen() {
       formData.append('mandatorySeconds', String(videoAdMandatorySeconds));
       formData.append('isActive', String(videoAdIsActive));
       if (videoAdClickUrl) formData.append('clickUrl', videoAdClickUrl);
+      
+      // Add video file
+      const videoAsset = videoFile.assets[0];
+      formData.append('video', {
+        uri: videoAsset.uri,
+        type: videoAsset.mimeType || 'video/mp4',
+        name: videoAsset.name,
+      } as any);
 
-      // Note: In mobile app, we can't easily upload video files
-      // This creates a placeholder that admin can update from web dashboard
       await videoAdApi.adminCreate(formData);
       
       // Reset form
@@ -188,8 +217,9 @@ export default function AdminScreen() {
       setVideoAdClickUrl('');
       setVideoAdMandatorySeconds(5);
       setVideoAdIsActive(true);
+      setVideoFile(null);
       
-      showError('نجاح', 'تم إنشاء الإعلان بنجاح (ارفع الفيديو من لوحة التحكم على الويب)');
+      showError('نجاح', 'تم إنشاء الإعلان بنجاح');
     } catch (error) {
       console.error('Error creating video ad:', error);
       showError('خطأ', 'فشل إنشاء الإعلان');
@@ -464,6 +494,24 @@ export default function AdminScreen() {
             />
           </View>
 
+          {/* Video File */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>ملف الفيديو *</Text>
+            <TouchableOpacity
+              style={[styles.filePicker, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={pickVideo}
+              activeOpacity={0.7}
+            >
+              <View style={styles.filePickerInner}>
+                <Ionicons name="videocam" size={20} color={videoFile?.assets ? colors.accent : colors.textTertiary} />
+                <Text style={[styles.filePickerText, { color: videoFile?.assets ? colors.text : colors.textTertiary }]}>
+                  {videoFile?.assets && !videoFile.canceled ? videoFile.assets[0].name : 'اختر ملف الفيديو'}
+                </Text>
+              </View>
+              <Ionicons name="folder-open" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
+
           {/* Click URL */}
           <View style={styles.field}>
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>رابط عند النقر (اختياري)</Text>
@@ -507,14 +555,7 @@ export default function AdminScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Note */}
-          <View style={[styles.noteBox, { backgroundColor: colors.background, borderColor: colors.warning }]}>
-            <Ionicons name="information-circle" size={16} color={colors.warning} />
-            <Text style={[styles.noteText, { color: colors.textSecondary }]}>
-              سيتم إنشاء الإعلان بدون فيديو. يمكنك رفع الفيديو من لوحة التحكم على الويب.
-            </Text>
-          </View>
-
+          
           {/* Submit */}
           <TouchableOpacity
             style={[styles.submitButton, videoAdCreating && { opacity: 0.6 }]}
@@ -907,6 +948,27 @@ const styles = StyleSheet.create({
   },
   toggleDotActive: {
     transform: [{ translateX: 20 }],
+  },
+  filePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.sm,
+  },
+  filePickerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flex: 1,
+  },
+  filePickerText: {
+    ...TYPOGRAPHY.bodyMedium,
+    flex: 1,
   },
   noteBox: {
     flexDirection: 'row',
