@@ -24,7 +24,6 @@ import { useAuthStore } from '@/store/authStore';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { useSocket } from '@/services/socket';
 import { matchApi, sliderApi } from '@/services/api';
-import VideoAdOverlay from '@/components/VideoAdOverlay';
 import { getUnreadCount } from '@/services/notifications';
 import MatchCard from '@/components/MatchCard';
 import EmptyState from '@/components/ui/EmptyState';
@@ -450,7 +449,6 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <VideoAdOverlay />
       <PageHeader
         title={t('home.title')}
         logo={colorScheme === 'dark' ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}

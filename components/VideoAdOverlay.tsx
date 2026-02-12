@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,32 +23,36 @@ interface VideoAdData {
   clickUrl: string | null;
 }
 
-// Fullscreen video player — only mounts when ad URL is ready (stable ref)
+// ─── Fullscreen video player (mounts only when video is preloaded) ───
 function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => void }) {
-  const [videoReady, setVideoReady] = useState(false);
   const [countdown, setCountdown] = useState(ad.mandatorySeconds);
   const [canSkip, setCanSkip] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dismissRef = useRef(onDismiss);
   dismissRef.current = onDismiss;
 
-  const player = useVideoPlayer(ad.videoUrl, (p) => {
+  // Stable video URL ref — useVideoPlayer needs a stable string
+  const videoUrlRef = useRef(ad.videoUrl);
+
+  const player = useVideoPlayer(videoUrlRef.current, (p) => {
     p.loop = false;
     p.muted = false;
+    p.play();
   });
 
-  // Timeout: if video doesn't load in 15s, dismiss
+  // Safety timeout: dismiss after 30s regardless
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (!videoReady) dismissRef.current();
-    }, 15000);
+      dismissRef.current();
+    }, 30000);
     return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
     const statusSub = player.addListener('statusChange', (payload) => {
-      if (payload.status === 'readyToPlay') {
-        setVideoReady(true);
+      if (payload.status === 'readyToPlay' && !playing) {
+        setPlaying(true);
         player.play();
       } else if (payload.status === 'error') {
         dismissRef.current();
@@ -57,6 +61,7 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
 
     const endSub = player.addListener('playToEnd', () => {
       setCanSkip(true);
+      if (timerRef.current) clearInterval(timerRef.current);
     });
 
     return () => {
@@ -65,9 +70,8 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
     };
   }, [player]);
 
-  // Countdown starts only when video is playing
+  // Countdown starts immediately (video is already preloaded)
   useEffect(() => {
-    if (!videoReady) return;
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -81,14 +85,14 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [videoReady]);
+  }, []);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     if (!canSkip) return;
     if (timerRef.current) clearInterval(timerRef.current);
     try { player.pause(); } catch {}
     dismissRef.current();
-  };
+  }, [canSkip, player]);
 
   return (
     <View style={styles.fullscreen}>
@@ -100,14 +104,6 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
         nativeControls={false}
         contentFit="contain"
       />
-
-      {/* Loading overlay */}
-      {!videoReady && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>جاري تحميل الإعلان...</Text>
-        </View>
-      )}
 
       {/* Ad badge — top left */}
       <View style={styles.adBadge}>
@@ -125,11 +121,11 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
             <Ionicons name="close" size={18} color="#fff" />
             <Text style={styles.skipText}>تخطي الإعلان</Text>
           </TouchableOpacity>
-        ) : videoReady ? (
+        ) : (
           <View style={styles.countdownBadge}>
             <Text style={styles.countdownText}>تخطي بعد {countdown}</Text>
           </View>
-        ) : null}
+        )}
       </View>
 
       {/* Bottom CTA link */}
@@ -148,38 +144,46 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
 }
 
 /**
- * Fullscreen mandatory video ad overlay.
- * Fetches one random ad on mount, shows fullscreen, skip only after mandatory seconds.
+ * Global fullscreen mandatory video ad overlay.
+ * - Fetches one random active ad after auth
+ * - Preloads video in background (HEAD request to warm cache)
+ * - Shows fullscreen modal on TOP of entire app (rendered in _layout.tsx)
+ * - Cannot be dismissed until mandatory seconds pass
  */
-export default function VideoAdOverlay() {
+export default function VideoAdOverlay({ isAuthenticated }: { isAuthenticated?: boolean }) {
   const [ad, setAd] = useState<VideoAdData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [preloaded, setPreloaded] = useState(false);
   const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (fetchedRef.current) return;
+    if (fetchedRef.current || !isAuthenticated) return;
     fetchedRef.current = true;
 
-    // Wait 3 seconds after home page mounts, then fetch ad
+    // Delay 2s after app start, then fetch random ad + preload
     const delay = setTimeout(async () => {
       try {
         const res = await videoAdApi.getRandom();
-        if (res.data?.data && res.data.data.videoUrl) {
-          setAd(res.data.data);
-          setReady(true);
-        }
-      } catch {
-        // no ad
-      } finally {
-        setLoading(false);
-      }
-    }, 3000);
-    return () => clearTimeout(delay);
-  }, []);
+        const adData = res.data?.data;
+        if (!adData || !adData.videoUrl) return;
 
-  const showModal = !dismissed && !loading && ready && !!ad;
+        setAd(adData);
+
+        // Preload: fetch first bytes of video to warm CDN cache & device
+        try {
+          await fetch(adData.videoUrl, { method: 'HEAD' });
+        } catch {}
+
+        // Small extra delay to let video cache settle
+        setTimeout(() => setPreloaded(true), 500);
+      } catch {
+        // no ad available
+      }
+    }, 2000);
+    return () => clearTimeout(delay);
+  }, [isAuthenticated]);
+
+  const showModal = !dismissed && preloaded && !!ad;
 
   if (!showModal) return null;
 
@@ -203,17 +207,6 @@ const styles = StyleSheet.create({
   },
   video: {
     flex: 1,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-  loadingText: {
-    color: '#aaa',
-    fontSize: 14,
-    marginTop: 12,
   },
   adBadge: {
     position: 'absolute',

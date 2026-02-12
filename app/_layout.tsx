@@ -12,6 +12,7 @@ import { AlertProvider } from '@/contexts/AlertContext';
 import { registerForPushNotifications, handleNotificationTap } from '@/services/notifications';
 import { requestNotificationPermission, setupForegroundNotificationHandler } from '@/services/firebase';
 import AnimatedSplash from '@/components/AnimatedSplash';
+import VideoAdOverlay from '@/components/VideoAdOverlay';
 import '@/i18n';
 
 // Enable native screens for maximum performance
@@ -102,6 +103,7 @@ function RootLayoutContent() {
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {showSplash && <AnimatedSplash onFinish={() => setShowSplash(false)} />}
+      {!showSplash && <VideoAdOverlay isAuthenticated={isAuthenticated} />}
       <Stack
         screenOptions={{
           headerStyle: {
