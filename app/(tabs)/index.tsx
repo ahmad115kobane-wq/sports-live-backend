@@ -450,6 +450,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <VideoAdOverlay />
       <PageHeader
         title={t('home.title')}
         logo={colorScheme === 'dark' ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}
@@ -490,9 +491,6 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Video Ad — inline on home page */}
-        <VideoAdOverlay />
-
         {/* Competitions/Categories Section */}
         {competitions.length > 0 && (
           <View style={styles.competitionsSection}>
