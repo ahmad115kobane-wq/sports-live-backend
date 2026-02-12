@@ -149,6 +149,9 @@ model Match {
   isFeatured    Boolean  @default(false) @map("is_featured")
   venue         String?
   referee       String?
+  assistantReferee1 String? @map("assistant_referee_1")
+  assistantReferee2 String? @map("assistant_referee_2")
+  fourthReferee     String? @map("fourth_referee")
   attendance    Int?
   weather       String?
   matchday      Int?     // round/matchday number

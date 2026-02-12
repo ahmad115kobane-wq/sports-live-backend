@@ -164,27 +164,32 @@ router.get('/matches/:matchId', authenticate, isOperator, async (req: AuthReques
   }
 });
 
-// Update match referee (operator can set before match)
+// Update match referees (operator can set before match)
 router.patch('/matches/:matchId/referee', authenticate, isOperator, async (req: AuthRequest, res) => {
   try {
     const { matchId } = req.params;
-    const { referee } = req.body;
+    const { referee, assistantReferee1, assistantReferee2, fourthReferee } = req.body;
 
     const match = await prisma.match.update({
       where: { id: matchId },
-      data: { referee },
+      data: {
+        referee,
+        assistantReferee1,
+        assistantReferee2,
+        fourthReferee,
+      },
     });
 
     res.json({
       success: true,
-      message: 'Referee updated',
+      message: 'Referees updated',
       data: match,
     });
   } catch (error) {
-    console.error('Update referee error:', error);
+    console.error('Update referees error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update referee',
+      message: 'Failed to update referees',
     });
   }
 });
