@@ -279,7 +279,6 @@ export default function HomeScreen() {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [sliders, setSliders] = useState<any[]>([]);
-  const [showVideoAd, setShowVideoAd] = useState(true);
 
   // Only pass relevant matches to timer hooks (not ALL matches)
   const activeMatches = useMemo(() => {
@@ -451,7 +450,6 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <VideoAdOverlay visible={showVideoAd} onClose={() => setShowVideoAd(false)} />
       <PageHeader
         title={t('home.title')}
         logo={colorScheme === 'dark' ? require('@/assets/logo-white.png') : require('@/assets/logo-black.png')}
@@ -492,6 +490,9 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Video Ad — inline on home page */}
+        <VideoAdOverlay />
+
         {/* Competitions/Categories Section */}
         {competitions.length > 0 && (
           <View style={styles.competitionsSection}>

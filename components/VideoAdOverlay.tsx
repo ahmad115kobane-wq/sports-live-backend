@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
   Dimensions,
-  StatusBar,
-  Platform,
   Linking,
   ActivityIndicator,
 } from 'react-native';
@@ -15,7 +12,8 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { videoAdApi } from '@/services/api';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const VIDEO_HEIGHT = (SCREEN_WIDTH - 24) * 9 / 16; // 16:9 aspect ratio with padding
 
 interface VideoAdData {
   id: string;
@@ -26,33 +24,28 @@ interface VideoAdData {
   clickUrl: string | null;
 }
 
-interface Props {
-  visible: boolean;
-  onClose: () => void;
-}
-
-// Separate component so useVideoPlayer only runs with a valid, stable URL
-function VideoAdPlayer({ ad, onClose }: { ad: VideoAdData; onClose: () => void }) {
+// Child component: only mounts when we have a valid ad URL (prevents shared object release)
+function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => void }) {
   const [videoReady, setVideoReady] = useState(false);
   const [countdown, setCountdown] = useState(ad.mandatorySeconds);
   const [canSkip, setCanSkip] = useState(false);
+  const [ended, setEnded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
 
   const player = useVideoPlayer(ad.videoUrl, (p) => {
     p.loop = false;
     p.muted = false;
   });
 
-  // Timeout: if video doesn't load in 10s, close the ad
+  // Timeout: if video doesn't load in 10s, dismiss
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (!videoReady) {
-        console.warn('Video ad timed out loading');
-        onClose();
-      }
+      if (!videoReady) dismissRef.current();
     }, 10000);
     return () => clearTimeout(timeout);
-  }, [videoReady, onClose]);
+  }, []); // empty deps — runs once on mount
 
   useEffect(() => {
     const statusSub = player.addListener('statusChange', (payload) => {
@@ -60,20 +53,20 @@ function VideoAdPlayer({ ad, onClose }: { ad: VideoAdData; onClose: () => void }
         setVideoReady(true);
         player.play();
       } else if (payload.status === 'error') {
-        console.warn('Video ad player error');
-        onClose();
+        dismissRef.current();
       }
     });
 
     const endSub = player.addListener('playToEnd', () => {
-      onClose();
+      setEnded(true);
+      setCanSkip(true);
     });
 
     return () => {
       statusSub.remove();
       endSub.remove();
     };
-  }, [player, onClose]);
+  }, [player]); // only depends on player (stable)
 
   useEffect(() => {
     if (videoReady && countdown > 0) {
@@ -91,212 +84,248 @@ function VideoAdPlayer({ ad, onClose }: { ad: VideoAdData; onClose: () => void }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [videoReady, countdown]);
+  }, [videoReady]); // only start once when video is ready
 
-  const handleAdClick = () => {
-    if (ad.clickUrl) {
-      Linking.openURL(ad.clickUrl).catch(() => {});
-    }
-  };
-
-  const handleSkip = () => {
-    if (canSkip) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      try { player.pause(); } catch {}
-      onClose();
-    }
+  const handleDismiss = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    try { player.pause(); } catch {}
+    dismissRef.current();
   };
 
   return (
-    <>
-      <VideoView
-        player={player}
-        style={styles.video}
-        nativeControls={false}
-        contentFit="contain"
-      />
+    <View style={styles.card}>
+      {/* Video container */}
+      <View style={styles.videoContainer}>
+        <VideoView
+          player={player}
+          style={styles.video}
+          nativeControls={false}
+          contentFit="contain"
+        />
 
-      {!videoReady && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>جاري تحميل الإعلان...</Text>
+        {!videoReady && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="small" color="#fff" />
+            <Text style={styles.loadingText}>جاري تحميل الإعلان...</Text>
+          </View>
+        )}
+
+        {/* Ad badge */}
+        <View style={styles.adBadge}>
+          <Text style={styles.adBadgeText}>إعلان</Text>
         </View>
-      )}
 
-      <View style={styles.adBadge}>
-        <Text style={styles.adBadgeText}>إعلان</Text>
-      </View>
-
-      <View style={styles.skipContainer}>
+        {/* Skip / Countdown */}
         {canSkip ? (
           <TouchableOpacity
-            onPress={handleSkip}
-            style={styles.skipButton}
+            onPress={handleDismiss}
+            style={styles.closeButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="close" size={18} color="#fff" />
-            <Text style={styles.skipText}>تخطي</Text>
+            <Ionicons name="close" size={16} color="#fff" />
           </TouchableOpacity>
-        ) : (
+        ) : videoReady ? (
           <View style={styles.countdownBadge}>
-            <Text style={styles.countdownText}>
-              {countdown > 0 ? `تخطي بعد ${countdown}` : '...'}
-            </Text>
+            <Text style={styles.countdownText}>{countdown}</Text>
           </View>
+        ) : null}
+
+        {/* Ended overlay */}
+        {ended && ad.clickUrl && (
+          <TouchableOpacity
+            onPress={() => Linking.openURL(ad.clickUrl!).catch(() => {})}
+            style={styles.replayOverlay}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="open-outline" size={20} color="#fff" />
+            <Text style={styles.replayText}>معرفة المزيد</Text>
+          </TouchableOpacity>
         )}
       </View>
 
-      {ad.clickUrl && (
-        <TouchableOpacity
-          onPress={handleAdClick}
-          style={styles.clickIndicator}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="open-outline" size={14} color="#fff" />
-          <Text style={styles.clickText}>معرفة المزيد</Text>
-        </TouchableOpacity>
-      )}
-    </>
+      {/* Bottom bar: title + CTA */}
+      <View style={styles.bottomBar}>
+        <Text style={styles.adTitle} numberOfLines={1}>{ad.title}</Text>
+        {ad.clickUrl ? (
+          <TouchableOpacity
+            onPress={() => Linking.openURL(ad.clickUrl!).catch(() => {})}
+            style={styles.ctaButton}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.ctaText}>المزيد</Text>
+            <Ionicons name="arrow-forward" size={14} color="#fff" />
+          </TouchableOpacity>
+        ) : canSkip ? (
+          <TouchableOpacity onPress={handleDismiss} style={styles.dismissLink} activeOpacity={0.7}>
+            <Text style={styles.dismissText}>إغلاق</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
-export default function VideoAdOverlay({ visible, onClose }: Props) {
+/**
+ * Inline video ad component — embeds in the home page ScrollView.
+ * Fetches one random ad on mount, shows it once, then disappears on dismiss.
+ */
+export default function VideoAdOverlay() {
   const [ad, setAd] = useState<VideoAdData | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchAd = useCallback(async () => {
-    try {
-      const res = await videoAdApi.getRandom();
-      if (res.data?.data) {
-        setAd(res.data.data);
-      } else {
-        onClose();
-      }
-    } catch {
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  }, [onClose]);
+  const [dismissed, setDismissed] = useState(false);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (visible) {
-      setLoading(true);
-      setAd(null);
-      fetchAd();
-    }
-  }, [visible, fetchAd]);
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
-  if (!visible) return null;
+    (async () => {
+      try {
+        const res = await videoAdApi.getRandom();
+        if (res.data?.data && res.data.data.videoUrl) {
+          setAd(res.data.data);
+        }
+      } catch {
+        // silently fail — no ad to show
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Nothing to show
+  if (dismissed || (!loading && !ad)) return null;
+
+  // Still loading
+  if (loading) return null;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent={false}
-      statusBarTranslucent
-    >
-      <View style={styles.container}>
-        <StatusBar hidden />
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#fff" />
-          </View>
-        ) : ad ? (
-          <VideoAdPlayer ad={ad} onClose={onClose} />
-        ) : null}
-      </View>
-    </Modal>
+    <VideoAdPlayer ad={ad!} onDismiss={() => setDismissed(true)} />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  card: {
+    marginHorizontal: 12,
+    marginVertical: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
     backgroundColor: '#000',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  videoContainer: {
+    width: '100%',
+    height: VIDEO_HEIGHT,
+    backgroundColor: '#000',
+    position: 'relative',
   },
   video: {
-    flex: 1,
-    backgroundColor: '#000',
+    width: '100%',
+    height: '100%',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
   loadingText: {
-    color: '#fff',
-    fontSize: 14,
-    marginTop: 12,
+    color: '#ccc',
+    fontSize: 12,
+    marginTop: 8,
   },
   adBadge: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    left: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(255,180,0,0.85)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 4,
   },
   adBadgeText: {
-    color: '#fff',
-    fontSize: 11,
+    color: '#000',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countdownBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countdownText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
     fontWeight: '600',
   },
-  skipContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    right: 16,
+  replayOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    gap: 6,
   },
-  skipButton: {
+  replayText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#111',
+  },
+  adTitle: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+    marginRight: 8,
+  },
+  ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
-  skipText: {
+  ctaText: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  countdownBadge: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  countdownText: {
-    color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
-    fontWeight: '500',
-  },
-  clickIndicator: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 50 : 30,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(59,130,246,0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-  },
-  clickText: {
-    color: '#fff',
-    fontSize: 13,
     fontWeight: '600',
+  },
+  dismissLink: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  dismissText: {
+    color: '#888',
+    fontSize: 12,
   },
 });
