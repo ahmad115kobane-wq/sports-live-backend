@@ -10,8 +10,8 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { videoAdApi } from '@/services/api';
 
@@ -36,7 +36,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(0);
   const [canSkip, setCanSkip] = useState(false);
-  const [videoStarted, setVideoStarted] = useState(false);
+  const [videoOpened, setVideoOpened] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchAd = useCallback(async () => {
@@ -46,7 +46,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
         setAd(res.data.data);
         setCountdown(res.data.data.mandatorySeconds);
         setCanSkip(false);
-        setVideoStarted(false);
+        setVideoOpened(false);
       } else {
         onClose();
       }
@@ -62,7 +62,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
       setLoading(true);
       setAd(null);
       setCanSkip(false);
-      setVideoStarted(false);
+      setVideoOpened(false);
       fetchAd();
     }
     return () => {
@@ -70,18 +70,18 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
     };
   }, [visible, fetchAd]);
 
-  // Start countdown after a short delay (video auto-plays in WebView)
+  // Start countdown after a short delay
   useEffect(() => {
-    if (ad && visible && !videoStarted) {
+    if (ad && visible && !videoOpened) {
       const startDelay = setTimeout(() => {
-        setVideoStarted(true);
+        setVideoOpened(true);
       }, 1500);
       return () => clearTimeout(startDelay);
     }
-  }, [ad, visible, videoStarted]);
+  }, [ad, visible, videoOpened]);
 
   useEffect(() => {
-    if (videoStarted && countdown > 0) {
+    if (videoOpened && countdown > 0) {
       timerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -96,7 +96,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [videoStarted, countdown]);
+  }, [videoOpened, countdown]);
 
   const handleAdClick = () => {
     if (ad?.clickUrl) {
@@ -111,41 +111,15 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
     }
   };
 
-  const handleWebViewMessage = (event: any) => {
-    const msg = event.nativeEvent?.data;
-    if (msg === 'video_ended') {
-      onClose();
+  const handlePlayVideo = () => {
+    if (ad?.videoUrl) {
+      Linking.openURL(ad.videoUrl).catch(() => {});
+      // Close after opening video
+      setTimeout(() => onClose(), 1000);
     }
   };
 
   if (!visible) return null;
-
-  const videoHtml = ad ? `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden; }
-        video { width: 100vw; height: 100vh; object-fit: contain; background: #000; }
-      </style>
-    </head>
-    <body>
-      <video id="vid" autoplay playsinline muted>
-        <source src="${ad.videoUrl}" type="video/mp4">
-      </video>
-      <script>
-        var v = document.getElementById('vid');
-        v.addEventListener('ended', function() {
-          window.ReactNativeWebView.postMessage('video_ended');
-        });
-        // Unmute after a short delay (autoplay policy)
-        setTimeout(function() { v.muted = false; }, 500);
-      </script>
-    </body>
-    </html>
-  ` : '';
 
   return (
     <Modal
@@ -164,16 +138,29 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
           </View>
         ) : ad ? (
           <>
-            <WebView
-              source={{ html: videoHtml }}
-              style={styles.video}
-              allowsInlineMediaPlayback
-              mediaPlaybackRequiresUserAction={false}
-              javaScriptEnabled
-              onMessage={handleWebViewMessage}
-              scrollEnabled={false}
-              bounces={false}
-            />
+            {/* Video thumbnail with play button */}
+            <TouchableOpacity
+              activeOpacity={0.95}
+              onPress={handlePlayVideo}
+              style={styles.videoContainer}
+            >
+              {ad.thumbnailUrl ? (
+                <Image
+                  source={{ uri: ad.thumbnailUrl }}
+                  style={styles.thumbnail}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.placeholder}>
+                  <Ionicons name="play-circle" size={80} color="rgba(255,255,255,0.6)" />
+                </View>
+              )}
+              
+              {/* Play button overlay */}
+              <View style={styles.playButtonOverlay}>
+                <Ionicons name="play" size={60} color="#fff" />
+              </View>
+            </TouchableOpacity>
 
             {/* Ad badge */}
             <View style={styles.adBadge}>
@@ -228,9 +215,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  video: {
+  videoContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnail: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  placeholder: {
+    flex: 1,
+    width: SCREEN_WIDTH,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#000',
+  },
+  playButtonOverlay: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   adBadge: {
     position: 'absolute',
