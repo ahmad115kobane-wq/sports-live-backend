@@ -43,11 +43,25 @@ function VideoAdPlayer({ ad, onClose }: { ad: VideoAdData; onClose: () => void }
     p.muted = false;
   });
 
+  // Timeout: if video doesn't load in 10s, close the ad
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!videoReady) {
+        console.warn('Video ad timed out loading');
+        onClose();
+      }
+    }, 10000);
+    return () => clearTimeout(timeout);
+  }, [videoReady, onClose]);
+
   useEffect(() => {
     const statusSub = player.addListener('statusChange', (payload) => {
       if (payload.status === 'readyToPlay') {
         setVideoReady(true);
         player.play();
+      } else if (payload.status === 'error') {
+        console.warn('Video ad player error');
+        onClose();
       }
     });
 
