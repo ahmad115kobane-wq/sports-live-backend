@@ -3,6 +3,9 @@ import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middlewar
 import prisma from '../utils/prisma';
 import { uploadToImgBB } from '../services/imgbb.service';
 import { resolveImageUrl } from '../utils/imageUrl';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -21,6 +24,10 @@ const uploadSlider = multer({
 });
 
 const router = Router();
+
+// Ensure sliders directory exists
+const SLIDER_DIR = path.join(process.cwd(), 'public/sliders');
+fs.mkdirSync(SLIDER_DIR, { recursive: true });
 
 // ==================== PUBLIC ====================
 
@@ -63,11 +70,15 @@ router.post('/admin', authenticate, isAdmin, uploadSlider.single('image'), async
       return res.status(400).json({ success: false, message: 'Image is required' });
     }
 
-    // Upload to ImgBB
-    const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`, file.mimetype);
-    if (!imageUrl) {
-      return res.status(500).json({ success: false, message: 'Failed to upload image' });
-    }
+    // Save locally (primary)
+    const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg' };
+    const ext = mimeExt[file.mimetype] || 'jpg';
+    const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+    fs.writeFileSync(path.join(SLIDER_DIR, filename), file.buffer);
+    const imageUrl = `/sliders/${filename}`;
+
+    // R2 backup (non-blocking)
+    uploadToImgBB(file.buffer, `slider-${Date.now()}`, file.mimetype).catch(() => {});
 
     const slider = await prisma.homeSlider.create({
       data: {
@@ -100,9 +111,14 @@ router.put('/admin/:id', authenticate, isAdmin, uploadSlider.single('image'), as
     if (sortOrder !== undefined) data.sortOrder = parseInt(sortOrder);
 
     if (file) {
-      // Upload new image to ImgBB
-      const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`, file.mimetype);
-      if (imageUrl) data.imageUrl = imageUrl;
+      // Save locally (primary)
+      const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg' };
+      const ext = mimeExt[file.mimetype] || 'jpg';
+      const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+      fs.writeFileSync(path.join(SLIDER_DIR, filename), file.buffer);
+      data.imageUrl = `/sliders/${filename}`;
+      // R2 backup (non-blocking)
+      uploadToImgBB(file.buffer, `slider-${Date.now()}`, file.mimetype).catch(() => {});
     }
 
     const slider = await prisma.homeSlider.update({

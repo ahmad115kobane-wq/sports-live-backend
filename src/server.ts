@@ -125,24 +125,46 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/seed', seedRoutes);
 }
 
-// General image proxy — proxies R2/external images through backend for mobile app compatibility
-app.get('/api/image-proxy', async (req, res) => {
+// R2 image proxy — streams images from R2 bucket via S3 client (no fetch needed)
+app.get('/api/r2/*', async (req, res) => {
   try {
-    const url = req.query.url as string;
-    if (!url || !url.startsWith('http')) {
-      return res.status(400).send('Invalid URL');
+    const key = req.path.replace('/api/r2/', ''); // e.g., "store/abc123.jpg"
+    if (!key) {
+      return res.status(400).send('Missing key');
     }
-    const response = await fetch(url);
-    if (!response.ok) {
-      return res.status(response.status).send('Image not found');
+
+    const { s3, R2_BUCKET_NAME, isR2Configured } = require('./services/imgbb.service');
+    if (!isR2Configured || !s3) {
+      return res.status(503).send('R2 not configured');
     }
-    const contentType = response.headers.get('content-type');
-    if (contentType) res.setHeader('Content-Type', contentType);
+
+    const { GetObjectCommand } = require('@aws-sdk/client-s3');
+    const response = await s3.send(new GetObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+    }));
+
+    res.setHeader('Content-Type', response.ContentType || 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    const buffer = Buffer.from(await response.arrayBuffer());
-    res.send(buffer);
-  } catch (error) {
-    console.error('Image proxy error:', error);
+
+    // Stream the response body to the client
+    const stream = response.Body;
+    if (stream && typeof stream.pipe === 'function') {
+      stream.pipe(res);
+    } else if (stream) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      res.send(Buffer.concat(chunks));
+    } else {
+      res.status(404).send('Not found');
+    }
+  } catch (error: any) {
+    if (error?.name === 'NoSuchKey') {
+      return res.status(404).send('Image not found');
+    }
+    console.error('R2 proxy error:', error);
     res.status(500).send('Proxy error');
   }
 });

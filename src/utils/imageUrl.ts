@@ -4,22 +4,28 @@
  * that the mobile app can load directly.
  * 
  * - Relative paths (e.g. /store/img.jpg) → prepend BASE_URL
- * - Full R2/external URLs → proxy through backend to avoid CORS/access issues
+ * - R2 URLs → rewrite to /api/r2/<key> so backend streams them via S3 client
+ * - Other external URLs → pass through as-is
  */
 
 const BASE_URL = process.env.BASE_URL
   || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '')
   || 'https://sports-live.up.railway.app';
 
+const _R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
+
 /**
  * Resolve a single image URL to a full absolute URL.
  */
 export function resolveImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  // Full URL (R2 or external) → proxy through backend
-  if (url.startsWith('http')) {
-    return `${BASE_URL}/api/image-proxy?url=${encodeURIComponent(url)}`;
+  // R2 URL → rewrite to backend proxy path (uses S3 GetObject, no fetch needed)
+  if (_R2_PUBLIC_URL && url.startsWith(_R2_PUBLIC_URL)) {
+    const key = url.replace(`${_R2_PUBLIC_URL}/`, '');
+    return `${BASE_URL}/api/r2/${key}`;
   }
+  // Other external URL → pass through as-is
+  if (url.startsWith('http')) return url;
   // Relative path → make absolute (served by express.static)
   return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 }

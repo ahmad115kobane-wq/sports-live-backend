@@ -4,6 +4,13 @@ import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import { uploadToImgBB } from '../services/imgbb.service';
 import { resolveImageUrl } from '../utils/imageUrl';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+// Ensure avatars directory exists
+const AVATAR_DIR = path.join(process.cwd(), 'public/avatars');
+fs.mkdirSync(AVATAR_DIR, { recursive: true });
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -405,14 +412,15 @@ router.post('/avatar', authenticate, avatarUpload.single('avatar'), async (req: 
       });
     }
 
-    // Upload to ImgBB
-    const avatarUrl = await uploadToImgBB((req as any).file.buffer, `avatar-${req.user!.id}-${Date.now()}`, (req as any).file.mimetype);
-    if (!avatarUrl) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to upload avatar image',
-      });
-    }
+    // Save locally (primary)
+    const file = (req as any).file;
+    const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg' };
+    const ext = mimeExt[file.mimetype] || 'jpg';
+    const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+    fs.writeFileSync(path.join(AVATAR_DIR, filename), file.buffer);
+    const avatarUrl = `/avatars/${filename}`;
+    // R2 backup (non-blocking)
+    uploadToImgBB(file.buffer, `avatar-${req.user!.id}-${Date.now()}`, file.mimetype).catch(() => {});
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user!.id },
