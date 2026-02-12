@@ -169,17 +169,7 @@ app.get('/api/r2/*', async (req, res) => {
   }
 });
 
-// Serve news images
-app.use('/news', express.static(path.join(process.cwd(), 'public/news')));
-
-// Serve avatar images
-app.use('/avatars', express.static(path.join(process.cwd(), 'public/avatars')));
-
-// Serve store images
-app.use('/store', express.static(path.join(process.cwd(), 'public/store')));
-
-// Serve slider images
-app.use('/sliders', express.static(path.join(process.cwd(), 'public/sliders')));
+// All images are served from R2 via /api/r2/* proxy — no local static files needed
 
 // Setup Socket handlers
 setupSocketHandlers(io);

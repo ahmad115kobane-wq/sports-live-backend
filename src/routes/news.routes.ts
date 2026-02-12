@@ -4,13 +4,6 @@ import prisma from '../utils/prisma';
 import admin from 'firebase-admin';
 import { uploadToImgBB } from '../services/imgbb.service';
 import { resolveImageUrl } from '../utils/imageUrl';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-
-// Ensure news directory exists
-const NEWS_DIR = path.join(process.cwd(), 'public/news');
-fs.mkdirSync(NEWS_DIR, { recursive: true });
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -125,14 +118,8 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
 
     let imageUrl: string | undefined;
     if ((req as any).file) {
-      const file = (req as any).file;
-      const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg' };
-      const ext = mimeExt[file.mimetype] || 'jpg';
-      const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-      fs.writeFileSync(path.join(NEWS_DIR, filename), file.buffer);
-      imageUrl = `/news/${filename}`;
-      // R2 backup (non-blocking)
-      uploadToImgBB(file.buffer, `news-${Date.now()}`, file.mimetype).catch(() => {});
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`, (req as any).file.mimetype);
+      if (uploaded) imageUrl = uploaded;
     }
 
     const article = await (prisma as any).newsArticle.create({
@@ -254,14 +241,8 @@ router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req
     if (content) updateData.content = content;
     if (isPublished !== undefined) updateData.isPublished = isPublished === 'true' || isPublished === true;
     if ((req as any).file) {
-      const file = (req as any).file;
-      const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg' };
-      const ext = mimeExt[file.mimetype] || 'jpg';
-      const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
-      fs.writeFileSync(path.join(NEWS_DIR, filename), file.buffer);
-      updateData.imageUrl = `/news/${filename}`;
-      // R2 backup (non-blocking)
-      uploadToImgBB(file.buffer, `news-${Date.now()}`, file.mimetype).catch(() => {});
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`, (req as any).file.mimetype);
+      if (uploaded) updateData.imageUrl = uploaded;
     }
 
     const updated = await (prisma as any).newsArticle.update({
