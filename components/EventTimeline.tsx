@@ -272,6 +272,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   playerContent: {
+    flex: 1,
     justifyContent: 'center',
   },
   playerContentRight: {
@@ -288,6 +289,7 @@ const styles = StyleSheet.create({
   playerName: {
     ...TYPOGRAPHY.bodyMedium,
     fontWeight: '600',
+    flex: 1,
   },
   playerNameSecondary: {
     ...TYPOGRAPHY.labelMedium,

@@ -145,7 +145,7 @@ export default function TeamDetailsScreen() {
 
           <View style={styles.heroContent}>
             <TeamLogo team={team || { name: '' }} size="xlarge" />
-            <Text style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} numberOfLines={2}>{team?.name}</Text>
+            <Text style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} numberOfLines={2} ellipsizeMode="tail">{team?.name}</Text>
             <Text style={[styles.teamCountry, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }]}>
               {team?.country} • {team?.shortName}
             </Text>
@@ -246,7 +246,7 @@ export default function TeamDetailsScreen() {
                           </Text>
                         </View>
                         <View style={[styles.playerInfo, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0, flex: 1 }]}>
-                          <Text style={[styles.playerName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
+                          <Text style={[styles.playerName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
                             {player.name}
                           </Text>
                           <Text style={[styles.playerPosition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>

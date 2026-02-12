@@ -270,7 +270,7 @@ export default function NotificationsScreen() {
                         { color: colors.text },
                         !notification.isRead && styles.unreadTitle,
                       ]}
-                      numberOfLines={2}
+                      numberOfLines={2} ellipsizeMode="tail"
                     >
                       {notification.title}
                     </Text>
@@ -280,7 +280,7 @@ export default function NotificationsScreen() {
                   </View>
                   <Text
                     style={[styles.notificationMessage, { color: colors.textSecondary }]}
-                    numberOfLines={2}
+                    numberOfLines={2} ellipsizeMode="tail"
                   >
                     {notification.body}
                   </Text>
