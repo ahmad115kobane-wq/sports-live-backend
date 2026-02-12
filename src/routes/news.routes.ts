@@ -3,6 +3,18 @@ import { authenticate, isPublisher, isAdmin, AuthRequest } from '../middleware/a
 import prisma from '../utils/prisma';
 import admin from 'firebase-admin';
 import { uploadToImgBB } from '../services/imgbb.service';
+import { resolveImageUrl, toRelativeImagePath } from '../utils/imageUrl';
+
+// Resolve author avatar + article imageUrl for mobile consumption
+function resolveArticle(article: any) {
+  if (!article) return article;
+  const resolved = { ...article };
+  if (resolved.imageUrl) resolved.imageUrl = resolveImageUrl(resolved.imageUrl);
+  if (resolved.author && resolved.author.avatar) {
+    resolved.author = { ...resolved.author, avatar: toRelativeImagePath(resolved.author.avatar) };
+  }
+  return resolved;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -45,7 +57,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: articles,
+      data: articles.map(resolveArticle),
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -72,7 +84,7 @@ router.get('/my/articles', authenticate, isPublisher, async (req: AuthRequest, r
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ success: true, data: articles });
+    res.json({ success: true, data: articles.map(resolveArticle) });
   } catch (error) {
     console.error('Get my articles error:', error);
     res.status(500).json({ success: false, message: 'Failed to get articles' });
@@ -95,7 +107,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Article not found' });
     }
 
-    res.json({ success: true, data: article });
+    res.json({ success: true, data: resolveArticle(article) });
   } catch (error) {
     console.error('Get article error:', error);
     res.status(500).json({ success: false, message: 'Failed to get article' });
@@ -136,11 +148,11 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
     io.emit('news:new', { article });
 
     // Respond immediately so the client doesn't timeout
-    res.status(201).json({ success: true, message: 'Article published', data: article });
+    res.status(201).json({ success: true, message: 'Article published', data: resolveArticle(article) });
 
     // Send push notification to ALL users (fire-and-forget, after response)
-    // ImgBB URLs are already full public URLs
-    const fullImageUrl = imageUrl || undefined;
+    // Resolve image URL to public proxy URL so FCM can access it
+    const fullImageUrl = resolveImageUrl(imageUrl || null) || undefined;
 
     (async () => {
       try {
@@ -250,7 +262,7 @@ router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req
       },
     });
 
-    res.json({ success: true, message: 'Article updated', data: updated });
+    res.json({ success: true, message: 'Article updated', data: resolveArticle(updated) });
   } catch (error) {
     console.error('Update article error:', error);
     res.status(500).json({ success: false, message: 'Failed to update article' });
