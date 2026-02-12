@@ -162,7 +162,7 @@ export default function VideoAdOverlay() {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
-    // Wait 1 second after home page mounts, then fetch ad
+    // Wait 3 seconds after home page mounts, then fetch ad
     const delay = setTimeout(async () => {
       try {
         const res = await videoAdApi.getRandom();
@@ -175,7 +175,7 @@ export default function VideoAdOverlay() {
       } finally {
         setLoading(false);
       }
-    }, 1000);
+    }, 3000);
     return () => clearTimeout(delay);
   }, []);
 

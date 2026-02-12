@@ -56,6 +56,13 @@ export default function PublisherScreen() {
   const [content, setContent] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Edit article state
+  const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editImage, setEditImage] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+
   useEffect(() => {
     loadMyArticles();
   }, []);
@@ -124,6 +131,54 @@ export default function PublisherScreen() {
       alert(t('common.error'), t('news.publishFailed'));
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleEdit = (article: NewsArticle) => {
+    setEditingArticle(article);
+    setEditTitle(article.title);
+    setEditContent(article.content);
+    setEditImage(null);
+    setShowForm(false);
+  };
+
+  const pickEditImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.5,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditImage(result.assets[0].uri);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingArticle || !editTitle.trim() || !editContent.trim()) {
+      alert(t('common.error'), t('news.fillRequired'));
+      return;
+    }
+    try {
+      setUpdating(true);
+      const formData = new FormData();
+      formData.append('title', editTitle.trim());
+      formData.append('content', editContent.trim());
+      if (editImage) {
+        const filename = editImage.split('/').pop() || 'image.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        formData.append('image', { uri: editImage, name: filename, type } as any);
+      }
+      await newsApi.update(editingArticle.id, formData);
+      Vibration.vibrate(20);
+      alert(t('common.success'), t('news.updated') || 'تم تحديث المقال');
+      setEditingArticle(null);
+      loadMyArticles();
+    } catch (error) {
+      console.error('Update error:', error);
+      alert(t('common.error'), t('news.updateFailed') || 'فشل تحديث المقال');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -282,6 +337,74 @@ export default function PublisherScreen() {
           </View>
         )}
 
+        {/* Edit Article Form */}
+        {editingArticle && (
+          <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.lg }}>
+              <Text style={[styles.formTitle, { color: colors.text, marginBottom: 0 }]}>
+                {t('news.editArticle') || 'تعديل المقال'}
+              </Text>
+              <TouchableOpacity onPress={() => setEditingArticle(null)}>
+                <Ionicons name="close-circle" size={28} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder={t('news.titlePlaceholder')}
+              placeholderTextColor={colors.textTertiary}
+              value={editTitle}
+              onChangeText={setEditTitle}
+              textAlign={isRTL ? 'right' : 'left'}
+            />
+
+            <TextInput
+              style={[styles.textArea, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder={t('news.contentPlaceholder')}
+              placeholderTextColor={colors.textTertiary}
+              value={editContent}
+              onChangeText={setEditContent}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              textAlign={isRTL ? 'right' : 'left'}
+            />
+
+            <TouchableOpacity
+              style={[styles.imagePickerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={pickEditImage}
+            >
+              {editImage ? (
+                <Image source={{ uri: editImage }} style={styles.previewImage} />
+              ) : editingArticle.imageUrl ? (
+                <Image source={{ uri: getImageUrl(editingArticle.imageUrl)! }} style={styles.previewImage} />
+              ) : (
+                <View style={styles.imagePickerContent}>
+                  <Ionicons name="image-outline" size={32} color={colors.textTertiary} />
+                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>
+                    {t('news.changeImage') || 'تغيير الصورة'}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.publishBtn, updating && { opacity: 0.6 }]}
+              onPress={handleUpdate}
+              disabled={updating}
+            >
+              {updating ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark" size={18} color="#fff" />
+                  <Text style={styles.publishBtnText}>{t('news.update') || 'تحديث المقال'}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* My Articles */}
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -307,12 +430,20 @@ export default function PublisherScreen() {
                     <Text style={[styles.articleDate, { color: colors.textTertiary }]}>
                       {formatDate(article.createdAt)}
                     </Text>
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => handleDelete(article)}
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <TouchableOpacity
+                        style={styles.editBtn}
+                        onPress={() => handleEdit(article)}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#8B5CF6" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => handleDelete(article)}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -494,6 +625,10 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   deleteBtn: {
+    padding: SPACING.sm,
+    borderRadius: RADIUS.sm,
+  },
+  editBtn: {
     padding: SPACING.sm,
     borderRadius: RADIUS.sm,
   },
