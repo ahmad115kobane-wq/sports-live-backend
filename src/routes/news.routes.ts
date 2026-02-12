@@ -184,6 +184,7 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
               data: {
                 type: 'news',
                 articleId: article.id,
+                ...(fullImageUrl ? { imageUrl: fullImageUrl } : {}),
               },
               android: {
                 priority: 'high',
