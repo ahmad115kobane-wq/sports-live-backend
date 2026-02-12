@@ -31,6 +31,27 @@ export function resolveImageUrl(url: string | null | undefined): string | null {
 }
 
 /**
+ * Convert image URL to a relative path suitable for mobile's `${SOCKET_URL}${path}` pattern.
+ * Used for avatars where mobile app manually prepends SOCKET_URL.
+ */
+export function toRelativeImagePath(url: string | null | undefined): string | null {
+  if (!url) return null;
+  // R2 URL → relative proxy path
+  if (_R2_PUBLIC_URL && url.startsWith(_R2_PUBLIC_URL)) {
+    const key = url.replace(`${_R2_PUBLIC_URL}/`, '');
+    return `/api/r2/${key}`;
+  }
+  // Already relative → return as-is
+  if (!url.startsWith('http')) return url.startsWith('/') ? url : `/${url}`;
+  // External URL that starts with our BASE_URL → strip to relative
+  if (BASE_URL && url.startsWith(BASE_URL)) {
+    return url.replace(BASE_URL, '');
+  }
+  // Other external URL → return as-is (shouldn't happen for avatars)
+  return url;
+}
+
+/**
  * Resolve image URLs in a team object (logoUrl).
  */
 export function resolveTeamImages(team: any): any {

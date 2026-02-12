@@ -51,16 +51,20 @@ export async function uploadToImgBB(buffer: Buffer, name: string, mimetype?: str
     else if (name.startsWith('news')) folder = 'news';
     else if (name.startsWith('store')) folder = 'store';
     else if (name.startsWith('slider')) folder = 'sliders';
+    else if (name.startsWith('videoad')) folder = 'videoads';
 
     // Detect extension from mimetype first, then from name, fallback to jpg
     let ext = 'jpg';
     if (mimetype) {
-      const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/svg+xml': 'svg' };
+      const mimeExt: Record<string, string> = {
+        'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/svg+xml': 'svg',
+        'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'video/x-msvideo': 'avi',
+      };
       ext = mimeExt[mimetype] || 'jpg';
     } else if (name.includes('.')) {
       ext = name.split('.').pop() || 'jpg';
     }
-    const contentType = mimetype || `image/${ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : ext === 'gif' ? 'gif' : 'jpeg'}`;
+    const contentType = mimetype || `image/jpeg`;
 
     const uniqueId = crypto.randomBytes(16).toString('hex');
     const key = `${folder}/${uniqueId}.${ext}`;

@@ -485,6 +485,22 @@ model LegalPage {
   @@map("legal_pages")
 }
 
+// Video Advertisements - mandatory video ads shown on app open
+model VideoAd {
+  id              String   @id @default(uuid())
+  title           String
+  videoUrl        String   @map("video_url")
+  thumbnailUrl    String?  @map("thumbnail_url")
+  mandatorySeconds Int     @default(5) @map("mandatory_seconds") // seconds before X appears
+  isActive        Boolean  @default(true) @map("is_active")
+  clickUrl        String?  @map("click_url") // optional link when ad is tapped
+  views           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("video_ads")
+}
+
 // News Articles - published by publishers
 model NewsArticle {
   id          String   @id @default(uuid())

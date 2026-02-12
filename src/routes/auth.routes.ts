@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import prisma from '../utils/prisma';
 import { generateCode, sendVerificationEmail, sendPasswordResetEmail } from '../services/email.service';
+import { toRelativeImagePath } from '../utils/imageUrl';
 
 const router = Router();
 
@@ -167,7 +168,7 @@ router.post(
               name: user.name,
               email: user.email,
               role: user.role,
-              avatar: user.avatar,
+              avatar: toRelativeImagePath(user.avatar),
               emailVerified: false,
             },
             token,
@@ -185,7 +186,7 @@ router.post(
             name: user.name,
             email: user.email,
             role: user.role,
-            avatar: user.avatar,
+            avatar: toRelativeImagePath(user.avatar),
             emailVerified: user.emailVerified,
           },
           token,
