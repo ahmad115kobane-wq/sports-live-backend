@@ -80,7 +80,6 @@ export function setupForegroundNotificationHandler() {
 
       const androidConfig: any = {
         channelId,
-        smallIcon: 'ic_notification',
         pressAction: { id: 'default' },
         sound: 'default',
       };
