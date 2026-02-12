@@ -31,54 +31,19 @@ interface Props {
   onClose: () => void;
 }
 
-export default function VideoAdOverlay({ visible, onClose }: Props) {
-  const [ad, setAd] = useState<VideoAdData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(0);
-  const [canSkip, setCanSkip] = useState(false);
+// Separate component so useVideoPlayer only runs with a valid, stable URL
+function VideoAdPlayer({ ad, onClose }: { ad: VideoAdData; onClose: () => void }) {
   const [videoReady, setVideoReady] = useState(false);
+  const [countdown, setCountdown] = useState(ad.mandatorySeconds);
+  const [canSkip, setCanSkip] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const player = useVideoPlayer(ad?.videoUrl || '', (p) => {
+  const player = useVideoPlayer(ad.videoUrl, (p) => {
     p.loop = false;
     p.muted = false;
   });
 
-  const fetchAd = useCallback(async () => {
-    try {
-      const res = await videoAdApi.getRandom();
-      if (res.data?.data) {
-        setAd(res.data.data);
-        setCountdown(res.data.data.mandatorySeconds);
-        setCanSkip(false);
-        setVideoReady(false);
-      } else {
-        onClose();
-      }
-    } catch {
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  }, [onClose]);
-
   useEffect(() => {
-    if (visible) {
-      setLoading(true);
-      setAd(null);
-      setCanSkip(false);
-      setVideoReady(false);
-      fetchAd();
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [visible, fetchAd]);
-
-  // Listen to player status changes
-  useEffect(() => {
-    if (!player || !ad) return;
-
     const statusSub = player.addListener('statusChange', (payload) => {
       if (payload.status === 'readyToPlay') {
         setVideoReady(true);
@@ -94,9 +59,8 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
       statusSub.remove();
       endSub.remove();
     };
-  }, [player, ad, onClose]);
+  }, [player, onClose]);
 
-  // Start countdown when video is ready
   useEffect(() => {
     if (videoReady && countdown > 0) {
       timerRef.current = setInterval(() => {
@@ -116,7 +80,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
   }, [videoReady, countdown]);
 
   const handleAdClick = () => {
-    if (ad?.clickUrl) {
+    if (ad.clickUrl) {
       Linking.openURL(ad.clickUrl).catch(() => {});
     }
   };
@@ -129,6 +93,86 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
     }
   };
 
+  return (
+    <>
+      <VideoView
+        player={player}
+        style={styles.video}
+        nativeControls={false}
+        contentFit="contain"
+      />
+
+      {!videoReady && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>جاري تحميل الإعلان...</Text>
+        </View>
+      )}
+
+      <View style={styles.adBadge}>
+        <Text style={styles.adBadgeText}>إعلان</Text>
+      </View>
+
+      <View style={styles.skipContainer}>
+        {canSkip ? (
+          <TouchableOpacity
+            onPress={handleSkip}
+            style={styles.skipButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={18} color="#fff" />
+            <Text style={styles.skipText}>تخطي</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.countdownBadge}>
+            <Text style={styles.countdownText}>
+              {countdown > 0 ? `تخطي بعد ${countdown}` : '...'}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {ad.clickUrl && (
+        <TouchableOpacity
+          onPress={handleAdClick}
+          style={styles.clickIndicator}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="open-outline" size={14} color="#fff" />
+          <Text style={styles.clickText}>معرفة المزيد</Text>
+        </TouchableOpacity>
+      )}
+    </>
+  );
+}
+
+export default function VideoAdOverlay({ visible, onClose }: Props) {
+  const [ad, setAd] = useState<VideoAdData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAd = useCallback(async () => {
+    try {
+      const res = await videoAdApi.getRandom();
+      if (res.data?.data) {
+        setAd(res.data.data);
+      } else {
+        onClose();
+      }
+    } catch {
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (visible) {
+      setLoading(true);
+      setAd(null);
+      fetchAd();
+    }
+  }, [visible, fetchAd]);
+
   if (!visible) return null;
 
   return (
@@ -137,7 +181,6 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
       animationType="fade"
       transparent={false}
       statusBarTranslucent
-      onRequestClose={canSkip ? handleSkip : undefined}
     >
       <View style={styles.container}>
         <StatusBar hidden />
@@ -147,58 +190,7 @@ export default function VideoAdOverlay({ visible, onClose }: Props) {
             <ActivityIndicator size="large" color="#fff" />
           </View>
         ) : ad ? (
-          <>
-            <VideoView
-              player={player}
-              style={styles.video}
-              nativeControls={false}
-              contentFit="contain"
-            />
-
-            {!videoReady && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color="#fff" />
-                <Text style={styles.loadingText}>جاري تحميل الإعلان...</Text>
-              </View>
-            )}
-
-            {/* Ad badge */}
-            <View style={styles.adBadge}>
-              <Text style={styles.adBadgeText}>إعلان</Text>
-            </View>
-
-            {/* Skip / Countdown button */}
-            <View style={styles.skipContainer}>
-              {canSkip ? (
-                <TouchableOpacity
-                  onPress={handleSkip}
-                  style={styles.skipButton}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close" size={18} color="#fff" />
-                  <Text style={styles.skipText}>تخطي</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.countdownBadge}>
-                  <Text style={styles.countdownText}>
-                    {countdown > 0 ? `تخطي بعد ${countdown}` : '...'}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Click URL indicator */}
-            {ad.clickUrl && (
-              <TouchableOpacity
-                onPress={handleAdClick}
-                style={styles.clickIndicator}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="open-outline" size={14} color="#fff" />
-                <Text style={styles.clickText}>معرفة المزيد</Text>
-              </TouchableOpacity>
-            )}
-          </>
+          <VideoAdPlayer ad={ad} onClose={onClose} />
         ) : null}
       </View>
     </Modal>
