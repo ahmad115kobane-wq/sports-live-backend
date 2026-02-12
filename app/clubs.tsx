@@ -492,7 +492,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     ...TYPOGRAPHY.labelSmall,
-    maxWidth: 110,
   },
   arrowWrap: {
     width: 36,

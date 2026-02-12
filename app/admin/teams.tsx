@@ -1202,7 +1202,6 @@ const styles = StyleSheet.create({
   },
   playerChipName: {
     fontSize: 12,
-    maxWidth: 120,
   },
   morePlayersText: {
     fontSize: 12,

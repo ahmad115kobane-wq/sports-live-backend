@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.titleMedium,
     fontWeight: '800',
     letterSpacing: -0.3,
-    flexShrink: 1,
+    flex: 1,
     fontSize: 17,
   },
   verifiedBadge: {

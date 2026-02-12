@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelMedium,
     fontWeight: '700',
     letterSpacing: 0.5,
-    flexShrink: 1,
+    flex: 1,
   },
   liveBadgeContainer: {
     position: 'relative',

@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.titleLarge,
     fontWeight: '800',
     letterSpacing: -0.5,
-    flexShrink: 1,
+    flex: 1,
   },
   seeAllBtn: {
     flexDirection: 'row',
