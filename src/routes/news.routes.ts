@@ -151,8 +151,9 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
     res.status(201).json({ success: true, message: 'Article published', data: resolveArticle(article) });
 
     // Send push notification to ALL users (fire-and-forget, after response)
-    // Resolve image URL to public proxy URL so FCM can access it
-    const fullImageUrl = resolveImageUrl(imageUrl || null) || undefined;
+    // Use the raw R2 public URL directly — FCM fetches from Google servers,
+    // so it needs a direct public URL, not our backend proxy
+    const fullImageUrl = imageUrl || undefined;
 
     (async () => {
       try {
