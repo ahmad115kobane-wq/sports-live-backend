@@ -144,6 +144,9 @@ export interface Match {
   isFeatured: boolean;
   venue?: string;
   referee?: string;
+  assistantReferee1?: string;
+  assistantReferee2?: string;
+  fourthReferee?: string;
   homeTeam: Team;
   awayTeam: Team;
   competition?: Competition;

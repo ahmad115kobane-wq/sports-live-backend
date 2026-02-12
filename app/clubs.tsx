@@ -168,7 +168,7 @@ export default function ClubsScreen() {
 
           {/* Info */}
           <View style={[styles.teamInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
+            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2}>
               {team.name}
             </Text>
             <View style={[styles.teamMetaRow, { flexDirection }]}>

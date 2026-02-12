@@ -169,8 +169,8 @@ export const operatorApi = {
   getFormations: () => api.get('/matches/formations/list'),
   saveLineup: (matchId: string, teamId: string, data: { formation: string; coach?: string; players: any[] }) =>
     api.post(`/matches/${matchId}/lineup/${teamId}`, data),
-  updateReferee: (matchId: string, referee: string) =>
-    api.patch(`/operator/matches/${matchId}/referee`, { referee }),
+  updateReferees: (matchId: string, data: { referee?: string; assistantReferee1?: string; assistantReferee2?: string; fourthReferee?: string }) =>
+    api.patch(`/operator/matches/${matchId}/referee`, data),
 };
 
 export const eventApi = {

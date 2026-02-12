@@ -513,7 +513,7 @@ export default function HomeScreen() {
                 <Text style={[
                   styles.competitionName, 
                   { color: colors.text }
-                ]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                ]} numberOfLines={1}>
                   {t('clubs.title')}
                 </Text>
               </TouchableOpacity>
@@ -578,8 +578,6 @@ export default function HomeScreen() {
                           { color: isSelected ? '#fff' : colors.text }
                         ]}
                         numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.75}
                       >
                         {competition.shortName || competition.name}
                       </Text>
@@ -612,7 +610,7 @@ export default function HomeScreen() {
                 <View style={[styles.sectionIconBg, { backgroundColor: colors.liveBackground }]}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.live }} />
                 </View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={1}>
                   {t('home.liveNow')}
                 </Text>
               </View>
@@ -663,7 +661,7 @@ export default function HomeScreen() {
                       color={isTodayDay ? colors.accent : colors.info} 
                     />
                   </View>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={1}>
                     {dayLabel}
                   </Text>
                 </View>

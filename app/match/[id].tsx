@@ -177,7 +177,7 @@ export default function MatchDetailScreen() {
         {/* Competition */}
         <View style={styles.competitionBadge}>
           <Ionicons name="trophy" size={11} color="#FFD700" />
-          <Text style={styles.competitionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+          <Text style={styles.competitionText} numberOfLines={1}>
             {currentMatch.competition?.name || t('match.match')}
           </Text>
         </View>
@@ -192,7 +192,7 @@ export default function MatchDetailScreen() {
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{currentMatch.homeTeam.name}</Text>
+            <Text style={styles.teamName} numberOfLines={2}>{currentMatch.homeTeam.name}</Text>
           </View>
 
           {/* Score */}
@@ -233,11 +233,11 @@ export default function MatchDetailScreen() {
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>{currentMatch.awayTeam.name}</Text>
+            <Text style={styles.teamName} numberOfLines={2}>{currentMatch.awayTeam.name}</Text>
           </View>
         </View>
 
-        {/* Match Details (venue, referee) */}
+        {/* Match Details (venue, referees) */}
         {(currentMatch.venue || currentMatch.referee) && (
           <View style={styles.matchDetailsRow}>
             {currentMatch.venue && (
@@ -249,7 +249,30 @@ export default function MatchDetailScreen() {
             {currentMatch.referee && (
               <View style={styles.detailChip}>
                 <Ionicons name="person-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2}>{currentMatch.referee}</Text>
+                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.referee}</Text>
+              </View>
+            )}
+          </View>
+        )}
+        {/* Additional Referees */}
+        {(currentMatch.assistantReferee1 || currentMatch.assistantReferee2 || currentMatch.fourthReferee) && (
+          <View style={styles.matchDetailsRow}>
+            {currentMatch.assistantReferee1 && (
+              <View style={styles.detailChip}>
+                <Ionicons name="flag-outline" size={12} color="rgba(255,255,255,0.6)" />
+                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.assistantReferee1}</Text>
+              </View>
+            )}
+            {currentMatch.assistantReferee2 && (
+              <View style={styles.detailChip}>
+                <Ionicons name="flag-outline" size={12} color="rgba(255,255,255,0.6)" />
+                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.assistantReferee2}</Text>
+              </View>
+            )}
+            {currentMatch.fourthReferee && (
+              <View style={styles.detailChip}>
+                <Ionicons name="swap-horizontal-outline" size={12} color="rgba(255,255,255,0.6)" />
+                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.fourthReferee}</Text>
               </View>
             )}
           </View>

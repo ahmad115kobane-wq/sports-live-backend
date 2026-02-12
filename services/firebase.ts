@@ -1,22 +1,28 @@
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
 import notifee, { AndroidStyle, AndroidImportance } from '@notifee/react-native';
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import api from './api';
 
 // طلب إذن الإشعارات
 export async function requestNotificationPermission() {
   try {
+    // Android 13+ (API 33+) requires POST_NOTIFICATIONS runtime permission
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        return false;
+      }
+    }
+
     const authStatus = await messaging().requestPermission();
     const enabled =
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-    if (enabled) {
-      return true;
-    } else {
-      return false;
-    }
+    return enabled;
   } catch (error) {
     console.error('Error requesting notification permission:', error);
     return false;

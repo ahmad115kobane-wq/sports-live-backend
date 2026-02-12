@@ -250,8 +250,6 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary },
             ]}
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
           >
             {homeTeam.shortName || homeTeam.name}
           </Text>
@@ -281,8 +279,6 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary },
             ]}
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
           >
             {awayTeam.shortName || awayTeam.name}
           </Text>
@@ -422,8 +418,6 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                       <Text
                         style={[styles.playerNameText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}
                         numberOfLines={2}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.8}
                       >
                         {getPlayerLastName(player.player?.name)}
                       </Text>

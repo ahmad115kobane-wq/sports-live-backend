@@ -55,6 +55,9 @@ export default function MatchSetupScreen() {
   const [homeCoach, setHomeCoach] = useState('');
   const [awayCoach, setAwayCoach] = useState('');
   const [referee, setReferee] = useState('');
+  const [assistantReferee1, setAssistantReferee1] = useState('');
+  const [assistantReferee2, setAssistantReferee2] = useState('');
+  const [fourthReferee, setFourthReferee] = useState('');
 
   useEffect(() => {
     loadMatch();
@@ -67,6 +70,9 @@ export default function MatchSetupScreen() {
       const m = response.data.data;
       setMatch(m);
       setReferee(m.referee || '');
+      setAssistantReferee1(m.assistantReferee1 || '');
+      setAssistantReferee2(m.assistantReferee2 || '');
+      setFourthReferee(m.fourthReferee || '');
 
       // Set default formation based on category
       const cat = m.homeTeam?.category || 'FOOTBALL';
@@ -284,10 +290,19 @@ export default function MatchSetupScreen() {
         players: awayPlayers,
       });
 
-      // Update referee if changed
-      if (referee !== (match.referee || '')) {
+      // Update referees if changed
+      const refereesChanged = referee !== (match.referee || '') ||
+        assistantReferee1 !== (match.assistantReferee1 || '') ||
+        assistantReferee2 !== (match.assistantReferee2 || '') ||
+        fourthReferee !== (match.fourthReferee || '');
+      if (refereesChanged) {
         try {
-          await operatorApi.updateReferee(match.id, referee);
+          await operatorApi.updateReferees(match.id, {
+            referee: referee || undefined,
+            assistantReferee1: assistantReferee1 || undefined,
+            assistantReferee2: assistantReferee2 || undefined,
+            fourthReferee: fourthReferee || undefined,
+          });
         } catch (e) {
           // Referee update is optional
         }
@@ -340,14 +355,14 @@ export default function MatchSetupScreen() {
         <View style={[styles.matchInfo, { flexDirection }]}>
           <View style={styles.matchTeamCol}>
             <TeamLogo team={match.homeTeam} size="small" />
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
               {match.homeTeam.shortName}
             </Text>
           </View>
           <Text style={[styles.matchVs, { color: colors.textTertiary }]}>{t('match.vs')}</Text>
           <View style={styles.matchTeamCol}>
             <TeamLogo team={match.awayTeam} size="small" />
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
               {match.awayTeam.shortName}
             </Text>
           </View>
@@ -360,19 +375,54 @@ export default function MatchSetupScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Referee Input */}
+        {/* Referees Input */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            <Ionicons name="person-outline" size={16} color={colors.textSecondary} />
-            {'  '}{t('operator.referee')}
+            <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
+            {'  '}الحكام
           </Text>
-          <TextInput
-            style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-            value={referee}
-            onChangeText={setReferee}
-            placeholder={t('operator.refereePlaceholder')}
-            placeholderTextColor={colors.textTertiary}
-          />
+          <View style={{ gap: SPACING.sm }}>
+            <View>
+              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>حكم الساحة</Text>
+              <TextInput
+                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+                value={referee}
+                onChangeText={setReferee}
+                placeholder="اسم حكم الساحة"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
+            <View>
+              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>الحكم المساعد الأول</Text>
+              <TextInput
+                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+                value={assistantReferee1}
+                onChangeText={setAssistantReferee1}
+                placeholder="اسم الحكم المساعد الأول"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
+            <View>
+              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>الحكم المساعد الثاني</Text>
+              <TextInput
+                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+                value={assistantReferee2}
+                onChangeText={setAssistantReferee2}
+                placeholder="اسم الحكم المساعد الثاني"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
+            <View>
+              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>الحكم الاحتياطي</Text>
+              <TextInput
+                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
+                value={fourthReferee}
+                onChangeText={setFourthReferee}
+                placeholder="اسم الحكم الاحتياطي"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
+          </View>
         </View>
 
         {/* Team Selector */}
@@ -383,7 +433,7 @@ export default function MatchSetupScreen() {
               onPress={() => setSelectedTeam('home')}
             >
               <TeamLogo team={match.homeTeam} size="small" />
-              <Text style={[styles.teamTabText, { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={[styles.teamTabText, { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary }]} numberOfLines={1}>
                 {match.homeTeam.shortName}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: selectedTeam === 'home' ? '#3B82F6' : colors.backgroundSecondary }]}>
@@ -398,7 +448,7 @@ export default function MatchSetupScreen() {
               onPress={() => setSelectedTeam('away')}
             >
               <TeamLogo team={match.awayTeam} size="small" />
-              <Text style={[styles.teamTabText, { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+              <Text style={[styles.teamTabText, { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary }]} numberOfLines={1}>
                 {match.awayTeam.shortName}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: selectedTeam === 'away' ? '#EF4444' : colors.backgroundSecondary }]}>
@@ -663,6 +713,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  refereeLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
   refereeInput: {
     borderWidth: 1,
     borderRadius: RADIUS.lg,
@@ -670,6 +726,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     fontSize: 15,
     fontWeight: '500',
+    textAlign: 'right',
   },
   teamSelector: {
     flexDirection: 'row',

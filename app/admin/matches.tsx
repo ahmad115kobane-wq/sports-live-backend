@@ -194,7 +194,7 @@ export default function MatchesManagementScreen() {
       <View style={styles.teamsContainer}>
         <View style={styles.teamInfo}>
           <TeamLogo team={match.homeTeam} size="medium" />
-          <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+          <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
             {match.homeTeam.shortName}
           </Text>
         </View>
@@ -210,7 +210,7 @@ export default function MatchesManagementScreen() {
 
         <View style={styles.teamInfo}>
           <TeamLogo team={match.awayTeam} size="medium" />
-          <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+          <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
             {match.awayTeam.shortName}
           </Text>
         </View>

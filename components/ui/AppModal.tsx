@@ -184,8 +184,6 @@ export default function AppModal({
                   <Text
                     style={[styles.title, { color: colors.text }]}
                     numberOfLines={2}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
                   >
                     {title}
                   </Text>

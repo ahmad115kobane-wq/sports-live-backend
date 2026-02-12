@@ -86,7 +86,7 @@ function MatchCard({
         <View style={[styles.header, { flexDirection }]}>
           <View style={[styles.competitionRow, { flexDirection }]}>
             <View style={[styles.competitionDot, { backgroundColor: isLive ? colors.live : colors.accent }]} />
-            <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+            <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
               {match.competition?.name || t('match.match')}
             </Text>
           </View>
@@ -137,8 +137,6 @@ function MatchCard({
                 match.homeScore > match.awayScore && isFinished && styles.winnerName
               ]} 
               numberOfLines={2}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
             >
               {match.homeTeam.name}
             </Text>
@@ -197,8 +195,6 @@ function MatchCard({
                 match.awayScore > match.homeScore && isFinished && styles.winnerName
               ]} 
               numberOfLines={2}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
             >
               {match.awayTeam.name}
             </Text>

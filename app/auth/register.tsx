@@ -665,7 +665,7 @@ export default function RegisterScreen() {
                   <Ionicons name="trophy" size={24} color={colors.textTertiary} />
                 </View>
               )}
-              <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
+              <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
                 {comp.name}
               </Text>
               {selectedCompetitions.includes(comp.id) && (
@@ -712,7 +712,7 @@ export default function RegisterScreen() {
                       <Ionicons name="shield" size={24} color={colors.textInverse} />
                     </View>
                   )}
-                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
+                  <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
                     {team.name}
                   </Text>
                   {selectedTeams.includes(team.id) && (

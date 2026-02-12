@@ -145,7 +145,7 @@ export default function TeamDetailsScreen() {
 
           <View style={styles.heroContent}>
             <TeamLogo team={team || { name: '' }} size="xlarge" />
-            <Text style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>{team?.name}</Text>
+            <Text style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} numberOfLines={2}>{team?.name}</Text>
             <Text style={[styles.teamCountry, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }]}>
               {team?.country} • {team?.shortName}
             </Text>

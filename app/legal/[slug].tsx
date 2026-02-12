@@ -94,7 +94,7 @@ export default function LegalPageScreen() {
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surface }]} onPress={() => router.back()}>
           <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
           {loading ? '' : getLocalizedTitle()}
         </Text>
         <View style={{ width: 40 }} />
