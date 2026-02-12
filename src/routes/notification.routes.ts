@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
+import { resolveNotificationImages } from '../utils/imageUrl';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 
     res.json({
       success: true,
-      data: notifications,
+      data: notifications.map(resolveNotificationImages),
       pagination: {
         page,
         limit,

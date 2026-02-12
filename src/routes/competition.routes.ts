@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
+import { resolveCompetitionImages, resolveMatchImages, resolveTeamImages } from '../utils/imageUrl';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: competitions,
+      data: competitions.map(resolveCompetitionImages),
     });
   } catch (error) {
     console.error('Get competitions error:', error);
@@ -59,7 +60,7 @@ router.get('/active', async (req, res) => {
 
     res.json({
       success: true,
-      data: competitions,
+      data: competitions.map(resolveCompetitionImages),
     });
   } catch (error) {
     console.error('Get active competitions error:', error);
@@ -106,9 +107,18 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    const resolved: any = resolveCompetitionImages(competition);
+    if (resolved.matches) {
+      resolved.matches = resolved.matches.map((m: any) => {
+        const rm: any = { ...m };
+        if (rm.homeTeam) rm.homeTeam = resolveTeamImages(rm.homeTeam);
+        if (rm.awayTeam) rm.awayTeam = resolveTeamImages(rm.awayTeam);
+        return rm;
+      });
+    }
     res.json({
       success: true,
-      data: competition,
+      data: resolved,
     });
   } catch (error) {
     console.error('Get competition error:', error);
@@ -161,7 +171,7 @@ router.get('/:id/matches', async (req, res) => {
 
     res.json({
       success: true,
-      data: matches,
+      data: matches.map(resolveMatchImages),
       pagination: {
         page: parseInt(page as string),
         limit: parseInt(limit as string),

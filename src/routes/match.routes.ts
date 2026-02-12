@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, isAdmin, isOperator, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
+import { resolveMatchImages } from '../utils/imageUrl';
 
 const router = Router();
 
@@ -97,7 +98,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: enrichedMatches,
+      data: enrichedMatches.map(resolveMatchImages),
     });
   } catch (error) {
     console.error('Get matches error:', error);
@@ -141,7 +142,7 @@ router.get('/live', async (req, res) => {
 
     res.json({
       success: true,
-      data: enrichedMatches,
+      data: enrichedMatches.map(resolveMatchImages),
     });
   } catch (error) {
     console.error('Get live matches error:', error);
@@ -174,7 +175,7 @@ router.get('/featured', async (req, res) => {
 
     res.json({
       success: true,
-      data: match,
+      data: match ? resolveMatchImages(match) : null,
     });
   } catch (error) {
     console.error('Get featured match error:', error);
@@ -235,10 +236,10 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+      data: resolveMatchImages({
         ...match,
         currentMinute: liveMinute ?? match.currentMinute,
-      },
+      }),
     });
   } catch (error) {
     console.error('Get match error:', error);

@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import bcrypt from 'bcryptjs';
 import { uploadToImgBB } from '../services/imgbb.service';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -118,7 +119,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
 
     res.json({
       success: true,
-      data: user,
+      data: { ...user, avatar: resolveImageUrl(user.avatar) },
     });
   } catch (error) {
     console.error('Get profile error:', error);

@@ -125,6 +125,28 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/seed', seedRoutes);
 }
 
+// General image proxy — proxies R2/external images through backend for mobile app compatibility
+app.get('/api/image-proxy', async (req, res) => {
+  try {
+    const url = req.query.url as string;
+    if (!url || !url.startsWith('http')) {
+      return res.status(400).send('Invalid URL');
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(response.status).send('Image not found');
+    }
+    const contentType = response.headers.get('content-type');
+    if (contentType) res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    const buffer = Buffer.from(await response.arrayBuffer());
+    res.send(buffer);
+  } catch (error) {
+    console.error('Image proxy error:', error);
+    res.status(500).send('Proxy error');
+  }
+});
+
 // Serve news images
 app.use('/news', express.static(path.join(process.cwd(), 'public/news')));
 

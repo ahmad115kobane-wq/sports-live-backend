@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import { uploadToImgBB } from '../services/imgbb.service';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
-    res.json({ success: true, data: sliders });
+    res.json({ success: true, data: sliders.map((s: any) => ({ ...s, imageUrl: resolveImageUrl(s.imageUrl) })) });
   } catch (error) {
     console.error('Get sliders error:', error);
     res.status(500).json({ success: false, message: 'Failed to get sliders' });

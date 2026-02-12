@@ -3,6 +3,7 @@ import { authenticate, isPublisher, isAdmin, AuthRequest } from '../middleware/a
 import prisma from '../utils/prisma';
 import admin from 'firebase-admin';
 import { uploadToImgBB } from '../services/imgbb.service';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -45,7 +46,11 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: articles,
+      data: articles.map((a: any) => ({
+        ...a,
+        imageUrl: resolveImageUrl(a.imageUrl),
+        author: a.author ? { ...a.author, avatar: resolveImageUrl(a.author.avatar) } : a.author,
+      })),
       pagination: {
         page: Number(page),
         limit: Number(limit),

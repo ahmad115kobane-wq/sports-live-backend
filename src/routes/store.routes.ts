@@ -2,6 +2,10 @@ import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import { uploadToImgBB } from '../services/imgbb.service';
+import { resolveImageUrl } from '../utils/imageUrl';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const multer = require('multer');
@@ -20,17 +24,6 @@ const storeImageUpload = multer({
 });
 
 const router = Router();
-
-// Helper: ensure imageUrl is always a full absolute URL for mobile app compatibility
-const BASE_URL = process.env.BASE_URL 
-  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '')
-  || 'https://sports-live.up.railway.app';
-
-function resolveImageUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-}
 
 function resolveProductImages(product: any) {
   return { ...product, imageUrl: resolveImageUrl(product.imageUrl) };
@@ -514,17 +507,33 @@ router.post('/admin/clean-images', authenticate, isAdmin, async (req: AuthReques
 
 // ==================== IMAGE UPLOAD ====================
 
-// Upload store image (admin)
+// Ensure store directory exists
+const STORE_DIR = path.join(process.cwd(), 'public/store');
+fs.mkdirSync(STORE_DIR, { recursive: true });
+
+// Upload store image (admin) - saves locally + R2 backup
 router.post('/admin/upload', authenticate, isAdmin, storeImageUpload.single('image'), async (req: AuthRequest, res) => {
   try {
     if (!(req as any).file) {
       return res.status(400).json({ success: false, message: 'No image file provided' });
     }
     const file = (req as any).file;
-    const imageUrl = await uploadToImgBB(file.buffer, `store-${Date.now()}`, file.mimetype);
-    if (!imageUrl) {
-      return res.status(500).json({ success: false, message: 'Failed to upload image' });
-    }
+
+    // Determine file extension from mimetype
+    const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg' };
+    const ext = mimeExt[file.mimetype] || 'jpg';
+    const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${ext}`;
+
+    // Save locally (primary - served by express.static)
+    fs.writeFileSync(path.join(STORE_DIR, filename), file.buffer);
+    const imageUrl = `/store/${filename}`;
+    console.log(`📦 Store image saved locally: ${imageUrl}`);
+
+    // Also upload to R2 as backup (non-blocking)
+    uploadToImgBB(file.buffer, `store-${Date.now()}`, file.mimetype).catch(err =>
+      console.error('R2 backup upload failed:', err)
+    );
+
     res.json({ success: true, data: { imageUrl } });
   } catch (error) {
     console.error('Upload store image error:', error);
