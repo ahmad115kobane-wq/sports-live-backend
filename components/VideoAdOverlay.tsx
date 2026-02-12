@@ -98,7 +98,7 @@ function VideoAdPlayer({ ad, onDismiss }: { ad: VideoAdData; onDismiss: () => vo
         player={player}
         style={styles.video}
         nativeControls={false}
-        contentFit="cover"
+        contentFit="contain"
       />
 
       {/* Loading overlay */}
@@ -155,27 +155,31 @@ export default function VideoAdOverlay() {
   const [ad, setAd] = useState<VideoAdData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const [ready, setReady] = useState(false);
   const fetchedRef = useRef(false);
 
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 
-    (async () => {
+    // Wait 1 second after home page mounts, then fetch ad
+    const delay = setTimeout(async () => {
       try {
         const res = await videoAdApi.getRandom();
         if (res.data?.data && res.data.data.videoUrl) {
           setAd(res.data.data);
+          setReady(true);
         }
       } catch {
         // no ad
       } finally {
         setLoading(false);
       }
-    })();
+    }, 1000);
+    return () => clearTimeout(delay);
   }, []);
 
-  const showModal = !dismissed && !loading && !!ad;
+  const showModal = !dismissed && !loading && ready && !!ad;
 
   if (!showModal) return null;
 
