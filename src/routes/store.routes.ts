@@ -463,8 +463,8 @@ router.delete('/admin/banners/:id', authenticate, isAdmin, async (req: AuthReque
   }
 });
 
-// Clean dead image URLs - removes old broken image links (one-time use)
-router.post('/admin/clean-images', async (req: any, res) => {
+// Clean dead image URLs (admin) - removes old broken image links
+router.post('/admin/clean-images', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
     const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
     // Clear imageUrl for products where URL doesn't point to R2

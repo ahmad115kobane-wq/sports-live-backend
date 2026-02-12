@@ -12,14 +12,25 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '';
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'iqdd';
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
 
-const s3 = new S3Client({
+const isR2Configured = !!(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_PUBLIC_URL);
+
+if (!isR2Configured) {
+  console.warn('⚠️ R2 storage is NOT configured. Missing env vars:', [
+    !R2_ACCOUNT_ID && 'R2_ACCOUNT_ID',
+    !R2_ACCESS_KEY_ID && 'R2_ACCESS_KEY_ID',
+    !R2_SECRET_ACCESS_KEY && 'R2_SECRET_ACCESS_KEY',
+    !R2_PUBLIC_URL && 'R2_PUBLIC_URL',
+  ].filter(Boolean).join(', '));
+}
+
+const s3 = isR2Configured ? new S3Client({
   region: 'auto',
   endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
   },
-});
+}) : null;
 
 /**
  * Upload an image buffer to Cloudflare R2.
@@ -29,6 +40,11 @@ const s3 = new S3Client({
  */
 export async function uploadToImgBB(buffer: Buffer, name: string): Promise<string | null> {
   try {
+    if (!isR2Configured || !s3) {
+      console.error('❌ Cannot upload: R2 storage is not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_URL env vars.');
+      return null;
+    }
+
     // Determine folder based on name prefix
     let folder = 'general';
     if (name.startsWith('avatar')) folder = 'avatars';
@@ -62,6 +78,7 @@ export async function uploadToImgBB(buffer: Buffer, name: string): Promise<strin
  */
 export async function deleteFromR2(imageUrl: string): Promise<boolean> {
   try {
+    if (!isR2Configured || !s3) return false;
     if (!imageUrl || !imageUrl.includes(R2_PUBLIC_URL)) return false;
     const key = imageUrl.replace(`${R2_PUBLIC_URL}/`, '');
     await s3.send(new DeleteObjectCommand({
