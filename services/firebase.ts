@@ -1,5 +1,6 @@
 import messaging from '@react-native-firebase/messaging';
 import * as Notifications from 'expo-notifications';
+import notifee, { AndroidStyle, AndroidImportance } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import api from './api';
 
@@ -64,16 +65,52 @@ export function setupForegroundNotificationHandler() {
     
     const title = remoteMessage.notification?.title || 'إشعار جديد';
     const body = remoteMessage.notification?.body || '';
-    
-    await Notifications.scheduleNotificationAsync({
-      content: {
+    const imageUrl = remoteMessage.notification?.android?.imageUrl
+      || (remoteMessage.notification as any)?.imageUrl
+      || (remoteMessage.data?.imageUrl as string | undefined);
+
+    if (Platform.OS === 'android') {
+      // Use notifee for rich Android notifications with image support
+      const channelId = await notifee.createChannel({
+        id: 'match-notifications',
+        name: 'Match Notifications',
+        importance: AndroidImportance.HIGH,
+        sound: 'default',
+      });
+
+      const androidConfig: any = {
+        channelId,
+        smallIcon: 'ic_notification',
+        pressAction: { id: 'default' },
+        sound: 'default',
+      };
+
+      if (imageUrl) {
+        androidConfig.style = {
+          type: AndroidStyle.BIGPICTURE,
+          picture: imageUrl,
+        };
+        androidConfig.largeIcon = imageUrl;
+      }
+
+      await notifee.displayNotification({
         title,
         body,
-        data: remoteMessage.data as { [key: string]: unknown },
-        sound: 'default' as const,
-      },
-      trigger: null,
-    });
+        data: remoteMessage.data as { [key: string]: string },
+        android: androidConfig,
+      });
+    } else {
+      // iOS: use expo-notifications (FCM handles image via mutable-content)
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: remoteMessage.data as { [key: string]: unknown },
+          sound: 'default' as const,
+        },
+        trigger: null,
+      });
+    }
     
   });
 
