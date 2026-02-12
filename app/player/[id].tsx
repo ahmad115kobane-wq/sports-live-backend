@@ -128,7 +128,7 @@ export default function PlayerProfileScreen() {
           <TouchableOpacity style={styles.navBtn} onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.navTitle} numberOfLines={1}>
+          <Text style={styles.navTitle} numberOfLines={2} ellipsizeMode="tail">
             {t('player.profile')}
           </Text>
           <View style={{ width: 36 }} />

@@ -446,7 +446,7 @@ export default function AdminScreen() {
                 {homeTeamId ? (
                   <View style={styles.selectedTeam}>
                     <TeamLogo team={getTeamById(homeTeamId)!} size="medium" />
-                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
+                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
                       {getTeamById(homeTeamId)?.shortName}
                     </Text>
                   </View>
@@ -469,7 +469,7 @@ export default function AdminScreen() {
                 {awayTeamId ? (
                   <View style={styles.selectedTeam}>
                     <TeamLogo team={getTeamById(awayTeamId)!} size="medium" />
-                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
+                    <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
                       {getTeamById(awayTeamId)?.shortName}
                     </Text>
                   </View>

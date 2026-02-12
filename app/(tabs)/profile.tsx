@@ -150,7 +150,7 @@ export default function ProfileScreen() {
         </View>
       )}
       <View style={[styles.rowContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.rowLabel, { color: colors.text }]} numberOfLines={1}>{label}</Text>
+        <Text style={[styles.rowLabel, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{label}</Text>
         {sublabel ? <Text style={[styles.rowSublabel, { color: colors.textTertiary }]}>{sublabel}</Text> : null}
       </View>
       {trailing || (
@@ -298,14 +298,14 @@ export default function ProfileScreen() {
               </View>
 
               {/* Name & Email */}
-              <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={1}>{user?.name}</Text>
+              <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{user?.name}</Text>
               {!isGuest && user?.email && (
                 <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user.email}</Text>
               )}
 
               {/* Role Chip */}
               <View style={[styles.roleChip, { backgroundColor: colors.accent + '15' }]}>
-                <Text style={[styles.roleChipText, { color: colors.accent }]} numberOfLines={1}>
+                <Text style={[styles.roleChipText, { color: colors.accent }]} numberOfLines={2} ellipsizeMode="tail">
                   {isGuest ? t('welcome.guestAccount') : getRoleLabel(user?.role || 'user')}
                 </Text>
               </View>
@@ -452,7 +452,7 @@ export default function ProfileScreen() {
                 <Ionicons name="log-out-outline" size={18} color={isDark ? '#FF6B6B' : '#DC2626'} />
               </View>
               <View style={[styles.rowContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={1}>{t('settings.logout')}</Text>
+                <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={2} ellipsizeMode="tail">{t('settings.logout')}</Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={18} color={colors.textQuaternary} />
             </TouchableOpacity>
@@ -466,7 +466,7 @@ export default function ProfileScreen() {
                   <Ionicons name="trash-outline" size={18} color={isDark ? '#FF6B6B' : '#DC2626'} />
                 </View>
                 <View style={[styles.rowContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                  <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={1}>{t('settings.deleteAccount')}</Text>
+                  <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={2} ellipsizeMode="tail">{t('settings.deleteAccount')}</Text>
                   <Text style={[styles.rowSublabel, { color: colors.textTertiary }]}>{t('settings.deleteAccountDesc')}</Text>
                 </View>
               </TouchableOpacity>

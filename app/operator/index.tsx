@@ -92,7 +92,7 @@ export default function OperatorScreen() {
         <View style={[styles.matchCardRow, { flexDirection }]}>
           {/* Home Team */}
           <View style={styles.matchTeam}>
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
               {match.homeTeam.shortName || match.homeTeam.name}
             </Text>
           </View>
@@ -126,7 +126,7 @@ export default function OperatorScreen() {
 
           {/* Away Team */}
           <View style={[styles.matchTeam, { alignItems: 'flex-end' }]}>
-            <Text style={[styles.matchTeamName, { color: colors.text, textAlign: 'right' }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text, textAlign: 'right' }]} numberOfLines={2} ellipsizeMode="tail">
               {match.awayTeam.shortName || match.awayTeam.name}
             </Text>
           </View>

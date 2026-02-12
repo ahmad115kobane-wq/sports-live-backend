@@ -249,7 +249,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               styles.teamTabText,
               { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary },
             ]}
-            numberOfLines={1}
+            numberOfLines={2} ellipsizeMode="tail"
           >
             {homeTeam.shortName || homeTeam.name}
           </Text>
@@ -278,7 +278,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               styles.teamTabText,
               { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary },
             ]}
-            numberOfLines={1}
+            numberOfLines={2} ellipsizeMode="tail"
           >
             {awayTeam.shortName || awayTeam.name}
           </Text>

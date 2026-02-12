@@ -355,14 +355,14 @@ export default function MatchSetupScreen() {
         <View style={[styles.matchInfo, { flexDirection }]}>
           <View style={styles.matchTeamCol}>
             <TeamLogo team={match.homeTeam} size="small" />
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
               {match.homeTeam.shortName}
             </Text>
           </View>
           <Text style={[styles.matchVs, { color: colors.textTertiary }]}>{t('match.vs')}</Text>
           <View style={styles.matchTeamCol}>
             <TeamLogo team={match.awayTeam} size="small" />
-            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.matchTeamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
               {match.awayTeam.shortName}
             </Text>
           </View>
@@ -433,7 +433,7 @@ export default function MatchSetupScreen() {
               onPress={() => setSelectedTeam('home')}
             >
               <TeamLogo team={match.homeTeam} size="small" />
-              <Text style={[styles.teamTabText, { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary }]} numberOfLines={1}>
+              <Text style={[styles.teamTabText, { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                 {match.homeTeam.shortName}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: selectedTeam === 'home' ? '#3B82F6' : colors.backgroundSecondary }]}>
@@ -448,7 +448,7 @@ export default function MatchSetupScreen() {
               onPress={() => setSelectedTeam('away')}
             >
               <TeamLogo team={match.awayTeam} size="small" />
-              <Text style={[styles.teamTabText, { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary }]} numberOfLines={1}>
+              <Text style={[styles.teamTabText, { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                 {match.awayTeam.shortName}
               </Text>
               <View style={[styles.countBadge, { backgroundColor: selectedTeam === 'away' ? '#EF4444' : colors.backgroundSecondary }]}>

@@ -215,7 +215,7 @@ export default function NewsScreen() {
               )}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={1}>{item.author.name}</Text>
+              <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{item.author.name}</Text>
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark" size={11} color="#fff" />
               </View>

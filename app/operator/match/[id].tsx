@@ -577,7 +577,7 @@ export default function OperatorMatchScreen() {
             onPress={() => setSelectedTeamId(match.homeTeamId)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
               {match.homeTeam.shortName || match.homeTeam.name}
             </Text>
           </TouchableOpacity>
@@ -599,7 +599,7 @@ export default function OperatorMatchScreen() {
             onPress={() => setSelectedTeamId(match.awayTeamId)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.teamChipName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
               {match.awayTeam.shortName || match.awayTeam.name}
             </Text>
           </TouchableOpacity>
@@ -726,7 +726,7 @@ export default function OperatorMatchScreen() {
                 <Text style={[
                   styles.possessionBtnText,
                   { color: possessionTeam === 'home' ? '#fff' : colors.text },
-                ]} numberOfLines={1}>
+                ]} numberOfLines={2} ellipsizeMode="tail">
                   {match.homeTeam.shortName || match.homeTeam.name}
                 </Text>
                 <Text style={[
@@ -757,7 +757,7 @@ export default function OperatorMatchScreen() {
                 <Text style={[
                   styles.possessionBtnText,
                   { color: possessionTeam === 'away' ? '#fff' : colors.text },
-                ]} numberOfLines={1}>
+                ]} numberOfLines={2} ellipsizeMode="tail">
                   {match.awayTeam.shortName || match.awayTeam.name}
                 </Text>
                 <Text style={[

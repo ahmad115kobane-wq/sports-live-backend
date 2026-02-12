@@ -177,7 +177,7 @@ export default function MatchDetailScreen() {
         {/* Competition */}
         <View style={styles.competitionBadge}>
           <Ionicons name="trophy" size={11} color="#FFD700" />
-          <Text style={styles.competitionText} numberOfLines={1}>
+          <Text style={styles.competitionText} numberOfLines={2} ellipsizeMode="tail">
             {currentMatch.competition?.name || t('match.match')}
           </Text>
         </View>
@@ -249,7 +249,7 @@ export default function MatchDetailScreen() {
             {currentMatch.referee && (
               <View style={styles.detailChip}>
                 <Ionicons name="person-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.referee}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.referee}</Text>
               </View>
             )}
           </View>
@@ -260,19 +260,19 @@ export default function MatchDetailScreen() {
             {currentMatch.assistantReferee1 && (
               <View style={styles.detailChip}>
                 <Ionicons name="flag-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.assistantReferee1}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.assistantReferee1}</Text>
               </View>
             )}
             {currentMatch.assistantReferee2 && (
               <View style={styles.detailChip}>
                 <Ionicons name="flag-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.assistantReferee2}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.assistantReferee2}</Text>
               </View>
             )}
             {currentMatch.fourthReferee && (
               <View style={styles.detailChip}>
                 <Ionicons name="swap-horizontal-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={1}>{currentMatch.fourthReferee}</Text>
+                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.fourthReferee}</Text>
               </View>
             )}
           </View>

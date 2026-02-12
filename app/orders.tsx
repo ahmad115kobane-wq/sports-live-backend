@@ -123,7 +123,7 @@ export default function OrdersScreen() {
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={colors.text} />
             </TouchableOpacity>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{t('orders.trackOrders')}</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{t('orders.trackOrders')}</Text>
             </View>
             <View style={{ width: 40 }} />
           </View>
@@ -142,7 +142,7 @@ export default function OrdersScreen() {
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{t('orders.trackOrders')}</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{t('orders.trackOrders')}</Text>
             {orders.length > 0 && (
               <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>{orders.length} {t('orders.orderCount')}</Text>
             )}

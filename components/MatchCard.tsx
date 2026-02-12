@@ -86,7 +86,7 @@ function MatchCard({
         <View style={[styles.header, { flexDirection }]}>
           <View style={[styles.competitionRow, { flexDirection }]}>
             <View style={[styles.competitionDot, { backgroundColor: isLive ? colors.live : colors.accent }]} />
-            <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+            <Text style={[styles.competition, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left', flex: 1 }]} numberOfLines={2} ellipsizeMode="tail">
               {match.competition?.name || t('match.match')}
             </Text>
           </View>

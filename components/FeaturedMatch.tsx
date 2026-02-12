@@ -75,7 +75,7 @@ function FeaturedMatch({ match, liveMinute, liveTime }: FeaturedMatchProps) {
               <View style={styles.competitionIcon}>
                 <Ionicons name="trophy" size={10} color="#FFD700" />
               </View>
-              <Text style={styles.competition} numberOfLines={1}>
+              <Text style={styles.competition} numberOfLines={2} ellipsizeMode="tail">
                 {match.competition?.name || t('home.featuredMatches')}
               </Text>
             </View>

@@ -505,7 +505,7 @@ export default function TeamsManagementScreen() {
                 <View style={[styles.playerNumber, { backgroundColor: team.primaryColor || colors.accent }]}>
                   <Text style={styles.playerNumberText}>{player.shirtNumber}</Text>
                 </View>
-                <Text style={[styles.playerChipName, { color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.playerChipName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
                   {player.name}
                 </Text>
               </View>
