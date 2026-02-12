@@ -291,6 +291,9 @@ export const competitionApi = {
 
 export const videoAdApi = {
   getRandom: () => api.get('/video-ads/random'),
+  adminCreate: (formData: FormData) => api.post('/video-ads/admin', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };
 
 export const legalApi = {

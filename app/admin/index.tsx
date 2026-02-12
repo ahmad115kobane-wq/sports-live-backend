@@ -18,7 +18,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
-import { matchApi, teamApi, competitionApi, adminApi } from '@/services/api';
+import { matchApi, teamApi, competitionApi, adminApi, videoAdApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
 import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
@@ -68,6 +68,13 @@ export default function AdminScreen() {
   const [venue, setVenue] = useState('');
   const [referee, setReferee] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
+
+  // Video Ad form state
+  const [videoAdTitle, setVideoAdTitle] = useState('');
+  const [videoAdClickUrl, setVideoAdClickUrl] = useState('');
+  const [videoAdMandatorySeconds, setVideoAdMandatorySeconds] = useState(5);
+  const [videoAdIsActive, setVideoAdIsActive] = useState(true);
+  const [videoAdCreating, setVideoAdCreating] = useState(false);
 
   // Pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -155,6 +162,39 @@ export default function AdminScreen() {
       showError(t('admin.error'), t('admin.createMatchFailed'));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleCreateVideoAd = async () => {
+    if (!videoAdTitle) {
+      showError('خطأ', 'يجب إدخال عنوان الإعلان');
+      return;
+    }
+
+    try {
+      setVideoAdCreating(true);
+      const formData = new FormData();
+      formData.append('title', videoAdTitle);
+      formData.append('mandatorySeconds', String(videoAdMandatorySeconds));
+      formData.append('isActive', String(videoAdIsActive));
+      if (videoAdClickUrl) formData.append('clickUrl', videoAdClickUrl);
+
+      // Note: In mobile app, we can't easily upload video files
+      // This creates a placeholder that admin can update from web dashboard
+      await videoAdApi.adminCreate(formData);
+      
+      // Reset form
+      setVideoAdTitle('');
+      setVideoAdClickUrl('');
+      setVideoAdMandatorySeconds(5);
+      setVideoAdIsActive(true);
+      
+      showError('نجاح', 'تم إنشاء الإعلان بنجاح (ارفع الفيديو من لوحة التحكم على الويب)');
+    } catch (error) {
+      console.error('Error creating video ad:', error);
+      showError('خطأ', 'فشل إنشاء الإعلان');
+    } finally {
+      setVideoAdCreating(false);
     }
   };
 
@@ -398,6 +438,102 @@ export default function AdminScreen() {
                 <>
                   <Ionicons name="football-outline" size={20} color="#fff" />
                   <Text style={styles.submitText}>إنشاء المباراة</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Create Video Ad Card ── */}
+        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.formCardHeader, { borderBottomColor: colors.divider }]}>
+            <Ionicons name="videocam" size={22} color={colors.accent} />
+            <Text style={[styles.formCardTitle, { color: colors.text }]}>إنشاء إعلان فيديو</Text>
+          </View>
+
+          {/* Title */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>عنوان الإعلان *</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={videoAdTitle}
+              onChangeText={setVideoAdTitle}
+              placeholder="أدخل عنوان الإعلان"
+              placeholderTextColor={colors.textTertiary}
+              textAlign="right"
+            />
+          </View>
+
+          {/* Click URL */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>رابط عند النقر (اختياري)</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={videoAdClickUrl}
+              onChangeText={setVideoAdClickUrl}
+              placeholder="https://example.com"
+              placeholderTextColor={colors.textTertiary}
+              textAlign="right"
+              keyboardType="url"
+            />
+          </View>
+
+          {/* Mandatory Seconds */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الوقت الإجباري (ثانية)</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              value={String(videoAdMandatorySeconds)}
+              onChangeText={(text) => setVideoAdMandatorySeconds(Number(text) || 5)}
+              placeholder="5"
+              placeholderTextColor={colors.textTertiary}
+              textAlign="right"
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Active Toggle */}
+          <TouchableOpacity
+            style={[styles.toggleRow, { backgroundColor: colors.background, borderColor: videoAdIsActive ? colors.accent : colors.border }]}
+            onPress={() => setVideoAdIsActive(!videoAdIsActive)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.toggleInfo}>
+              <Ionicons name="checkmark-circle" size={20} color={videoAdIsActive ? colors.success : colors.textTertiary} />
+              <Text style={[styles.toggleTitle, { color: colors.text }]}>تفعيل الإعلان</Text>
+            </View>
+            <View style={[styles.toggle, { backgroundColor: videoAdIsActive ? colors.accent : colors.border }]}>
+              <View style={[styles.toggleDot, videoAdIsActive && styles.toggleDotActive]} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Note */}
+          <View style={[styles.noteBox, { backgroundColor: colors.background, borderColor: colors.warning }]}>
+            <Ionicons name="information-circle" size={16} color={colors.warning} />
+            <Text style={[styles.noteText, { color: colors.textSecondary }]}>
+              سيتم إنشاء الإعلان بدون فيديو. يمكنك رفع الفيديو من لوحة التحكم على الويب.
+            </Text>
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitButton, videoAdCreating && { opacity: 0.6 }]}
+            onPress={handleCreateVideoAd}
+            disabled={videoAdCreating}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={colors.gradients.success}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.submitGradient}
+            >
+              {videoAdCreating ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="videocam-outline" size={20} color="#fff" />
+                  <Text style={styles.submitText}>إنشاء الإعلان</Text>
                 </>
               )}
             </LinearGradient>
@@ -771,6 +907,22 @@ const styles = StyleSheet.create({
   },
   toggleDotActive: {
     transform: [{ translateX: 20 }],
+  },
+  noteBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+  },
+  noteText: {
+    ...TYPOGRAPHY.bodySmall,
+    flex: 1,
+    lineHeight: 18,
   },
   submitButton: {
     marginHorizontal: SPACING.lg,
