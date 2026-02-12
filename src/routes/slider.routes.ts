@@ -63,7 +63,7 @@ router.post('/admin', authenticate, isAdmin, uploadSlider.single('image'), async
     }
 
     // Upload to ImgBB
-    const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`);
+    const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`, file.mimetype);
     if (!imageUrl) {
       return res.status(500).json({ success: false, message: 'Failed to upload image' });
     }
@@ -100,7 +100,7 @@ router.put('/admin/:id', authenticate, isAdmin, uploadSlider.single('image'), as
 
     if (file) {
       // Upload new image to ImgBB
-      const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`);
+      const imageUrl = await uploadToImgBB(file.buffer, `slider-${Date.now()}`, file.mimetype);
       if (imageUrl) data.imageUrl = imageUrl;
     }
 

@@ -38,7 +38,7 @@ const s3 = isR2Configured ? new S3Client({
  * @param name - Filename hint (used to determine folder)
  * @returns Full public URL of the uploaded image, or null on failure
  */
-export async function uploadToImgBB(buffer: Buffer, name: string): Promise<string | null> {
+export async function uploadToImgBB(buffer: Buffer, name: string, mimetype?: string): Promise<string | null> {
   try {
     if (!isR2Configured || !s3) {
       console.error('❌ Cannot upload: R2 storage is not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_URL env vars.');
@@ -52,15 +52,24 @@ export async function uploadToImgBB(buffer: Buffer, name: string): Promise<strin
     else if (name.startsWith('store')) folder = 'store';
     else if (name.startsWith('slider')) folder = 'sliders';
 
+    // Detect extension from mimetype first, then from name, fallback to jpg
+    let ext = 'jpg';
+    if (mimetype) {
+      const mimeExt: Record<string, string> = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/svg+xml': 'svg' };
+      ext = mimeExt[mimetype] || 'jpg';
+    } else if (name.includes('.')) {
+      ext = name.split('.').pop() || 'jpg';
+    }
+    const contentType = mimetype || `image/${ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : ext === 'gif' ? 'gif' : 'jpeg'}`;
+
     const uniqueId = crypto.randomBytes(16).toString('hex');
-    const ext = name.includes('.') ? name.split('.').pop() : 'jpg';
     const key = `${folder}/${uniqueId}.${ext}`;
 
     await s3.send(new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,
       Key: key,
       Body: buffer,
-      ContentType: `image/${ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : ext === 'gif' ? 'gif' : 'jpeg'}`,
+      ContentType: contentType,
     }));
 
     const publicUrl = `${R2_PUBLIC_URL}/${key}`;

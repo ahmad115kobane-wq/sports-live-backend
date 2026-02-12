@@ -405,7 +405,7 @@ router.post('/avatar', authenticate, avatarUpload.single('avatar'), async (req: 
     }
 
     // Upload to ImgBB
-    const avatarUrl = await uploadToImgBB((req as any).file.buffer, `avatar-${req.user!.id}-${Date.now()}`);
+    const avatarUrl = await uploadToImgBB((req as any).file.buffer, `avatar-${req.user!.id}-${Date.now()}`, (req as any).file.mimetype);
     if (!avatarUrl) {
       return res.status(500).json({
         success: false,

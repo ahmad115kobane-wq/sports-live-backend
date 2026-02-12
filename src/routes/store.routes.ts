@@ -21,6 +21,25 @@ const storeImageUpload = multer({
 
 const router = Router();
 
+// Helper: ensure imageUrl is always a full absolute URL for mobile app compatibility
+const BASE_URL = process.env.BASE_URL 
+  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '')
+  || 'https://sports-live.up.railway.app';
+
+function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+function resolveProductImages(product: any) {
+  return { ...product, imageUrl: resolveImageUrl(product.imageUrl) };
+}
+
+function resolveBannerImages(banner: any) {
+  return { ...banner, imageUrl: resolveImageUrl(banner.imageUrl) };
+}
+
 // ==================== PUBLIC ROUTES ====================
 
 // Get all active categories
@@ -88,7 +107,7 @@ router.get('/products', async (req, res) => {
 
     res.json({
       success: true,
-      data: products,
+      data: products.map(resolveProductImages),
       pagination: {
         page,
         limit,
@@ -115,7 +134,7 @@ router.get('/products/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    res.json({ success: true, data: product });
+    res.json({ success: true, data: resolveProductImages(product) });
   } catch (error) {
     console.error('Get store product error:', error);
     res.status(500).json({ success: false, message: 'Failed to get product' });
@@ -139,7 +158,7 @@ router.get('/banners', async (req, res) => {
       orderBy: { sortOrder: 'asc' },
     });
 
-    res.json({ success: true, data: banners });
+    res.json({ success: true, data: banners.map(resolveBannerImages) });
   } catch (error) {
     console.error('Get store banners error:', error);
     res.status(500).json({ success: false, message: 'Failed to get banners' });
@@ -502,7 +521,7 @@ router.post('/admin/upload', authenticate, isAdmin, storeImageUpload.single('ima
       return res.status(400).json({ success: false, message: 'No image file provided' });
     }
     const file = (req as any).file;
-    const imageUrl = await uploadToImgBB(file.buffer, `store-${Date.now()}`);
+    const imageUrl = await uploadToImgBB(file.buffer, `store-${Date.now()}`, file.mimetype);
     if (!imageUrl) {
       return res.status(500).json({ success: false, message: 'Failed to upload image' });
     }

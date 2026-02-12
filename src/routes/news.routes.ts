@@ -113,7 +113,7 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
 
     let imageUrl: string | undefined;
     if ((req as any).file) {
-      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`, (req as any).file.mimetype);
       if (uploaded) imageUrl = uploaded;
     }
 
@@ -236,7 +236,7 @@ router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req
     if (content) updateData.content = content;
     if (isPublished !== undefined) updateData.isPublished = isPublished === 'true' || isPublished === true;
     if ((req as any).file) {
-      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
+      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`, (req as any).file.mimetype);
       if (uploaded) updateData.imageUrl = uploaded;
     }
 
