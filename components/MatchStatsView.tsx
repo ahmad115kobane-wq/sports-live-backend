@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, FONTS } from '@/constants/Theme';
 import { MatchStats, Match } from '@/types';
 import { useRTL } from '@/contexts/RTLContext';
 import api from '@/services/api';
@@ -22,83 +22,105 @@ interface StatRowProps {
 
 function StatRow({ label, homeValue, awayValue, colors, isPercentage, highlight }: StatRowProps) {
   const total = homeValue + awayValue;
-  const homePercent = total > 0 ? (homeValue / total) * 100 : 50;
-  const awayPercent = total > 0 ? (awayValue / total) * 100 : 50;
+  // Avoid division by zero
+  const safeTotal = total === 0 ? 1 : total;
+  const homePercent = (homeValue / safeTotal) * 100;
+  const awayPercent = (awayValue / safeTotal) * 100;
+  
   const homeWins = homeValue > awayValue;
   const awayWins = awayValue > homeValue;
 
   return (
-    <View style={[statStyles.row, { borderBottomColor: colors.border }]}>
-      {/* Home value */}
-      <View style={statStyles.valueContainer}>
-        {highlight && homeWins ? (
-          <View style={[statStyles.highlightBadge, { backgroundColor: colors.accent + '20' }]}>
-            <Text style={[statStyles.value, statStyles.valueBold, { color: colors.accent }]}>
-              {isPercentage ? `${homeValue}%` : homeValue}
-            </Text>
-          </View>
-        ) : (
-          <Text style={[statStyles.value, { color: colors.text }]}>
-            {isPercentage ? `${homeValue}%` : homeValue}
-          </Text>
-        )}
+    <View style={statStyles.container}>
+      {/* Label Row */}
+      <View style={statStyles.headerRow}>
+        <Text style={[statStyles.valueText, { color: colors.text }]}>
+          {isPercentage ? `${homeValue}%` : homeValue}
+        </Text>
+        <Text style={[statStyles.labelText, { color: colors.textSecondary }]}>{label}</Text>
+        <Text style={[statStyles.valueText, { color: colors.text }]}>
+          {isPercentage ? `${awayValue}%` : awayValue}
+        </Text>
       </View>
 
-      {/* Label */}
-      <View style={statStyles.labelContainer}>
-        <Text style={[statStyles.label, { color: colors.textSecondary }]}>{label}</Text>
-      </View>
+      {/* Bars Row */}
+      <View style={statStyles.barsRow}>
+        {/* Home Bar (Left, Aligned Right) */}
+        <View style={statStyles.barTrack}>
+          <View 
+            style={[
+              statStyles.barFill, 
+              { 
+                width: `${homePercent}%`, 
+                backgroundColor: highlight && homeWins ? colors.accent : (homeWins ? colors.text : colors.border),
+                alignSelf: 'flex-start' 
+              }
+            ]} 
+          />
+        </View>
 
-      {/* Away value */}
-      <View style={statStyles.valueContainer}>
-        {highlight && awayWins ? (
-          <View style={[statStyles.highlightBadge, { backgroundColor: colors.accent + '20' }]}>
-            <Text style={[statStyles.value, statStyles.valueBold, { color: colors.accent }]}>
-              {isPercentage ? `${awayValue}%` : awayValue}
-            </Text>
-          </View>
-        ) : (
-          <Text style={[statStyles.value, { color: colors.text }]}>
-            {isPercentage ? `${awayValue}%` : awayValue}
-          </Text>
-        )}
+        {/* Spacer */}
+        <View style={{ width: 8 }} />
+
+        {/* Away Bar (Right, Aligned Left) */}
+        <View style={statStyles.barTrack}>
+          <View 
+            style={[
+              statStyles.barFill, 
+              { 
+                width: `${awayPercent}%`, 
+                backgroundColor: highlight && awayWins ? colors.accent : (awayWins ? colors.text : colors.border),
+                alignSelf: 'flex-end' // Actually we want it to grow from left to right, flex-start is default for LTR
+              }
+            ]} 
+          />
+        </View>
       </View>
     </View>
   );
 }
 
 const statStyles = StyleSheet.create({
-  row: {
+  container: {
+    paddingVertical: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  headerRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 6,
   },
-  valueContainer: {
-    width: 60,
-    alignItems: 'center',
-  },
-  value: {
-    ...TYPOGRAPHY.bodyMedium,
+  labelText: {
+    ...TYPOGRAPHY.labelSmall,
     fontWeight: '500',
-    fontSize: 14,
-  },
-  valueBold: {
-    fontWeight: '700',
-  },
-  highlightBadge: {
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: SPACING.xxs + 1,
-    borderRadius: RADIUS.full,
-  },
-  labelContainer: {
+    fontSize: 12,
     flex: 1,
+    textAlign: 'center',
+  },
+  valueText: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  barsRow: {
+    flexDirection: 'row',
+    height: 6,
     alignItems: 'center',
   },
-  label: {
-    ...TYPOGRAPHY.bodySmall,
-    fontWeight: '500',
-    textAlign: 'center',
+  barTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 3,
+    overflow: 'hidden',
+    flexDirection: 'row', // Important for alignSelf to work
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 3,
   },
 });
 

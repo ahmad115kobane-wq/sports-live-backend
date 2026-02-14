@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { competitionApi, teamApi, matchApi, userApi } from '@/services/api';
 import { Competition, Team, Match } from '@/types';
@@ -452,6 +452,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   checkBadge: {
     position: 'absolute',
@@ -485,6 +486,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   skipButton: {
     paddingVertical: 14,
@@ -493,6 +495,7 @@ const styles = StyleSheet.create({
   skipButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   nextButton: {
     flex: 1,
@@ -519,6 +522,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
+    fontFamily: FONTS.bold,
   },
   buttonDisabled: {
     opacity: 0.5,

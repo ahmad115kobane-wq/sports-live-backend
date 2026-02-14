@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatPrice } from '@/utils/currency';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { storeApi, orderApi } from '@/services/api';
@@ -659,8 +659,8 @@ export default function AdminStoreScreen() {
                         {prod.discount ? <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(239,68,68,0.1)' }]}><Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>-{prod.discount}%</Text></View> : null}
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                        <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(99,102,241,0.1)' }]}>
-                          <Text style={{ color: '#A8A8A8', fontSize: 10, fontWeight: '600' }}>{prod.category?.nameAr || '—'}</Text>
+                        <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(5,150,105,0.1)' }]}>
+                          <Text style={{ color: colors.accent, fontSize: 10, fontWeight: '600' }}>{prod.category?.nameAr || '—'}</Text>
                         </View>
                         {prod.badge ? <View style={[styles.inactiveBadge, { backgroundColor: prod.badge === 'new' ? 'rgba(16,185,129,0.1)' : prod.badge === 'hot' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)' }]}><Text style={{ color: prod.badge === 'new' ? '#10b981' : prod.badge === 'hot' ? '#f59e0b' : '#ef4444', fontSize: 10, fontWeight: '600' }}>{prod.badge}</Text></View> : null}
                         {prod.isFeatured && <View style={[styles.inactiveBadge, { backgroundColor: 'rgba(245,158,11,0.1)' }]}><Ionicons name="star" size={10} color="#f59e0b" /></View>}
@@ -670,8 +670,8 @@ export default function AdminStoreScreen() {
                     </View>
                   </View>
                   <View style={[styles.listItemActions, { flexDirection }]}>
-                    <TouchableOpacity onPress={() => openProductModal(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
-                      <Ionicons name="create-outline" size={16} color="#A8A8A8" />
+                    <TouchableOpacity onPress={() => openProductModal(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(5,150,105,0.08)' }]}>
+                      <Ionicons name="create-outline" size={16} color={colors.accent} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteProduct(prod)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                       <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -721,8 +721,8 @@ export default function AdminStoreScreen() {
                       )}
                     </View>
                     <View style={[styles.listItemActions, { flexDirection, marginTop: SPACING.sm }]}>
-                      <TouchableOpacity onPress={() => openBannerModal(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}>
-                        <Ionicons name="create-outline" size={16} color="#A8A8A8" />
+                      <TouchableOpacity onPress={() => openBannerModal(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(5,150,105,0.08)' }]}>
+                        <Ionicons name="create-outline" size={16} color={colors.accent} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => deleteBanner(ban)} style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                         <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -945,8 +945,8 @@ export default function AdminStoreScreen() {
                 <Image source={{ uri: prodImageUrl }} style={styles.previewImg} resizeMode="cover" />
               </View>
               <View style={{ flexDirection: 'row', gap: SPACING.sm }}>
-                <TouchableOpacity onPress={() => pickImage('product')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)', flex: 1 }]} disabled={uploading}>
-                  {uploading ? <ActivityIndicator size="small" color="#A8A8A8" /> : <><Ionicons name="camera-outline" size={16} color="#A8A8A8" /><Text style={{ color: '#A8A8A8', fontSize: 12, fontWeight: '600' }}>تغيير الصورة</Text></>}
+                <TouchableOpacity onPress={() => pickImage('product')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(5,150,105,0.08)', flex: 1 }]} disabled={uploading}>
+                  {uploading ? <ActivityIndicator size="small" color={colors.accent} /> : <><Ionicons name="camera-outline" size={16} color={colors.accent} /><Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>تغيير الصورة</Text></>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setProdImageUrl('')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                   <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -970,8 +970,8 @@ export default function AdminStoreScreen() {
           <View style={{ flexDirection: 'row', gap: SPACING.xs, marginBottom: SPACING.md, flexWrap: 'wrap' }}>
             {BADGE_OPTIONS.map((b) => (
               <TouchableOpacity key={b.value} onPress={() => setProdBadge(b.value)}
-                style={[styles.badgeOption, { backgroundColor: prodBadge === b.value ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(99,102,241,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: prodBadge === b.value ? '#A8A8A8' : 'transparent' }]}>
-                <Text style={{ color: prodBadge === b.value ? '#A8A8A8' : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{b.label}</Text>
+                style={[styles.badgeOption, { backgroundColor: prodBadge === b.value ? (isDark ? 'rgba(16,185,129,0.15)' : 'rgba(5,150,105,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: prodBadge === b.value ? colors.accent : 'transparent' }]}>
+                <Text style={{ color: prodBadge === b.value ? colors.accent : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{b.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -983,8 +983,8 @@ export default function AdminStoreScreen() {
               const selected = prodSizes.includes(size);
               return (
                 <TouchableOpacity key={size} onPress={() => toggleSize(size)}
-                  style={[styles.sizeChip, { backgroundColor: selected ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(99,102,241,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: selected ? '#A8A8A8' : 'transparent' }]}>
-                  <Text style={{ color: selected ? '#A8A8A8' : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{size}</Text>
+                  style={[styles.sizeChip, { backgroundColor: selected ? (isDark ? 'rgba(16,185,129,0.15)' : 'rgba(5,150,105,0.1)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'), borderColor: selected ? colors.accent : 'transparent' }]}>
+                  <Text style={{ color: selected ? colors.accent : colors.textTertiary, fontSize: 12, fontWeight: '600' }}>{size}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -997,7 +997,7 @@ export default function AdminStoreScreen() {
               const selected = prodColors.includes(c.hex);
               return (
                 <TouchableOpacity key={c.hex} onPress={() => toggleColor(c.hex)} style={{ alignItems: 'center', gap: 3 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.hex, borderWidth: selected ? 3 : 2, borderColor: selected ? '#A8A8A8' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'), alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: c.hex, borderWidth: selected ? 3 : 2, borderColor: selected ? colors.accent : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'), alignItems: 'center', justifyContent: 'center' }}>
                     {selected && <Ionicons name="checkmark" size={16} color={c.hex === '#FFFFFF' || c.hex === '#F59E0B' ? '#000' : '#fff'} />}
                   </View>
                   <Text style={{ fontSize: 9, color: colors.textTertiary }}>{c.name}</Text>
@@ -1048,8 +1048,8 @@ export default function AdminStoreScreen() {
                 <Image source={{ uri: banImageUrl }} style={styles.bannerPreviewImg} resizeMode="cover" />
               </View>
               <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm }}>
-                <TouchableOpacity onPress={() => pickImage('banner')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)', flex: 1 }]} disabled={uploading}>
-                  {uploading ? <ActivityIndicator size="small" color="#A8A8A8" /> : <><Ionicons name="camera-outline" size={16} color="#A8A8A8" /><Text style={{ color: '#A8A8A8', fontSize: 12, fontWeight: '600' }}>تغيير</Text></>}
+                <TouchableOpacity onPress={() => pickImage('banner')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(5,150,105,0.08)', flex: 1 }]} disabled={uploading}>
+                  {uploading ? <ActivityIndicator size="small" color={colors.accent} /> : <><Ionicons name="camera-outline" size={16} color={colors.accent} /><Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>تغيير</Text></>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setBanImageUrl('')} style={[styles.imgBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.08)' }]}>
                   <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -1300,8 +1300,8 @@ const styles = StyleSheet.create({
     width: 34, height: 34, borderRadius: 17,
     alignItems: 'center', justifyContent: 'center',
   },
-  statCount: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 11, fontWeight: '600' },
+  statCount: { fontSize: 20, fontWeight: '800', fontFamily: FONTS.extraBold },
+  statLabel: { fontSize: 11, fontWeight: '600', fontFamily: FONTS.semiBold },
 
   // Tabs
   tabSwitcher: {
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11, borderRadius: RADIUS.lg,
     gap: SPACING.xs,
   },
-  tabBtnText: { fontSize: 14, fontWeight: '600' },
+  tabBtnText: { fontSize: 14, fontWeight: '600', fontFamily: FONTS.semiBold },
 
   // Add Button
   addBtn: {
@@ -1329,7 +1329,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
-  addBtnText: { fontSize: 15, fontWeight: '700' },
+  addBtnText: { fontSize: 15, fontWeight: '700', fontFamily: FONTS.bold },
 
   // List Items
   listItem: {
@@ -1348,8 +1348,8 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
-  listItemTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
-  listItemSub: { fontSize: 13, marginTop: 2 },
+  listItemTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2, fontFamily: FONTS.bold },
+  listItemSub: { fontSize: 13, marginTop: 2, fontFamily: FONTS.regular },
   listItemActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -1394,18 +1394,18 @@ const styles = StyleSheet.create({
     width: '100%', height: '100%',
   },
 
-  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 14 },
+  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 14, fontFamily: FONTS.regular },
 
   // Form
   fieldLabel: {
     fontSize: 13, fontWeight: '700',
     marginBottom: 6, marginTop: SPACING.md,
-    letterSpacing: -0.1,
+    letterSpacing: -0.1, fontFamily: FONTS.bold,
   },
   input: {
     borderWidth: 1, borderRadius: RADIUS.lg,
     paddingHorizontal: SPACING.md, paddingVertical: 14,
-    fontSize: 15, marginBottom: SPACING.sm,
+    fontSize: 15, marginBottom: SPACING.sm, fontFamily: FONTS.regular,
   },
   textArea: {
     minHeight: 80, textAlignVertical: 'top', paddingTop: 14,
@@ -1451,7 +1451,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: SPACING.xl, marginBottom: SPACING.md,
   },
   saveBtnText: {
-    color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2,
+    color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: -0.2, fontFamily: FONTS.bold,
   },
   // ─── Order Styles ───
   orderFilterChip: {
@@ -1459,7 +1459,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full, borderWidth: 1.5, marginRight: SPACING.xs,
   },
   orderFilterText: {
-    fontSize: 12, fontWeight: '700',
+    fontSize: 12, fontWeight: '700', fontFamily: FONTS.bold,
   },
   orderCardHeader: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
@@ -1469,10 +1469,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   orderPrice: {
-    fontSize: 15, fontWeight: '800',
+    fontSize: 15, fontWeight: '800', fontFamily: FONTS.extraBold,
   },
   orderStatusLabel: {
-    fontSize: 11, fontWeight: '700', marginTop: 2,
+    fontSize: 11, fontWeight: '700', marginTop: 2, fontFamily: FONTS.bold,
   },
   orderDetailRows: {
     marginTop: SPACING.sm, gap: 3,
@@ -1481,10 +1481,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
   orderAddress: {
-    fontSize: 12, fontWeight: '500', flex: 1,
+    fontSize: 12, fontWeight: '500', flex: 1, fontFamily: FONTS.medium,
   },
   orderDate: {
-    fontSize: 11, fontWeight: '500', marginTop: 2,
+    fontSize: 11, fontWeight: '500', marginTop: 2, fontFamily: FONTS.medium,
   },
   orderQuickActions: {
     flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.md,
@@ -1517,5 +1517,6 @@ const styles = StyleSheet.create({
   catFilterText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
 });

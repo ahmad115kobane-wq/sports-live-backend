@@ -86,7 +86,7 @@ export const teamApi = {
     });
   },
   getPlayers: (id: string) => api.get(`/teams/${id}/players`),
-  create: (data: {
+  create: (data: FormData | {
     name: string;
     shortName: string;
     logoUrl?: string;
@@ -95,10 +95,14 @@ export const teamApi = {
     stadium?: string;
     city?: string;
     country?: string;
-  }) => api.post('/teams', data),
+  }) => api.post('/teams', data, data instanceof FormData ? {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  } : undefined),
   getMatches: (id: string, params?: { status?: string; limit?: number }) =>
     api.get(`/teams/${id}/matches`, { params }),
-  update: (id: string, data: any) => api.put(`/teams/${id}`, data),
+  update: (id: string, data: any) => api.put(`/teams/${id}`, data, data instanceof FormData ? {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  } : undefined),
   delete: (id: string) => api.delete(`/teams/${id}`),
   addPlayer: (teamId: string, data: {
     name: string;

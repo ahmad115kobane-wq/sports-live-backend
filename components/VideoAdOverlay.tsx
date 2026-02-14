@@ -13,6 +13,7 @@ import {
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { videoAdApi } from '@/services/api';
+import { FONTS } from '@/constants/Theme';
 
 interface VideoAdData {
   id: string;
@@ -221,6 +222,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   topRight: {
     position: 'absolute',
@@ -242,6 +244,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   countdownBadge: {
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -253,6 +256,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   ctaButton: {
     position: 'absolute',
@@ -270,5 +274,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
 });

@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { matchApi, teamApi, competitionApi, adminApi, videoAdApi } from '@/services/api';
@@ -1114,6 +1114,7 @@ const styles = StyleSheet.create({
   vsText: {
     fontSize: 11,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   dateTimeRow: {
     flexDirection: 'row',

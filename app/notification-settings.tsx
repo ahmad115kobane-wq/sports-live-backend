@@ -4,6 +4,7 @@ import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { getNotificationPreferences, updateNotificationPreferences } from '@/services/notifications';
@@ -230,6 +231,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
+    fontFamily: FONTS.regular,
   },
   header: {
     alignItems: 'center',
@@ -239,11 +241,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginTop: 16,
+    fontFamily: FONTS.bold,
   },
   headerDescription: {
     fontSize: 14,
     textAlign: 'center',
     marginTop: 8,
+    fontFamily: FONTS.regular,
   },
   settingsList: {
     marginHorizontal: 16,
@@ -285,24 +289,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
+    fontFamily: FONTS.semiBold,
   },
   settingDescription: {
     fontSize: 12,
+    fontFamily: FONTS.regular,
   },
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
     margin: 16,
     padding: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.2)',
+    borderColor: 'rgba(5, 150, 105, 0.2)',
   },
   infoText: {
     flex: 1,
     fontSize: 13,
     marginHorizontal: 12,
     lineHeight: 18,
+    fontFamily: FONTS.regular,
   },
 });

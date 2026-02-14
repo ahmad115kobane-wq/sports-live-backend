@@ -17,7 +17,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { newsApi } from '@/services/api';
 import EmptyState from '@/components/ui/EmptyState';
 import { NewsSkeleton } from '@/components/ui/Skeleton';
@@ -215,7 +215,13 @@ export default function NewsScreen() {
               )}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Text style={[styles.authorName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{item.author.name}</Text>
+              <Text 
+                style={[styles.authorName, { color: colors.text, flex: 1 }]} 
+                numberOfLines={1} 
+                ellipsizeMode="tail"
+              >
+                {item.author.name}
+              </Text>
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark" size={11} color="#fff" />
               </View>
@@ -380,6 +386,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   headerActions: {
     flexDirection: 'row',
@@ -418,7 +425,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     ...SHADOWS.sm,
-    backgroundColor: '#fff', // Will be overridden by inline style for dark mode, but good default
   },
   authorSection: {
     paddingHorizontal: SPACING.lg,
@@ -447,6 +453,7 @@ const styles = StyleSheet.create({
   authorInitial: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   authorName: {
     ...TYPOGRAPHY.titleMedium,
@@ -500,7 +507,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
     borderRadius: RADIUS.sm,
   },
   expandText: {

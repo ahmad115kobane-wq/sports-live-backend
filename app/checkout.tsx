@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -149,8 +149,8 @@ export default function CheckoutScreen() {
                     <Text style={{ fontSize: 22 }}>{item.image}</Text>
                   )}
                 </View>
-                <View style={[styles.summaryItemInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                  <Text style={[styles.summaryItemName, { color: colors.text }]} numberOfLines={2}>
+                <View style={styles.summaryItemInfo}>
+                  <Text style={[styles.summaryItemName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
                     {getLocalizedName(item, language)}
                   </Text>
                   <View style={[styles.summaryItemMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -189,9 +189,9 @@ export default function CheckoutScreen() {
               <View style={[styles.paymentIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
                 <Ionicons name="wallet-outline" size={22} color={colors.accent} />
               </View>
-              <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                <Text style={[styles.paymentTitle, { color: colors.text }]}>{t('checkout.cashOnDelivery')}</Text>
-                <Text style={[styles.paymentDesc, { color: colors.textTertiary }]}>{t('checkout.cashOnDeliveryDesc')}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.paymentTitle, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>{t('checkout.cashOnDelivery')}</Text>
+                <Text style={[styles.paymentDesc, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>{t('checkout.cashOnDeliveryDesc')}</Text>
               </View>
               <Ionicons name="checkmark-circle" size={24} color={colors.accent} />
             </View>
@@ -248,9 +248,9 @@ export default function CheckoutScreen() {
       {/* Bottom Place Order */}
       <View style={[styles.bottomBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <View style={[styles.bottomBarInner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-            <Text style={[styles.bottomLabel, { color: colors.textTertiary }]}>{t('checkout.grandTotalWithDelivery')}</Text>
-            <Text style={[styles.bottomPrice, { color: colors.text }]}>{formatPrice(total + 5000)}</Text>
+          <View>
+            <Text style={[styles.bottomLabel, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>{t('checkout.grandTotalWithDelivery')}</Text>
+            <Text style={[styles.bottomPrice, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>{formatPrice(total + 5000)}</Text>
           </View>
           <TouchableOpacity
             style={[styles.placeOrderBtn, submitting && { opacity: 0.6 }]}
@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.3,
+    fontFamily: FONTS.bold,
   },
   section: {
     borderRadius: RADIUS.xl,
@@ -330,6 +331,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.2,
+    fontFamily: FONTS.bold,
   },
   summaryItem: {
     flexDirection: 'row',
@@ -354,6 +356,7 @@ const styles = StyleSheet.create({
   summaryItemName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   summaryItemMeta: {
     flexDirection: 'row',
@@ -363,6 +366,7 @@ const styles = StyleSheet.create({
   summaryItemQty: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   summaryItemTag: {
     fontSize: 10,
@@ -381,6 +385,7 @@ const styles = StyleSheet.create({
   summaryItemPrice: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   totalRow: {
     flexDirection: 'row',
@@ -391,10 +396,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   paymentMethod: {
     flexDirection: 'row',
@@ -416,11 +423,13 @@ const styles = StyleSheet.create({
   paymentTitle: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   paymentDesc: {
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+    fontFamily: FONTS.medium,
   },
   inputGroup: {
     paddingHorizontal: SPACING.lg,
@@ -431,6 +440,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 6,
     letterSpacing: -0.1,
+    fontFamily: FONTS.bold,
   },
   input: {
     borderWidth: 1,
@@ -438,6 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: 14,
     fontSize: 15,
+    fontFamily: FONTS.regular,
   },
   textArea: {
     minHeight: 80,
@@ -462,10 +473,12 @@ const styles = StyleSheet.create({
   bottomLabel: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   bottomPrice: {
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   placeOrderBtn: {
     borderRadius: RADIUS.lg,
@@ -482,5 +495,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

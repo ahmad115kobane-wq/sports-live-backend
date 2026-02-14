@@ -7,7 +7,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 
 type BadgeVariant = 'default' | 'live' | 'success' | 'warning' | 'error' | 'info' | 'premium';
 type BadgeSize = 'small' | 'medium' | 'large';
@@ -178,5 +178,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+    fontFamily: FONTS.bold,
   },
 });

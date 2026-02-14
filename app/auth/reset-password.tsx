@@ -16,7 +16,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import api from '@/services/api';
@@ -376,15 +376,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 6,
+    fontFamily: FONTS.bold,
   },
   subtitleText: {
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 4,
+    fontFamily: FONTS.regular,
   },
   emailText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   codeContainer: {
     marginBottom: 20,
@@ -403,6 +406,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   formSection: {
     marginBottom: 16,
@@ -415,6 +419,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
+    fontFamily: FONTS.semiBold,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -435,6 +440,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     height: '100%',
+    fontFamily: FONTS.regular,
   },
   eyeButton: {
     padding: 6,
@@ -464,6 +470,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   resendContainer: {
     marginTop: 16,
@@ -472,9 +479,11 @@ const styles = StyleSheet.create({
   resendText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   countdownText: {
     fontSize: 13,
+    fontFamily: FONTS.regular,
   },
   footer: {
     flexDirection: 'row',
@@ -484,5 +493,6 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

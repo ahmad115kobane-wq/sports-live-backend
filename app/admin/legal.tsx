@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { legalApi } from '@/services/api';
 import AppDialog from '@/components/ui/AppDialog';
@@ -209,10 +209,10 @@ export default function AdminLegalScreen() {
             <View style={[styles.cardActions, { flexDirection }]}>
               <TouchableOpacity
                 onPress={() => openModal(page)}
-                style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.08)' }]}
+                style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(5,150,105,0.08)' }]}
               >
-                <Ionicons name="create-outline" size={16} color="#A8A8A8" />
-                <Text style={{ color: '#A8A8A8', fontSize: 12, fontWeight: '600' }}>تعديل</Text>
+                <Ionicons name="create-outline" size={16} color={colors.accent} />
+                <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>تعديل</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => deletePage(page)}
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     marginBottom: SPACING.md,
   },
-  addBtnText: { fontSize: 14, fontWeight: '600' },
+  addBtnText: { fontSize: 14, fontWeight: '600', fontFamily: FONTS.semiBold },
   card: {
     borderRadius: RADIUS.lg,
     borderWidth: 1,
@@ -411,11 +411,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   cardSlug: {
     fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
+    fontFamily: FONTS.medium,
   },
   inactiveBadge: {
     paddingHorizontal: 8,
@@ -426,6 +428,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginBottom: SPACING.sm,
+    fontFamily: FONTS.regular,
   },
   cardActions: {
     flexDirection: 'row',
@@ -446,13 +449,14 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xxl * 2,
     gap: SPACING.md,
   },
-  emptyText: { fontSize: 15, fontWeight: '500' },
+  emptyText: { fontSize: 15, fontWeight: '500', fontFamily: FONTS.medium },
   modalScroll: { paddingHorizontal: SPACING.lg, maxHeight: 500 },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
     marginTop: SPACING.md,
+    fontFamily: FONTS.semiBold,
   },
   input: {
     borderWidth: 1,
@@ -460,6 +464,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 2,
     fontSize: 14,
+    fontFamily: FONTS.regular,
   },
   textArea: {
     borderWidth: 1,
@@ -468,6 +473,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm + 2,
     fontSize: 14,
     minHeight: 120,
+    fontFamily: FONTS.regular,
   },
   switchRow: {
     flexDirection: 'row',
@@ -476,7 +482,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
     paddingVertical: SPACING.sm,
   },
-  switchLabel: { fontSize: 15, fontWeight: '600' },
+  switchLabel: { fontSize: 15, fontWeight: '600', fontFamily: FONTS.semiBold },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -486,5 +492,5 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     marginTop: SPACING.lg,
   },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', fontFamily: FONTS.bold },
 });

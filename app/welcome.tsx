@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import { useAlert } from '@/contexts/AlertContext';
@@ -158,25 +158,25 @@ export default function WelcomeScreen() {
           },
         ]}
       >
-        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}>
-          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)' }]}>
-            <Ionicons name="flash" size={16} color={colors.text} />
+        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(5,150,105,0.06)' }]}>
+          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.2)' : 'rgba(5,150,105,0.12)' }]}>
+            <Ionicons name="flash" size={16} color={colors.accent} />
           </View>
           <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left', color: colors.text }]}>
             {t('welcome.feature1')}
           </Text>
         </View>
-        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}>
-          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)' }]}>
-            <Ionicons name="notifications" size={16} color={colors.text} />
+        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(5,150,105,0.06)' }]}>
+          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.2)' : 'rgba(5,150,105,0.12)' }]}>
+            <Ionicons name="notifications" size={16} color={colors.accent} />
           </View>
           <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left', color: colors.text }]}>
             {t('welcome.feature2')}
           </Text>
         </View>
-        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)' }]}>
-          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)' }]}>
-            <Ionicons name="heart" size={16} color={colors.text} />
+        <View style={[styles.featureItem, { flexDirection, backgroundColor: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(5,150,105,0.06)' }]}>
+          <View style={[styles.featureIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.2)' : 'rgba(5,150,105,0.12)' }]}>
+            <Ionicons name="heart" size={16} color={colors.accent} />
           </View>
           <Text style={[styles.featureText, { textAlign: isRTL ? 'right' : 'left', color: colors.text }]}>
             {t('welcome.feature3')}
@@ -301,11 +301,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 4,
+    fontFamily: FONTS.bold,
   },
   tagline: {
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: SPACING.lg,
+    fontFamily: FONTS.regular,
   },
   featuresSection: {
     paddingHorizontal: SPACING.lg,
@@ -329,6 +331,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   buttonsSection: {
     paddingHorizontal: SPACING.lg,
@@ -354,6 +357,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 15,
     fontWeight: 'bold',
+    fontFamily: FONTS.bold,
   },
   guestButton: {
     flexDirection: 'row',
@@ -367,6 +371,7 @@ const styles = StyleSheet.create({
   guestButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   termsRow: {
     alignItems: 'center',
@@ -390,11 +395,13 @@ const styles = StyleSheet.create({
   termsText: {
     fontSize: 12,
     lineHeight: 18,
+    fontFamily: FONTS.regular,
   },
   termsLink: {
     fontSize: 12,
     lineHeight: 18,
     fontWeight: '700',
     textDecorationLine: 'underline',
+    fontFamily: FONTS.bold,
   },
 });

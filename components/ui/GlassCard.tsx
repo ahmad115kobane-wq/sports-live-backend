@@ -18,7 +18,7 @@ interface GlassCardProps {
   intensity?: number;
   borderColor?: string;
   gradientColors?: readonly [string, string, ...string[]];
-  variant?: 'default' | 'accent' | 'live' | 'premium';
+  variant?: 'default' | 'accent' | 'live' | 'premium' | 'pitch';
 }
 
 export default function GlassCard({
@@ -47,6 +47,10 @@ export default function GlassCard({
         return isDark 
           ? ['rgba(245, 158, 11, 0.12)', 'rgba(249, 115, 22, 0.08)'] as const
           : ['rgba(245, 158, 11, 0.15)', 'rgba(249, 115, 22, 0.1)'] as const;
+      case 'pitch':
+        return isDark 
+          ? ['rgba(16, 185, 129, 0.12)', 'rgba(5, 150, 105, 0.06)'] as const
+          : ['rgba(5, 150, 105, 0.1)', 'rgba(4, 120, 87, 0.05)'] as const;
       default:
         return isDark 
           ? ['rgba(30, 41, 59, 0.8)', 'rgba(15, 23, 42, 0.9)'] as const
@@ -63,6 +67,8 @@ export default function GlassCard({
         return isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.3)';
       case 'premium':
         return isDark ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)';
+      case 'pitch':
+        return isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(5, 150, 105, 0.2)';
       default:
         return isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
     }

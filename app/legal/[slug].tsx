@@ -13,7 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { legalApi } from '@/services/api';
 
@@ -164,6 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   center: {
     flex: 1,
@@ -174,6 +175,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 15,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   retryBtn: {
     paddingHorizontal: SPACING.xl,
@@ -184,6 +186,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   content: {
     padding: SPACING.md,
@@ -192,6 +195,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginBottom: SPACING.sm,
+    fontFamily: FONTS.medium,
   },
   contentCard: {
     borderRadius: RADIUS.lg,
@@ -201,5 +205,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 26,
     fontWeight: '400',
+    fontFamily: FONTS.regular,
   },
 });

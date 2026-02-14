@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { LANGUAGES, LanguageCode } from '@/i18n';
 
@@ -81,19 +81,20 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 onPress={() => handleSelectLanguage(lang.code as LanguageCode)}
               >
                 <Text style={styles.flag}>{lang.flag}</Text>
-                <View style={[styles.langInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <View style={styles.langInfo}>
                   <Text
                     style={[
                       styles.langName,
                       {
                         color:
                           language === lang.code ? colors.primary : colors.text,
+                        textAlign: isRTL ? 'right' : 'left',
                       },
                     ]}
                   >
                     {lang.nativeName}
                   </Text>
-                  <Text style={[styles.langSubtext, { color: colors.textSecondary }]}>
+                  <Text style={[styles.langSubtext, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
                     {lang.name}
                   </Text>
                 </View>
@@ -146,6 +147,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   closeButton: {
     padding: SPACING.xs,
@@ -171,10 +173,12 @@ const styles = StyleSheet.create({
   langName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   langSubtext: {
     fontSize: 13,
     marginTop: 2,
+    fontFamily: FONTS.regular,
   },
   footer: {
     padding: SPACING.md,
@@ -184,6 +188,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     textAlign: 'center',
+    fontFamily: FONTS.regular,
   },
 });
 

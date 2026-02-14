@@ -16,7 +16,7 @@ import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { teamApi, playerApi, matchApi } from '@/services/api';
 import { Team, Player, Match } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -216,7 +216,9 @@ export default function SearchScreen() {
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection }]}>
               <Ionicons name="shield-outline" size={18} color={colors.accent} style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text 
+                style={[styles.sectionTitle, { color: colors.text }]}
+              >
                 {t('search.teams')} ({teams.length})
               </Text>
             </View>
@@ -436,6 +438,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.extraBold,
   },
   playerInfo: {
     flex: 1,

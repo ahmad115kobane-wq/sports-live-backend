@@ -3,6 +3,15 @@ import { Dimensions, Platform } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
+// ✍️ Font Family System (Cairo Arabic Font)
+export const FONTS = {
+  regular: 'Cairo-Regular',
+  medium: 'Cairo-Medium',
+  semiBold: 'Cairo-SemiBold',
+  bold: 'Cairo-Bold',
+  extraBold: 'Cairo-ExtraBold',
+};
+
 // 📱 Responsive Breakpoints
 export const SCREEN = {
   width,
@@ -36,18 +45,21 @@ export const TYPOGRAPHY = {
     lineHeight: 40,
     fontWeight: '700' as const,
     letterSpacing: -0.5,
+    fontFamily: FONTS.bold,
   },
   displayMedium: {
     fontSize: 28,
     lineHeight: 34,
     fontWeight: '700' as const,
     letterSpacing: -0.3,
+    fontFamily: FONTS.bold,
   },
   displaySmall: {
     fontSize: 24,
     lineHeight: 30,
     fontWeight: '600' as const,
     letterSpacing: -0.2,
+    fontFamily: FONTS.semiBold,
   },
   // Headlines - Section Titles
   headlineLarge: {
@@ -55,18 +67,21 @@ export const TYPOGRAPHY = {
     lineHeight: 28,
     fontWeight: '600' as const,
     letterSpacing: -0.2,
+    fontFamily: FONTS.semiBold,
   },
   headlineMedium: {
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '600' as const,
     letterSpacing: 0,
+    fontFamily: FONTS.semiBold,
   },
   headlineSmall: {
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '600' as const,
     letterSpacing: 0,
+    fontFamily: FONTS.semiBold,
   },
   // Titles - Component Headers
   titleLarge: {
@@ -74,18 +89,21 @@ export const TYPOGRAPHY = {
     lineHeight: 20,
     fontWeight: '600' as const,
     letterSpacing: 0,
+    fontFamily: FONTS.semiBold,
   },
   titleMedium: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600' as const,
     letterSpacing: 0.1,
+    fontFamily: FONTS.semiBold,
   },
   titleSmall: {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '600' as const,
     letterSpacing: 0.1,
+    fontFamily: FONTS.semiBold,
   },
   // Body - Content Text
   bodyLarge: {
@@ -93,18 +111,21 @@ export const TYPOGRAPHY = {
     lineHeight: 20,
     fontWeight: '400' as const,
     letterSpacing: 0.2,
+    fontFamily: FONTS.regular,
   },
   bodyMedium: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400' as const,
     letterSpacing: 0.15,
+    fontFamily: FONTS.regular,
   },
   bodySmall: {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '400' as const,
     letterSpacing: 0.2,
+    fontFamily: FONTS.regular,
   },
   // Labels - UI Elements
   labelLarge: {
@@ -112,18 +133,21 @@ export const TYPOGRAPHY = {
     lineHeight: 16,
     fontWeight: '500' as const,
     letterSpacing: 0.1,
+    fontFamily: FONTS.medium,
   },
   labelMedium: {
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '500' as const,
     letterSpacing: 0.3,
+    fontFamily: FONTS.medium,
   },
   labelSmall: {
     fontSize: 10,
     lineHeight: 14,
     fontWeight: '500' as const,
     letterSpacing: 0.4,
+    fontFamily: FONTS.medium,
   },
   // Score Display
   scoreDisplay: {
@@ -131,18 +155,21 @@ export const TYPOGRAPHY = {
     lineHeight: 34,
     fontWeight: '700' as const,
     letterSpacing: -0.5,
+    fontFamily: FONTS.bold,
   },
   scoreLarge: {
     fontSize: 22,
     lineHeight: 28,
     fontWeight: '700' as const,
     letterSpacing: -0.3,
+    fontFamily: FONTS.bold,
   },
   scoreMedium: {
     fontSize: 18,
     lineHeight: 22,
     fontWeight: '700' as const,
     letterSpacing: 0,
+    fontFamily: FONTS.bold,
   },
 };
 

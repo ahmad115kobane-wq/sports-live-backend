@@ -13,7 +13,7 @@ import Svg, { Rect, Line, Circle, G, Defs, LinearGradient, Stop, Path, Ellipse }
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { getCategoryRules } from '@/constants/categoryRules';
@@ -233,58 +233,56 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
 
   return (
     <View style={styles.container}>
-      {/* Team Selector */}
-      <View style={[styles.teamSelector, { backgroundColor: colors.surface, flexDirection }]}>
+      {/* Team Selector - Segmented Style */}
+      <View style={[styles.teamSelector, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
           style={[
             styles.teamTab,
-            selectedTeam === 'home' && { backgroundColor: '#3B82F6' + '20', borderColor: '#3B82F6' + '40', borderWidth: 1 },
+            selectedTeam === 'home' && { backgroundColor: colors.accent, shadowColor: colors.accent, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
           ]}
           onPress={() => setSelectedTeam('home')}
-          activeOpacity={0.7}
+          activeOpacity={0.9}
         >
-          <TeamLogo team={homeTeam} size="small" />
+          <TeamLogo team={homeTeam} size="small" showName={false} />
           <Text
             style={[
               styles.teamTabText,
-              { color: selectedTeam === 'home' ? '#3B82F6' : colors.textSecondary },
+              { color: selectedTeam === 'home' ? '#fff' : colors.textSecondary },
             ]}
-            numberOfLines={2} ellipsizeMode="tail"
+            numberOfLines={1}
           >
             {homeTeam.shortName || homeTeam.name}
           </Text>
           {homeLineup?.formation && (
-            <View style={[styles.formationBadge, { backgroundColor: '#3B82F6' + '20' }]}>
-              <Text style={[styles.formationText, { color: '#3B82F6' }]}>
+            <View style={[styles.formationBadge, { backgroundColor: selectedTeam === 'home' ? 'rgba(0,0,0,0.2)' : colors.backgroundSecondary }]}>
+              <Text style={[styles.formationText, { color: selectedTeam === 'home' ? '#fff' : colors.textSecondary }]}>
                 {homeLineup.formation}
               </Text>
             </View>
           )}
         </TouchableOpacity>
 
-        <View style={[styles.tabDivider, { backgroundColor: colors.border }]} />
-
         <TouchableOpacity
           style={[
             styles.teamTab,
-            selectedTeam === 'away' && { backgroundColor: '#EF4444' + '20', borderColor: '#EF4444' + '40', borderWidth: 1 },
+            selectedTeam === 'away' && { backgroundColor: colors.accent, shadowColor: colors.accent, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
           ]}
           onPress={() => setSelectedTeam('away')}
-          activeOpacity={0.7}
+          activeOpacity={0.9}
         >
-          <TeamLogo team={awayTeam} size="small" />
+          <TeamLogo team={awayTeam} size="small" showName={false} />
           <Text
             style={[
               styles.teamTabText,
-              { color: selectedTeam === 'away' ? '#EF4444' : colors.textSecondary },
+              { color: selectedTeam === 'away' ? '#fff' : colors.textSecondary },
             ]}
-            numberOfLines={2} ellipsizeMode="tail"
+            numberOfLines={1}
           >
             {awayTeam.shortName || awayTeam.name}
           </Text>
           {awayLineup?.formation && (
-            <View style={[styles.formationBadge, { backgroundColor: '#EF4444' + '20' }]}>
-              <Text style={[styles.formationText, { color: '#EF4444' }]}>
+            <View style={[styles.formationBadge, { backgroundColor: selectedTeam === 'away' ? 'rgba(0,0,0,0.2)' : colors.backgroundSecondary }]}>
+              <Text style={[styles.formationText, { color: selectedTeam === 'away' ? '#fff' : colors.textSecondary }]}>
                 {awayLineup.formation}
               </Text>
             </View>
@@ -294,47 +292,14 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
 
       {currentLineup ? (
         <>
-          {/* Formation & Coach Info Bar */}
-          <View style={[styles.infoBar, { backgroundColor: colors.surface }]}>
-            {/* Formation */}
-            {currentLineup.formation && (
-              <View style={[styles.infoItem, { flexDirection }]}>
-                <View style={[styles.infoIcon, { backgroundColor: teamColor + '15' }]}>
-                  <Ionicons name="grid-outline" size={18} color={teamColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                    {t('match.formation')}
-                  </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {currentLineup.formation}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Divider */}
-            {currentLineup.formation && currentLineup.coach && (
-              <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
-            )}
-
-            {/* Coach */}
-            {currentLineup.coach && (
-              <View style={[styles.infoItem, { flexDirection }]}>
-                <View style={[styles.infoIcon, { backgroundColor: teamColor + '15' }]}>
-                  <Ionicons name="person" size={18} color={teamColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                    {t('match.coach')}
-                  </Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>
-                    {currentLineup.coach}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
+          {/* Coach Info Bar (Compact) */}
+          {currentLineup.coach && (
+            <View style={[styles.coachBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="person-circle-outline" size={20} color={colors.textSecondary} />
+              <Text style={[styles.coachLabel, { color: colors.textSecondary }]}>{t('match.coach')}:</Text>
+              <Text style={[styles.coachName, { color: colors.text }]}>{currentLineup.coach}</Text>
+            </View>
+          )}
 
           {/* Playing Field */}
           <View style={[styles.fieldContainer, { backgroundColor: colors.surface }]}>
@@ -431,9 +396,15 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
           {/* Substitutes */}
           {substitutes.length > 0 && (
             <View style={styles.substitutesSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('match.substitutes')} ({substitutes.length})
-              </Text>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIcon, { backgroundColor: teamColor + '15' }]}>
+                  <Ionicons name="swap-horizontal" size={16} color={teamColor} />
+                </View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t('match.substitutes')} <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '400' }}>({substitutes.length})</Text>
+                </Text>
+              </View>
+              
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -442,21 +413,27 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                 {substitutes.map((player, index) => (
                   <View
                     key={player.id || index}
-                    style={[styles.substituteCard, { backgroundColor: colors.surface }]}
+                    style={[styles.substituteCard, { backgroundColor: colors.surfaceElevated || colors.surface }]}
                   >
-                    <View style={[styles.substituteNumber, { backgroundColor: teamColor }]}>
-                      <Text style={styles.substituteNumberText}>
-                        {player.player?.shirtNumber || '-'}
-                      </Text>
+                    <View style={styles.subCardTop}>
+                      <View style={[styles.substituteNumber, { backgroundColor: teamColor }]}>
+                        <Text style={styles.substituteNumberText}>
+                          {player.player?.shirtNumber || '-'}
+                        </Text>
+                      </View>
+                      <View style={[styles.positionBadge, { backgroundColor: colors.background }]}>
+                        <Text style={[styles.positionText, { color: colors.textSecondary }]}>
+                          {player.position || player.player?.position || 'SUB'}
+                        </Text>
+                      </View>
                     </View>
+                    
                     <Text
                       style={[styles.substituteName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={2} ellipsizeMode="tail"
+                      numberOfLines={2} 
+                      ellipsizeMode="tail"
                     >
-                      {player.player?.name}
-                    </Text>
-                    <Text style={[styles.substitutePosition, { color: colors.textSecondary }]}>
-                      {t(`positions.${player.position || player.player?.position || 'SUB'}`) || player.position || player.player?.position || t('positions.SUB')}
+                      {getPlayerLastName(player.player?.name) || player.player?.name}
                     </Text>
                   </View>
                 ))}
@@ -632,6 +609,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     textAlign: 'center',
+    fontFamily: FONTS.extraBold,
   },
   captainBadge: {
     position: 'absolute',
@@ -661,6 +639,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 9,
     fontWeight: '900',
+    fontFamily: FONTS.extraBold,
   },
   playerNameContainer: {
     marginTop: 2,
@@ -675,49 +654,88 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+    fontFamily: FONTS.bold,
   },
   substitutesSection: {
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
+    paddingBottom: SPACING.md,
   },
-  sectionTitle: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontWeight: '600',
-    marginBottom: SPACING.sm,
-  },
-  substitutesList: {
-    paddingVertical: SPACING.xs,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.xs,
     gap: SPACING.sm,
   },
-  substituteCard: {
-    alignItems: 'center',
-    padding: SPACING.sm,
-    paddingTop: SPACING.md,
-    borderRadius: RADIUS.lg,
-    width: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-  },
-  substituteNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  sectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+  },
+  substitutesList: {
+    paddingHorizontal: SPACING.xs,
+    paddingBottom: SPACING.sm,
+    gap: SPACING.md,
+  },
+  substituteCard: {
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    width: 110,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  subCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
+  },
+  substituteNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   substituteNumberText: {
     color: '#fff',
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+  },
+  positionBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.sm,
+  },
+  positionText: {
+    fontSize: 10,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   substituteName: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  substitutePosition: {
-    ...TYPOGRAPHY.labelSmall,
-    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+    fontFamily: FONTS.semiBold,
+    textAlign: 'left',
   },
   noLineupHeader: {
     flexDirection: 'row',
@@ -767,6 +785,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 17,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   noLineupName: {
     fontSize: 12,
@@ -774,11 +793,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 2,
     lineHeight: 16,
+    fontFamily: FONTS.semiBold,
   },
   noLineupPosition: {
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   noLineupEmpty: {
     alignItems: 'center',
@@ -790,5 +811,24 @@ const styles = StyleSheet.create({
   noLineupEmptyText: {
     ...TYPOGRAPHY.bodySmall,
     textAlign: 'center',
+  },
+  coachBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    gap: SPACING.sm,
+  },
+  coachLabel: {
+    ...TYPOGRAPHY.labelMedium,
+    fontWeight: '600',
+  },
+  coachName: {
+    ...TYPOGRAPHY.bodyMedium,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'left',
   },
 });

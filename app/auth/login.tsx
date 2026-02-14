@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
@@ -303,10 +303,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
+    fontFamily: FONTS.bold,
   },
   subtitleText: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
+    fontFamily: FONTS.regular,
   },
   formSection: {
     marginBottom: 16,
@@ -320,6 +322,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.8)',
     marginBottom: 6,
+    fontFamily: FONTS.semiBold,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -332,8 +335,8 @@ const styles = StyleSheet.create({
     height: 48,
   },
   inputWrapperFocused: {
-    borderColor: '#A8A8A8',
-    backgroundColor: 'rgba(168, 168, 168, 0.1)',
+    borderColor: '#059669',
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
   },
   inputIcon: {
     width: 32,
@@ -344,13 +347,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputIconFocused: {
-    backgroundColor: 'rgba(168, 168, 168, 0.15)',
+    backgroundColor: 'rgba(5, 150, 105, 0.15)',
   },
   textInput: {
     flex: 1,
     fontSize: 13,
     color: '#fff',
     height: '100%',
+    fontFamily: FONTS.regular,
   },
   eyeButton: {
     padding: 6,
@@ -361,7 +365,7 @@ const styles = StyleSheet.create({
   forgotText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#A8A8A8',
+    fontFamily: FONTS.semiBold,
   },
   primaryButton: {
     borderRadius: 12,
@@ -389,6 +393,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
+    fontFamily: FONTS.bold,
   },
   footer: {
     flexDirection: 'row',
@@ -398,10 +403,11 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
+    fontFamily: FONTS.regular,
   },
   footerLink: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#A8A8A8',
+    fontFamily: FONTS.bold,
   },
 });

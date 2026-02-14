@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, FONTS } from '@/constants/Theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
 type ButtonSize = 'small' | 'medium' | 'large';
@@ -122,7 +122,7 @@ export default function Button({
             backgroundColor: colors.accent,
           },
           text: {
-            color: '#000',
+            color: '#FFFFFF',
             fontWeight: '700',
           },
           gradient: [...colors.gradients.accent],
@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
   text: {
     textAlign: 'center',
     letterSpacing: 0.3,
+    fontFamily: FONTS.bold,
   },
   fullWidth: {
     width: '100%',

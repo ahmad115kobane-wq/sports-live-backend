@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { competitionApi, teamApi } from '@/services/api';
@@ -664,6 +664,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.extraBold,
   },
   emptyContainer: {
     flex: 1,
@@ -674,6 +675,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     marginTop: SPACING.md,
+    fontFamily: FONTS.regular,
   },
   modalOverlay: {
     flex: 1,
@@ -715,6 +717,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: SPACING.lg,
     fontSize: 16,
+    fontFamily: FONTS.regular,
   },
   typePicker: {
     flexDirection: 'row',
@@ -788,11 +791,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
+    fontFamily: FONTS.extraBold,
   },
   sectionDescription: {
     fontSize: 14,
     marginBottom: SPACING.md,
     lineHeight: 20,
+    fontFamily: FONTS.regular,
   },
   teamItem: {
     flexDirection: 'row',
@@ -820,6 +825,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   teamItemDetails: {
     flex: 1,

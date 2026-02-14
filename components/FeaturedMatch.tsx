@@ -14,7 +14,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Match } from '@/types';
 import { MATCH_STATUS } from '@/constants/config';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -75,7 +75,11 @@ function FeaturedMatch({ match, liveMinute, liveTime }: FeaturedMatchProps) {
               <View style={styles.competitionIcon}>
                 <Ionicons name="trophy" size={10} color="#FFD700" />
               </View>
-              <Text style={styles.competition} numberOfLines={2} ellipsizeMode="tail">
+              <Text 
+                style={styles.competition} 
+                numberOfLines={1} 
+                ellipsizeMode="tail"
+              >
                 {match.competition?.name || t('home.featuredMatches')}
               </Text>
             </View>
@@ -403,6 +407,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+    fontFamily: FONTS.extraBold,
   },
   scoreDividerContainer: {
     alignItems: 'center',
@@ -413,6 +418,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     fontWeight: '300',
     marginTop: -4,
+    fontFamily: FONTS.regular,
   },
   winningScore: {
     color: '#34D399',

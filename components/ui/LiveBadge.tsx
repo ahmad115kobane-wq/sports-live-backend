@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 
 interface LiveBadgeProps {
   minute?: number;
@@ -175,9 +175,11 @@ const styles = StyleSheet.create({
   liveText: {
     fontWeight: '700',
     letterSpacing: 0.5,
+    fontFamily: FONTS.bold,
   },
   minute: {
     marginLeft: SPACING.sm,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

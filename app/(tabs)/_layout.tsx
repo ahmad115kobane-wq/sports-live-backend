@@ -48,7 +48,7 @@ function TabIcon({
         style={[
           styles.activePill,
           {
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(5,150,105,0.1)',
             transform: [{ scaleX: pillScale }, { scaleY: pillScale }],
             opacity: scaleAnim,
           },
@@ -85,6 +85,7 @@ export default function TabLayout() {
           letterSpacing: 0.2,
           marginTop: 0,
           marginBottom: Platform.OS === 'ios' ? 0 : 4,
+          fontFamily: 'Cairo-SemiBold',
         },
         tabBarStyle: {
           position: 'absolute',

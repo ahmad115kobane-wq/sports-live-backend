@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { operatorApi } from '@/services/api';
 import { Match } from '@/types';
@@ -164,8 +164,20 @@ export default function OperatorScreen() {
             <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={22} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>{t('operator.panel')}</Text>
-            <Text style={styles.headerSubtitle}>{user?.name}</Text>
+            <Text 
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('operator.panel')}
+            </Text>
+            <Text 
+              style={styles.headerSubtitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {user?.name}
+            </Text>
           </View>
           <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
             <Ionicons name="refresh" size={20} color="#fff" />
@@ -313,6 +325,7 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     fontSize: 10,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   loadingContainer: {
     flex: 1,
@@ -356,6 +369,7 @@ const styles = StyleSheet.create({
   matchScore: {
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   matchScoreSep: {
     ...TYPOGRAPHY.titleMedium,
@@ -388,6 +402,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
+    fontFamily: FONTS.bold,
   },
   matchAction: {
     flexDirection: 'row',

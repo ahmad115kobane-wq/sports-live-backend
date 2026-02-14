@@ -1,7 +1,7 @@
 // Animated Number Counter Component
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, TextStyle, StyleSheet } from 'react-native';
-import { TYPOGRAPHY } from '@/constants/Theme';
+import { TYPOGRAPHY, FONTS } from '@/constants/Theme';
 
 interface AnimatedNumberProps {
   value: number;

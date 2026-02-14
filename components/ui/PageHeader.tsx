@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING } from '@/constants/Theme';
+import { SPACING, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 
 interface PageHeaderProps {
@@ -68,16 +68,20 @@ export default function PageHeader({
         {leftContent}
 
         {/* Title / Logo */}
-        <View style={[styles.titleBlock, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <View style={styles.titleBlock}>
           {logo ? (
             <Image source={logo} style={styles.logo} resizeMode="contain" />
           ) : (
             <>
-              <Text style={[styles.title, { color: colors.text }]}>
+              <Text 
+                style={[styles.title, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}
+              >
                 {title}
               </Text>
               {subtitle ? (
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
+                <Text 
+                  style={[styles.subtitle, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} 
+                >
                   {subtitle}
                 </Text>
               ) : null}
@@ -120,6 +124,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     letterSpacing: -0.5,
+    fontFamily: FONTS.extraBold,
   },
   subtitle: {
     fontSize: 13,
@@ -127,6 +132,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     opacity: 0.6,
     marginTop: 3,
+    fontFamily: FONTS.medium,
   },
   actions: {
     alignItems: 'center',

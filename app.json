@@ -32,6 +32,7 @@
       "package": "com.sportslive.app",
       "permissions": [
         "NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
         "VIBRATE"
       ],
       "googleServicesFile": "./google-services.json"
@@ -58,7 +59,29 @@
           "color": "#ffffff"
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Cairo-Regular.ttf",
+            "./assets/fonts/Cairo-Medium.ttf",
+            "./assets/fonts/Cairo-SemiBold.ttf",
+            "./assets/fonts/Cairo-Bold.ttf",
+            "./assets/fonts/Cairo-ExtraBold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "targetSdkVersion": 34,
+            "compileSdkVersion": 35,
+            "minSdkVersion": 24
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

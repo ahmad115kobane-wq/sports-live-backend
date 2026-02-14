@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { teamApi, competitionApi, playerApi } from '@/services/api';
@@ -274,22 +274,35 @@ export default function TeamsManagementScreen() {
 
     try {
       setSaving(true);
-      const teamData = {
-        name: teamName.trim(),
-        shortName: teamShortName.trim().toUpperCase(),
-        category: teamCategory,
-        logoUrl: teamLogo || undefined,
-        primaryColor: teamColor,
-        coach: teamCoach.trim() || undefined,
-        stadium: teamStadium.trim() || undefined,
-        city: teamCity.trim() || undefined,
-        country: 'العراق',
-      };
+      const formData = new FormData();
+      formData.append('name', teamName.trim());
+      formData.append('shortName', teamShortName.trim().toUpperCase());
+      formData.append('category', teamCategory);
+      formData.append('primaryColor', teamColor);
+      if (teamCoach.trim()) formData.append('coach', teamCoach.trim());
+      if (teamStadium.trim()) formData.append('stadium', teamStadium.trim());
+      if (teamCity.trim()) formData.append('city', teamCity.trim());
+      formData.append('country', 'العراق');
+
+      // If teamLogo is a local file URI (from ImagePicker), attach as file
+      if (teamLogo && (teamLogo.startsWith('file://') || teamLogo.startsWith('content://'))) {
+        const filename = teamLogo.split('/').pop() || 'logo.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        formData.append('logo', {
+          uri: teamLogo,
+          name: filename,
+          type,
+        } as any);
+      } else if (teamLogo && teamLogo.startsWith('http')) {
+        // Already a remote URL, pass as-is
+        formData.append('logoUrl', teamLogo);
+      }
 
       if (editingTeam) {
-        await teamApi.update(editingTeam.id, teamData);
+        await teamApi.update(editingTeam.id, formData);
       } else {
-        await teamApi.create(teamData);
+        await teamApi.create(formData);
       }
 
       setShowTeamModal(false);
@@ -1163,6 +1176,7 @@ const styles = StyleSheet.create({
   playersSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   addPlayerButton: {
     flexDirection: 'row',
@@ -1176,6 +1190,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   playersList: {
     flexDirection: 'row',
@@ -1199,20 +1214,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+    fontFamily: FONTS.bold,
   },
   playerChipName: {
     fontSize: 12,
+    fontFamily: FONTS.regular,
   },
   morePlayersText: {
     fontSize: 12,
     fontWeight: 'bold',
     paddingHorizontal: SPACING.sm,
+    fontFamily: FONTS.bold,
   },
   noPlayersText: {
     fontSize: 12,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: SPACING.sm,
+    fontFamily: FONTS.regular,
   },
   emptyContainer: {
     flex: 1,
@@ -1224,6 +1243,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
+    fontFamily: FONTS.regular,
   },
   emptyButton: {
     paddingHorizontal: SPACING.lg,
@@ -1233,6 +1253,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   modalOverlay: {
     flex: 1,
@@ -1254,6 +1275,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: FONTS.bold,
   },
   modalBody: {
     padding: SPACING.lg,
@@ -1278,6 +1300,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     marginTop: 4,
+    fontFamily: FONTS.regular,
   },
   inputGroup: {
     marginBottom: SPACING.md,
@@ -1286,6 +1309,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: SPACING.xs,
+    fontFamily: FONTS.semiBold,
   },
   input: {
     height: 48,
@@ -1293,6 +1317,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
     fontSize: 16,
+    fontFamily: FONTS.regular,
   },
   colorPicker: {
     flexDirection: 'row',
@@ -1327,6 +1352,7 @@ const styles = StyleSheet.create({
   categoryOptionText: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   positionPicker: {
     flexDirection: 'row',
@@ -1342,6 +1368,7 @@ const styles = StyleSheet.create({
   positionOptionText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   saveButton: {
     margin: SPACING.lg,
@@ -1354,6 +1381,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: FONTS.bold,
   },
   competitionsSection: {
     borderTopWidth: 1,
@@ -1373,11 +1401,13 @@ const styles = StyleSheet.create({
   manageCompetitionsText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   sectionDescription: {
     fontSize: 14,
     marginBottom: SPACING.md,
     lineHeight: 20,
+    fontFamily: FONTS.regular,
   },
   competitionItem: {
     flexDirection: 'row',
@@ -1407,10 +1437,12 @@ const styles = StyleSheet.create({
   competitionName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   competitionType: {
     fontSize: 12,
     marginTop: 2,
+    fontFamily: FONTS.regular,
   },
   checkbox: {
     width: 24,
@@ -1446,10 +1478,12 @@ const styles = StyleSheet.create({
   pmCoachLabel: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   pmCoachName: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   pmCoachInput: {
     flex: 1,
@@ -1468,6 +1502,7 @@ const styles = StyleSheet.create({
   pmPlayersTitle: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   pmAddBtn: {
     flexDirection: 'row',
@@ -1481,6 +1516,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   pmPlayerRow: {
     borderRadius: RADIUS.lg,
@@ -1506,14 +1542,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   pmPlayerName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   pmPlayerMeta: {
     fontSize: 12,
     marginTop: 1,
+    fontFamily: FONTS.regular,
   },
   pmActionBtn: {
     width: 32,
@@ -1530,5 +1569,6 @@ const styles = StyleSheet.create({
   },
   pmEmptyText: {
     fontSize: 14,
+    fontFamily: FONTS.regular,
   },
 });

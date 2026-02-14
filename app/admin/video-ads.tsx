@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS } from '@/constants/Theme';
+import { SPACING, RADIUS, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { videoAdApi } from '@/services/api';
 
@@ -243,6 +243,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: SPACING.sm,
+    fontFamily: FONTS.semiBold,
   },
   input: {
     height: 50,
@@ -250,6 +251,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
     fontSize: 15,
+    fontFamily: FONTS.regular,
   },
   videoPicker: {
     flexDirection: 'row',
@@ -269,6 +271,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     flex: 1,
+    fontFamily: FONTS.semiBold,
   },
   toggle: {
     flexDirection: 'row',
@@ -288,6 +291,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     flex: 1,
+    fontFamily: FONTS.semiBold,
   },
   toggleSwitch: {
     width: 50,
@@ -321,5 +325,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

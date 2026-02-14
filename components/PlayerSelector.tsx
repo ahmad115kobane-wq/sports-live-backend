@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { FONTS } from '@/constants/Theme';
 import { Team, Player } from '@/types';
 
 interface PlayerSelectorProps {
@@ -59,10 +60,12 @@ export default function PlayerSelector({
     teamTabText: {
       fontSize: 14,
       color: colors.textSecondary,
+      fontFamily: FONTS.regular,
     },
     teamTabTextActive: {
       color: colors.accent,
       fontWeight: '600',
+      fontFamily: FONTS.semiBold,
     },
     searchContainer: {
       padding: 12,
@@ -76,6 +79,7 @@ export default function PlayerSelector({
       color: colors.text,
       borderWidth: 1,
       borderColor: colors.border,
+      fontFamily: FONTS.regular,
     },
     playerList: {
       padding: 12,
@@ -101,6 +105,7 @@ export default function PlayerSelector({
       fontSize: 14,
       fontWeight: 'bold',
       color: colors.accent,
+      fontFamily: FONTS.bold,
     },
     playerInfo: {
       flex: 1,
@@ -109,11 +114,13 @@ export default function PlayerSelector({
       fontSize: 15,
       fontWeight: '600',
       color: colors.text,
+      fontFamily: FONTS.semiBold,
     },
     playerPosition: {
       fontSize: 12,
       color: colors.textSecondary,
       marginTop: 2,
+      fontFamily: FONTS.regular,
     },
     emptyState: {
       padding: 32,
@@ -122,6 +129,7 @@ export default function PlayerSelector({
     emptyText: {
       color: colors.textSecondary,
       fontSize: 14,
+      fontFamily: FONTS.regular,
     },
   });
 

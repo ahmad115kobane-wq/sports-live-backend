@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { teamApi, matchApi } from '@/services/api';
 import { Team, Player, Match } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -144,13 +144,23 @@ export default function TeamDetailsScreen() {
           </TouchableOpacity>
 
           <View style={styles.heroContent}>
-            <TeamLogo team={team || { name: '' }} size="xlarge" />
-            <Text style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} numberOfLines={2} ellipsizeMode="tail">{team?.name}</Text>
-            <Text style={[styles.teamCountry, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }]}>
+            <View style={{ alignSelf: 'center' }}>
+              <TeamLogo team={team || { name: '' }} size="xlarge" />
+            </View>
+            <Text 
+              style={[styles.teamName, { color: colorScheme === 'dark' ? '#fff' : '#000' }]} 
+            >
+              {team?.name}
+            </Text>
+            <Text 
+              style={[styles.teamCountry, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)' }]}
+            >
               {team?.country} • {team?.shortName}
             </Text>
             {team?.coach && (
-              <Text style={[styles.teamCoach, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)' }]}>
+              <Text 
+                style={[styles.teamCoach, { color: colorScheme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)' }]}
+              >
                 {t('match.coach')}: {team.coach}
               </Text>
             )}
@@ -315,7 +325,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   heroContent: {
-    alignItems: 'center',
     marginTop: SPACING.lg,
   },
   teamName: {
@@ -331,11 +340,13 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
     opacity: 0.9,
     fontWeight: '500',
+    textAlign: 'center',
   },
   teamCoach: {
     ...TYPOGRAPHY.bodySmall,
     marginTop: SPACING.xs,
     fontWeight: '500',
+    textAlign: 'center',
   },
   statsRow: {
     flexDirection: 'row',
@@ -421,6 +432,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.extraBold,
   },
   playerInfo: {
     flex: 1,

@@ -7,7 +7,7 @@ import {
 import { Image } from 'expo-image';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { API_URL } from '@/constants/config';
 
 interface TeamLogoProps {
@@ -207,9 +207,11 @@ const styles = StyleSheet.create({
   initials: {
     fontWeight: '800',
     letterSpacing: -0.5,
+    fontFamily: FONTS.extraBold,
   },
   teamName: {
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
 });

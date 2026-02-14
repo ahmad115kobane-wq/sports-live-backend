@@ -17,7 +17,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS, SHADOWS } from '@/constants/Theme';
 import { useMatchStore } from '@/store/matchStore';
 import { useAuthStore } from '@/store/authStore';
 import { useSocket } from '@/services/socket';
@@ -148,25 +148,34 @@ export default function MatchDetailScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
 
-      {/* ═══ FIXED HEADER ═══ */}
-      <LinearGradient
-        colors={isLive 
-          ? (isDark ? ['#7F1D1D', '#991B1B', '#1E293B'] : ['#991B1B', '#B91C1C', '#1E293B'])
-          : (isDark ? ['#0F172A', '#1E293B', '#334155'] : ['#1E293B', '#334155', '#475569'])
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.headerGradient}
-      >
+      {/* ═══ MODERN HEADER ═══ */}
+      <View style={styles.headerContainer}>
+        <LinearGradient
+          colors={isLive 
+            ? ['#991B1B', '#7F1D1D', '#1E293B'] // Live: Red/Dark
+            : [colors.pitch, '#065f46', '#1E293B'] // Standard: Emerald/Dark
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        
+        {/* Pattern Overlay (Optional) */}
+        <View style={styles.headerPattern} />
+
         {/* Nav Bar */}
-        <View style={[styles.navBar, { flexDirection }]}>
+        <View style={[styles.navBar, { flexDirection, paddingTop: STATUS_BAR_HEIGHT }]}>
           <TouchableOpacity style={styles.navBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={22} color="#fff" />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={22} color="#fff" />
           </TouchableOpacity>
+
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {currentMatch.competition?.name || t('match.match')}
+          </Text>
 
           <View style={[styles.navActions, { flexDirection }]}>
             <TouchableOpacity style={styles.navBtn} onPress={handleShare} activeOpacity={0.7}>
-              <Ionicons name="share-outline" size={20} color="#fff" />
+              <Ionicons name="share-social-outline" size={20} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.navBtn} onPress={toggleFavorite} activeOpacity={0.7}>
               <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? '#EF4444' : '#fff'} />
@@ -174,210 +183,193 @@ export default function MatchDetailScreen() {
           </View>
         </View>
 
-        {/* Competition */}
-        <View style={styles.competitionBadge}>
-          <Ionicons name="trophy" size={11} color="#FFD700" />
-          <Text style={styles.competitionText} numberOfLines={2} ellipsizeMode="tail">
-            {currentMatch.competition?.name || t('match.match')}
-          </Text>
-        </View>
-
-        {/* Teams & Score */}
-        <View style={[styles.teamsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        {/* Match Score Board */}
+        <View style={styles.scoreBoard}>
           {/* Home Team */}
-          <View style={styles.teamCol}>
-            <View style={[styles.logoWrap, homeWinning && styles.logoWrapWin]}>
+          <View style={styles.teamColumn}>
+            <View style={[styles.logoContainer, homeWinning && styles.logoWinner]}>
               <TeamLogo
                 team={{ name: currentMatch.homeTeam.name, shortName: currentMatch.homeTeam.shortName, logoUrl: currentMatch.homeTeam.logoUrl }}
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2} ellipsizeMode="tail">{currentMatch.homeTeam.name}</Text>
+            <Text style={styles.teamNameText} numberOfLines={2}>
+              {currentMatch.homeTeam.name}
+            </Text>
           </View>
 
-          {/* Score */}
-          <View style={styles.scoreCol}>
-            <View style={styles.scoreRow}>
-              <Text style={[styles.scoreNum, homeWinning && styles.scoreWin]}>{currentMatch.homeScore}</Text>
-              <Text style={styles.scoreSep}>:</Text>
-              <Text style={[styles.scoreNum, awayWinning && styles.scoreWin]}>{currentMatch.awayScore}</Text>
-            </View>
-
-            {isLive ? (
-              <View style={styles.livePill}>
-                <Animated.View style={[styles.livePulse, { transform: [{ scale: pulseAnim }], opacity: glowAnim }]} />
-                <View style={styles.liveDotSmall} />
-                <Text style={styles.liveLabel}>{t('match.live')}</Text>
-                {liveTime ? (
-                  <Text style={styles.liveMinute}>{liveTime.display}</Text>
-                ) : currentMatch.currentMinute ? (
-                  <Text style={styles.liveMinute}>{currentMatch.currentMinute}'</Text>
-                ) : null}
-              </View>
-            ) : isFinished ? (
-              <View style={styles.finishedPill}>
-                <Text style={styles.finishedLabel}>{statusInfo.label}</Text>
+          {/* Score & Status */}
+          <View style={styles.scoreInfo}>
+            {isFinished || isLive || currentMatch.status === 'halftime' ? (
+              <View style={styles.scoreResult}>
+                <Text style={[styles.scoreText, homeWinning && styles.scoreTextWin]}>
+                  {currentMatch.homeScore}
+                </Text>
+                <Text style={styles.scoreSeparator}>:</Text>
+                <Text style={[styles.scoreText, awayWinning && styles.scoreTextWin]}>
+                  {currentMatch.awayScore}
+                </Text>
               </View>
             ) : (
-              <View style={styles.scheduledPill}>
-                <Text style={styles.scheduledLabel}>{statusInfo.label}</Text>
+              <View style={styles.vsContainer}>
+                <Text style={styles.vsText}>VS</Text>
               </View>
+            )}
+
+            {/* Status Pill */}
+            {isLive ? (
+              <View style={styles.statusPillLive}>
+                <Animated.View style={[styles.statusDotLive, { opacity: pulseAnim }]} />
+                <Text style={styles.statusTextLive}>
+                   {liveTime ? `${liveTime}'` : t('match.live')}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.statusPill}>
+                <Text style={styles.statusText}>
+                  {statusInfo?.label || currentMatch.status}
+                </Text>
+              </View>
+            )}
+            
+            {/* Start Time (if scheduled) */}
+            {currentMatch.status === 'scheduled' && (
+              <Text style={styles.startTimeText}>
+                {new Date(currentMatch.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
             )}
           </View>
 
           {/* Away Team */}
-          <View style={styles.teamCol}>
-            <View style={[styles.logoWrap, awayWinning && styles.logoWrapWin]}>
+          <View style={styles.teamColumn}>
+            <View style={[styles.logoContainer, awayWinning && styles.logoWinner]}>
               <TeamLogo
                 team={{ name: currentMatch.awayTeam.name, shortName: currentMatch.awayTeam.shortName, logoUrl: currentMatch.awayTeam.logoUrl }}
                 size="large"
               />
             </View>
-            <Text style={styles.teamName} numberOfLines={2} ellipsizeMode="tail">{currentMatch.awayTeam.name}</Text>
+            <Text style={styles.teamNameText} numberOfLines={2}>
+              {currentMatch.awayTeam.name}
+            </Text>
           </View>
         </View>
 
-        {/* Match Details (venue, referees) */}
+        {/* Match Details (Venue/Ref) - subtle footer in header */}
         {(currentMatch.venue || currentMatch.referee) && (
-          <View style={styles.matchDetailsRow}>
+          <View style={[styles.matchMetaRow, { flexDirection }]}>
             {currentMatch.venue && (
-              <View style={styles.detailChip}>
-                <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.venue}</Text>
+              <View style={styles.matchMetaItem}>
+                <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.matchMetaText} numberOfLines={1}>{currentMatch.venue}</Text>
               </View>
             )}
             {currentMatch.referee && (
-              <View style={styles.detailChip}>
-                <Ionicons name="person-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.referee}</Text>
-              </View>
+               <View style={styles.matchMetaItem}>
+                 <Ionicons name="person-outline" size={14} color="rgba(255,255,255,0.7)" />
+                 <Text style={styles.matchMetaText} numberOfLines={1}>{currentMatch.referee}</Text>
+               </View>
             )}
           </View>
         )}
-        {/* Additional Referees */}
-        {(currentMatch.assistantReferee1 || currentMatch.assistantReferee2 || currentMatch.fourthReferee) && (
-          <View style={styles.matchDetailsRow}>
-            {currentMatch.assistantReferee1 && (
-              <View style={styles.detailChip}>
-                <Ionicons name="flag-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.assistantReferee1}</Text>
-              </View>
-            )}
-            {currentMatch.assistantReferee2 && (
-              <View style={styles.detailChip}>
-                <Ionicons name="flag-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.assistantReferee2}</Text>
-              </View>
-            )}
-            {currentMatch.fourthReferee && (
-              <View style={styles.detailChip}>
-                <Ionicons name="swap-horizontal-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.detailChipText} numberOfLines={2} ellipsizeMode="tail">{currentMatch.fourthReferee}</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </LinearGradient>
-
-      {/* ═══ TABS ═══ */}
-      <View style={[styles.tabBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={[styles.tabBarInner, { backgroundColor: colors.backgroundSecondary }]}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tabItem, isActive && { backgroundColor: colors.accent }]}
-                onPress={() => setActiveTab(tab.key)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={tab.icon as any} size={16} color={isActive ? '#fff' : colors.textTertiary} />
-                <Text style={[styles.tabLabel, { color: isActive ? '#fff' : colors.textTertiary }]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
       </View>
 
-      {/* ═══ SCROLLABLE CONTENT ═══ */}
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentWrap}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
-        }
-      >
-        {activeTab === 'events' && (
-          <View style={styles.section}>
-            {/* Sub-tabs: Key Events / All Events */}
-            <View style={[styles.eventsFilterRow, { flexDirection }]}>
-              <TouchableOpacity
-                style={[styles.eventsFilterBtn, { backgroundColor: eventsFilter === 'key' ? colors.accent : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-                onPress={() => setEventsFilter('key')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.eventsFilterText, { color: eventsFilter === 'key' ? '#fff' : colors.textSecondary }]}>
-                  {t('match.keyEvents') || 'أحداث مهمة'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.eventsFilterBtn, { backgroundColor: eventsFilter === 'all' ? colors.accent : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-                onPress={() => setEventsFilter('all')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.eventsFilterText, { color: eventsFilter === 'all' ? '#fff' : colors.textSecondary }]}>
-                  {t('match.allEvents') || 'جميع الأحداث'}
-                </Text>
-              </TouchableOpacity>
+      {/* ═══ TABS & CONTENT ═══ */}
+      <View style={styles.contentContainer}>
+        <View style={styles.tabsWrapper}>
+          <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tabItem, isActive && { backgroundColor: colors.accent + '15' }]}
+                  onPress={() => setActiveTab(tab.key)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name={isActive ? tab.icon : ((tab.icon as string).replace('-outline', '') + '-outline') as any} 
+                    size={18} 
+                    color={isActive ? colors.accent : colors.textSecondary} 
+                  />
+                  <Text style={[
+                    styles.tabLabel, 
+                    { color: isActive ? colors.accent : colors.textSecondary, fontFamily: isActive ? FONTS.bold : FONTS.medium }
+                  ]}>
+                    {tab.label}
+                  </Text>
+                  {isActive && <View style={[styles.activeIndicator, { backgroundColor: colors.accent }]} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {activeTab === 'events' && (
+            <View style={styles.tabContent}>
+               {/* Events Filter */}
+               {(currentMatch.events && currentMatch.events.length > 0) && (
+                <View style={[styles.filterRow, { flexDirection }]}>
+                  <TouchableOpacity 
+                    style={[styles.filterChip, eventsFilter === 'key' && { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                    onPress={() => setEventsFilter('key')}
+                  >
+                    <Text style={[styles.filterText, eventsFilter === 'key' ? { color: '#fff' } : { color: colors.textSecondary }]}>أبرز الأحداث</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.filterChip, eventsFilter === 'all' && { backgroundColor: colors.accent, borderColor: colors.accent }]}
+                    onPress={() => setEventsFilter('all')}
+                  >
+                    <Text style={[styles.filterText, eventsFilter === 'all' ? { color: '#fff' } : { color: colors.textSecondary }]}>الكل</Text>
+                  </TouchableOpacity>
+                </View>
+               )}
+
+               {isLoading ? (
+                 <EventItemSkeleton />
+               ) : (currentMatch.events && currentMatch.events.length > 0) ? (
+                 <EventTimeline 
+                   events={eventsFilter === 'key' 
+                     ? currentMatch.events.filter((e: any) => ['goal', 'red_card', 'yellow_card', 'substitution'].includes(e.type)) 
+                     : currentMatch.events
+                   } 
+                   match={currentMatch} 
+                 />
+               ) : (
+                 <View style={styles.emptyState}>
+                   <Ionicons name="time-outline" size={48} color={colors.textTertiary} />
+                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                     {t('match.noEvents')}
+                   </Text>
+                 </View>
+               )}
             </View>
+          )}
 
-            {isLoading ? (
-              <>
-                <EventItemSkeleton />
-                <EventItemSkeleton />
-                <EventItemSkeleton />
-              </>
-            ) : currentMatch.events && currentMatch.events.length > 0 ? (
-              <EventTimeline
-                events={
-                  eventsFilter === 'key'
-                    ? currentMatch.events.filter(e => ['goal', 'red_card', 'penalty', 'start_half', 'end_half', 'end_match'].includes(e.type))
-                    : currentMatch.events
-                }
-                match={currentMatch}
+          {activeTab === 'stats' && (
+            <View style={styles.tabContent}>
+              <MatchStatsView match={currentMatch} />
+            </View>
+          )}
+
+          {activeTab === 'field' && (
+            <View style={styles.tabContent}>
+              <LineupView
+                homeLineup={currentMatch.lineups?.find((l: any) => l.teamId === currentMatch.homeTeamId)}
+                awayLineup={currentMatch.lineups?.find((l: any) => l.teamId === currentMatch.awayTeamId)}
+                homeTeam={currentMatch.homeTeam}
+                awayTeam={currentMatch.awayTeam}
               />
-            ) : (
-              <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                  {isLive ? t('match.noEventsYet') : t('match.noEvents')}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+            </View>
+          )}
 
-        {activeTab === 'stats' && (
-          <View style={styles.section}>
-            <MatchStatsView match={currentMatch} />
-          </View>
-        )}
-
-        {activeTab === 'field' && (
-          <View style={styles.section}>
-            <LineupView
-              homeLineup={currentMatch.lineups?.find((l: any) => l.teamId === currentMatch.homeTeamId)}
-              awayLineup={currentMatch.lineups?.find((l: any) => l.teamId === currentMatch.awayTeamId)}
-              homeTeam={currentMatch.homeTeam}
-              awayTeam={currentMatch.awayTeam}
-            />
-          </View>
-        )}
-
-        <View style={{ height: 80 }} />
-      </ScrollView>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -386,7 +378,267 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  
+  // ── Header Styles ──
+  headerContainer: {
+    paddingBottom: SPACING.xl,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    zIndex: 10,
+  },
+  headerPattern: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    // Could add a pattern image here if desired
+  },
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
+    height: STATUS_BAR_HEIGHT + 60,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    textAlign: 'center',
+    flex: 1,
+    marginHorizontal: SPACING.md,
+    opacity: 0.9,
+  },
+  navBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
 
+  // ── Score Board ──
+  scoreBoard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.xl,
+    marginTop: SPACING.xs,
+  },
+  teamColumn: {
+    flex: 1,
+    alignItems: 'center',
+    maxWidth: '35%',
+  },
+  logoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: SPACING.sm,
+  },
+  logoWinner: {
+    borderColor: '#4ADE80',
+    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+  },
+  teamNameText: {
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: FONTS.bold,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  
+  scoreInfo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    paddingTop: SPACING.sm,
+  },
+  scoreResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    marginBottom: SPACING.xs,
+  },
+  scoreText: {
+    fontSize: 32,
+    color: '#fff',
+    fontFamily: FONTS.extraBold,
+  },
+  scoreTextWin: {
+    color: '#4ADE80',
+    textShadowColor: 'rgba(74, 222, 128, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  scoreSeparator: {
+    fontSize: 32,
+    color: 'rgba(255,255,255,0.5)',
+    fontFamily: FONTS.regular,
+    marginTop: -4,
+  },
+  vsContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  vsText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+  },
+  
+  statusPill: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  statusText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+  },
+  statusPillLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#EF4444',
+    gap: 6,
+  },
+  statusDotLive: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
+  statusTextLive: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+  },
+  startTimeText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    marginTop: 4,
+  },
+  
+  matchMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.lg,
+    marginTop: SPACING.lg,
+    opacity: 0.8,
+  },
+  matchMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  matchMetaText: {
+    color: '#fff',
+    fontSize: 11,
+    fontFamily: FONTS.regular,
+  },
+
+  // ── Tabs & Content ──
+  contentContainer: {
+    flex: 1,
+    marginTop: -SPACING.lg,
+    zIndex: 20,
+  },
+  tabsWrapper: {
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.sm,
+    ...SHADOWS.md,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: RADIUS.lg,
+    padding: 4,
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: RADIUS.md,
+    gap: 6,
+    position: 'relative',
+  },
+  tabLabel: {
+    fontSize: 13,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  
+  scrollContent: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+  },
+  tabContent: {
+    minHeight: 200,
+  },
+  
+  // ── Filters & Empty States ──
+  filterRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+  },
+  filterChip: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: 'rgba(150,150,150,0.2)',
+    backgroundColor: 'transparent',
+  },
+  filterText: {
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: SPACING.xxl,
+    opacity: 0.7,
+  },
+  emptyText: {
+    fontFamily: FONTS.medium,
+    marginTop: SPACING.md,
+    fontSize: 14,
+  },
+  
   // ── Loading ──
   loadingContainer: {
     flex: 1,
@@ -397,272 +649,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
   loadingText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: 'rgba(255,255,255,0.6)',
-  },
-
-  // ── Header ──
-  headerGradient: {
-    paddingTop: STATUS_BAR_HEIGHT + 10,
-    paddingBottom: SPACING.xxl,
-    paddingHorizontal: SPACING.lg,
-  },
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  navBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navActions: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-
-  // ── Competition ──
-  competitionBadge: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 5,
-    borderRadius: RADIUS.full,
-    marginBottom: SPACING.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  competitionText: {
-    color: 'rgba(255,255,255,0.9)',
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-
-  // ── Teams Row ──
-  teamsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  teamCol: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xs,
-  },
-  logoWrap: {
-    marginBottom: SPACING.sm,
-    padding: 3,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  logoWrapWin: {
-    borderColor: 'rgba(74, 222, 128, 0.5)',
-  },
-  teamName: {
-    color: 'rgba(255,255,255,0.95)',
-    ...TYPOGRAPHY.bodyMedium,
-    fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 18,
-    maxWidth: '100%',
-  },
-
-  // ── Score ──
-  scoreCol: {
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xs,
-    minWidth: 80,
-  },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  scoreNum: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: '#fff',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -1,
-    includeFontPadding: false,
-  },
-  scoreWin: {
-    color: '#4ADE80',
-  },
-  scoreSep: {
-    fontSize: 24,
-    fontWeight: '300',
-    color: 'rgba(255,255,255,0.35)',
-    marginTop: -2,
-  },
-
-  // ── Status Pills ──
-  livePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.25)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    marginTop: SPACING.sm,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  livePulse: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(239, 68, 68, 0.25)',
-  },
-  liveDotSmall: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#fff',
-    marginRight: 5,
-  },
-  liveLabel: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  liveMinute: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-    marginLeft: 6,
-  },
-  finishedPill: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    marginTop: SPACING.sm,
-  },
-  finishedLabel: {
+    fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  scheduledPill: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    marginTop: SPACING.sm,
-  },
-  scheduledLabel: {
-    color: 'rgba(147, 197, 253, 0.9)',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-
-  // ── Tabs ──
-  tabBar: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-  },
-  tabBarInner: {
-    flexDirection: 'row',
-    borderRadius: RADIUS.lg,
-    padding: 3,
-  },
-  tabItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.sm + 2,
-    borderRadius: RADIUS.md,
-    gap: 5,
-  },
-  tabLabel: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '700',
-  },
-
-  // ── Content ──
-  contentWrap: {
-    paddingTop: SPACING.md,
-  },
-  section: {
-    paddingHorizontal: SPACING.lg,
-  },
-
-  // ── Match Details ──
-  matchDetailsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-    marginTop: SPACING.md,
-  },
-  detailChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: 3,
-    borderRadius: RADIUS.full,
-  },
-  detailChipText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 10,
-    fontWeight: '500',
-  },
-
-  // ── Empty State ──
-  emptyCard: {
-    padding: SPACING.lg,
-    alignItems: 'center',
-    borderRadius: RADIUS.xl,
-    marginTop: SPACING.md,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.titleMedium,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  eventsFilterRow: {
-    flexDirection: 'row',
-    gap: SPACING.xs,
-    marginBottom: SPACING.md,
-  },
-  eventsFilterBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.full,
-  },
-  eventsFilterText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: FONTS.medium,
   },
 });

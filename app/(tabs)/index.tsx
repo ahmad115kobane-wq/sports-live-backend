@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useMatchStore } from '@/store/matchStore';
 import { useAuthStore } from '@/store/authStore';
 import { useCompetitionStore } from '@/store/competitionStore';
@@ -484,7 +484,7 @@ export default function HomeScreen() {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            tintColor={colors.accent}
+            tintColor={colors.pitch}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -530,8 +530,8 @@ export default function HomeScreen() {
                   style={[
                     styles.competitionItem,
                     { 
-                      backgroundColor: !selectedCompetition ? colors.accent : colors.surface,
-                      borderColor: !selectedCompetition ? colors.accent : colors.border,
+                      backgroundColor: !selectedCompetition ? colors.pitch : colors.surface,
+                      borderColor: !selectedCompetition ? colors.pitch : colors.border,
                     },
                   ]}
                   onPress={() => setSelectedCompetition(null)}
@@ -560,8 +560,8 @@ export default function HomeScreen() {
                       style={[
                         styles.competitionItem,
                         { 
-                          backgroundColor: isSelected ? colors.accent : colors.surface,
-                          borderColor: isSelected ? colors.accent : colors.border,
+                          backgroundColor: isSelected ? colors.pitch : colors.surface,
+                          borderColor: isSelected ? colors.pitch : colors.border,
                         },
                       ]}
                       onPress={() => setSelectedCompetition(isSelected ? null : competition.id)}
@@ -618,13 +618,13 @@ export default function HomeScreen() {
                 style={[styles.seeAllBtn, { backgroundColor: colors.surface }]}
                 onPress={() => router.push('/live')}
               >
-                <Text style={[styles.seeAllText, { color: colors.accent }]}>
+                <Text style={[styles.seeAllText, { color: colors.pitch }]}>
                   {t('common.seeAll')}
                 </Text>
                 <Ionicons 
                   name={isRTL ? "chevron-forward" : "chevron-back"} 
                   size={14} 
-                  color={colors.accent} 
+                  color={colors.pitch} 
                 />
               </TouchableOpacity>
             </View>
@@ -654,11 +654,11 @@ export default function HomeScreen() {
             <View key={dayIndex} style={styles.section}>
               <View style={[styles.sectionHeader, { flexDirection }]}>
                 <View style={[styles.sectionTitleRow, { flexDirection }]}>
-                  <View style={[styles.sectionIconBg, { backgroundColor: isTodayDay ? colors.accent + '15' : colors.info + '15' }]}>
+                  <View style={[styles.sectionIconBg, { backgroundColor: colors.pitch + '15' }]}>
                     <Ionicons 
                       name={isTodayDay ? "today" : "calendar"} 
                       size={16} 
-                      color={isTodayDay ? colors.accent : colors.info} 
+                      color={colors.pitch} 
                     />
                   </View>
                   <Text style={[styles.sectionTitle, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
@@ -761,11 +761,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   headerSubtitleStatic: {
     fontSize: 13,
     marginTop: 2,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   liveIndicator: {
     flexDirection: 'row',
@@ -809,6 +811,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 8,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   scrollView: {
     flex: 1,

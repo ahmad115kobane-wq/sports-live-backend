@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import { useRTL } from '@/contexts/RTLContext';
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
         </View>
       )}
       <View style={[styles.rowContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.rowLabel, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{label}</Text>
+        <Text style={[styles.rowLabel, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
         {sublabel ? <Text style={[styles.rowSublabel, { color: colors.textTertiary }]}>{sublabel}</Text> : null}
       </View>
       {trailing || (
@@ -176,7 +176,7 @@ export default function ProfileScreen() {
         activeOpacity={0.7}
       >
         <Ionicons name={icon} size={16} color={active ? '#fff' : colors.textTertiary} />
-        <Text style={[styles.themePillText, { color: active ? '#fff' : colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">{label}</Text>
+        <Text style={[styles.themePillText, { color: active ? '#fff' : colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -262,7 +262,7 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* ══════ PROFILE HEADER ══════ */}
-        <View style={[styles.headerBg, { backgroundColor: isDark ? '#0F0F0F' : '#F0F0F0' }]}>
+        <View style={[styles.headerBg, { backgroundColor: colors.backgroundSecondary }]}>
           {/* Top row: settings gear */}
           <View style={[styles.headerTopRow, { flexDirection }]}>
             <View style={{ flex: 1 }} />
@@ -292,20 +292,20 @@ export default function ProfileScreen() {
                   )}
                 </View>
                 {/* Role badge overlapping avatar */}
-                <View style={[styles.roleBadge, { backgroundColor: colors.accent }]}>
+                <View style={[styles.roleBadge, { backgroundColor: colors.accent, borderColor: colors.surface }]}>
                   <Ionicons name={getRoleIcon(user?.role || 'user')} size={10} color="#fff" />
                 </View>
               </View>
 
               {/* Name & Email */}
-              <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{user?.name}</Text>
+              <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{user?.name}</Text>
               {!isGuest && user?.email && (
                 <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user.email}</Text>
               )}
 
               {/* Role Chip */}
               <View style={[styles.roleChip, { backgroundColor: colors.accent + '15' }]}>
-                <Text style={[styles.roleChipText, { color: colors.accent }]} numberOfLines={2} ellipsizeMode="tail">
+                <Text style={[styles.roleChipText, { color: colors.accent }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                   {isGuest ? t('welcome.guestAccount') : getRoleLabel(user?.role || 'user')}
                 </Text>
               </View>
@@ -452,7 +452,7 @@ export default function ProfileScreen() {
                 <Ionicons name="log-out-outline" size={18} color={isDark ? '#FF6B6B' : '#DC2626'} />
               </View>
               <View style={[styles.rowContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={2} ellipsizeMode="tail">{t('settings.logout')}</Text>
+                <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('settings.logout')}</Text>
               </View>
               <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={18} color={colors.textQuaternary} />
             </TouchableOpacity>
@@ -466,7 +466,7 @@ export default function ProfileScreen() {
                   <Ionicons name="trash-outline" size={18} color={isDark ? '#FF6B6B' : '#DC2626'} />
                 </View>
                 <View style={[styles.rowContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                  <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={2} ellipsizeMode="tail">{t('settings.deleteAccount')}</Text>
+                  <Text style={[styles.rowLabel, { color: isDark ? '#FF6B6B' : '#DC2626' }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{t('settings.deleteAccount')}</Text>
                   <Text style={[styles.rowSublabel, { color: colors.textTertiary }]}>{t('settings.deleteAccountDesc')}</Text>
                 </View>
               </TouchableOpacity>
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'transparent',
   },
   profileName: {
     ...TYPOGRAPHY.headlineLarge,

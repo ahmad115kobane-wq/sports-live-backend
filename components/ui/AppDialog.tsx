@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 
 export type DialogType = 'success' | 'error' | 'warning' | 'info' | 'confirm';
 
@@ -261,6 +261,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 6,
     letterSpacing: -0.3,
+    fontFamily: FONTS.bold,
   },
   message: {
     fontSize: 14,
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     paddingHorizontal: 4,
     opacity: 0.8,
+    fontFamily: FONTS.regular,
   },
   loadingWrap: {
     paddingVertical: 16,
@@ -311,8 +313,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.1,
+    fontFamily: FONTS.semiBold,
   },
   btnTextBold: {
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

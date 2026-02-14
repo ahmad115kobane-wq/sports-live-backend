@@ -22,7 +22,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { matchApi, competitionApi, teamApi, userApi } from '@/services/api';
 import { Match, Competition, Team } from '@/types';
@@ -594,7 +594,10 @@ export default function FavoritesScreen() {
                           <Ionicons name="trophy" size={24} color={colors.textTertiary} />
                         </View>
                       )}
-                      <Text style={[styles.selectionName, { color: colors.text }]} numberOfLines={2}>
+                      <Text 
+                        style={[styles.selectionName, { color: colors.text }]} 
+                        numberOfLines={2}
+                      >
                         {comp.name}
                       </Text>
                       {selectedCompetitions.includes(comp.id) && (
@@ -742,6 +745,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   scrollView: {
     flex: 1,
@@ -953,6 +957,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   checkBadge: {
     position: 'absolute',

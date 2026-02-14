@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 150,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
+    borderColor: 'rgba(5, 150, 105, 0.1)',
   },
   bgCircle2: {
     position: 'absolute',
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+    backgroundColor: 'rgba(5, 150, 105, 0.05)',
   },
   navBackButton: {
     position: 'absolute',
@@ -923,11 +923,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
+    fontFamily: FONTS.bold,
   },
   subtitleText: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
     marginBottom: 16,
+    fontFamily: FONTS.regular,
   },
   progressContainer: {
     width: '100%',
@@ -942,7 +944,6 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#A8A8A8',
     borderRadius: 2,
   },
   stepsIndicator: {
@@ -960,12 +961,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   stepDotActive: {
-    backgroundColor: '#A8A8A8',
+    backgroundColor: '#059669',
   },
   stepLabel: {
     fontSize: 10,
     color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   stepLabelInactive: {
     color: 'rgba(255,255,255,0.4)',
@@ -982,6 +984,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.8)',
     marginBottom: 6,
+    fontFamily: FONTS.semiBold,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -994,8 +997,8 @@ const styles = StyleSheet.create({
     height: 48,
   },
   inputWrapperFocused: {
-    borderColor: '#A8A8A8',
-    backgroundColor: 'rgba(168, 168, 168, 0.1)',
+    borderColor: '#059669',
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
   },
   inputWrapperError: {
     borderColor: '#EF4444',
@@ -1013,17 +1016,19 @@ const styles = StyleSheet.create({
     right: 20,
   },
   inputIconFocused: {
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    backgroundColor: 'rgba(5, 150, 105, 0.15)',
   },
   textInput: {
     flex: 1,
     fontSize: 13,
     color: '#fff',
     height: '100%',
+    fontFamily: FONTS.regular,
   },
   selectText: {
     flex: 1,
     fontSize: 13,
+    fontFamily: FONTS.regular,
   },
   eyeButton: {
     padding: 4,
@@ -1049,15 +1054,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   cityOptionSelected: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: 'rgba(5, 150, 105, 0.1)',
   },
   cityOptionText: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
+    fontFamily: FONTS.regular,
   },
   cityOptionTextSelected: {
-    color: '#A8A8A8',
+    color: '#059669',
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   strengthContainer: {
     flexDirection: 'row',
@@ -1077,6 +1084,7 @@ const styles = StyleSheet.create({
   strengthText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   matchIndicator: {
     flexDirection: 'row',
@@ -1089,10 +1097,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     marginBottom: 14,
+    fontFamily: FONTS.regular,
   },
   termsLink: {
-    color: '#A8A8A8',
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   primaryButton: {
     borderRadius: 12,
@@ -1117,6 +1126,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
+    fontFamily: FONTS.bold,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -1139,6 +1149,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#fff',
+    fontFamily: FONTS.semiBold,
   },
   registerButton: {
     flex: 1,
@@ -1163,11 +1174,12 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
+    fontFamily: FONTS.regular,
   },
   footerLink: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#A8A8A8',
+    fontFamily: FONTS.bold,
   },
   // Step 3 - Favorites styles
   favoritesTitle: {
@@ -1217,6 +1229,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   checkBadge: {
     position: 'absolute',

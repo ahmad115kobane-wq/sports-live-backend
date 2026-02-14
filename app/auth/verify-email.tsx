@@ -16,7 +16,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
@@ -313,15 +313,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 6,
+    fontFamily: FONTS.bold,
   },
   subtitleText: {
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 4,
+    fontFamily: FONTS.regular,
   },
   emailText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   codeContainer: {
     marginBottom: 24,
@@ -339,6 +342,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   primaryButton: {
     borderRadius: 12,
@@ -365,6 +369,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   resendContainer: {
     marginTop: 20,
@@ -373,8 +378,10 @@ const styles = StyleSheet.create({
   resendText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   countdownText: {
     fontSize: 13,
+    fontFamily: FONTS.regular,
   },
 });

@@ -17,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { newsApi } from '@/services/api';
@@ -238,8 +238,18 @@ export default function PublisherScreen() {
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={24} color="#fff" />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>{t('news.publisherPanel')}</Text>
-            <Text style={styles.headerSubtitle}>
+            <Text 
+              style={styles.headerTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('news.publisherPanel')}
+            </Text>
+            <Text 
+              style={styles.headerSubtitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {articles.length} {t('news.articlesCount')}
             </Text>
           </View>
@@ -533,6 +543,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     fontSize: 16,
     marginBottom: SPACING.md,
+    fontFamily: FONTS.regular,
   },
   textArea: {
     borderWidth: 1,
@@ -541,6 +552,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 130,
     marginBottom: SPACING.md,
+    fontFamily: FONTS.regular,
   },
   imagePickerBtn: {
     borderWidth: 1.5,
@@ -584,6 +596,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
+    fontFamily: FONTS.extraBold,
   },
   loadingContainer: {
     paddingVertical: SPACING.xxl,

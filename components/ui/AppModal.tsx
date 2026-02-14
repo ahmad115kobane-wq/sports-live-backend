@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -184,7 +184,6 @@ export default function AppModal({
                   <Text
                     style={[styles.title, { color: colors.text }]}
                     numberOfLines={2}
-                    ellipsizeMode="tail"
                   >
                     {title}
                   </Text>
@@ -192,7 +191,6 @@ export default function AppModal({
                     <Text
                       style={[styles.subtitle, { color: colors.textSecondary }]}
                       numberOfLines={2}
-                      ellipsizeMode="tail"
                     >
                       {subtitle}
                     </Text>

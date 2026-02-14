@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { sliderApi } from '@/services/api';
@@ -407,6 +407,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   list: {
     paddingHorizontal: SPACING.md,
@@ -420,6 +421,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   card: {
     borderRadius: RADIUS.xl,
@@ -444,6 +446,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     flex: 1,
+    fontFamily: FONTS.bold,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -461,12 +464,15 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   cardLink: {
     fontSize: 11,
+    fontFamily: FONTS.regular,
   },
   cardOrder: {
     fontSize: 11,
+    fontFamily: FONTS.regular,
   },
   cardActions: {
     flexDirection: 'row',
@@ -484,6 +490,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   // Modal
   imagePicker: {
@@ -508,12 +515,14 @@ const styles = StyleSheet.create({
   imagePickerText: {
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   label: {
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 6,
     marginTop: SPACING.sm,
+    fontFamily: FONTS.semiBold,
   },
   input: {
     borderWidth: 1,
@@ -521,6 +530,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     fontSize: 14,
+    fontFamily: FONTS.regular,
   },
   switchRow: {
     flexDirection: 'row',
@@ -532,6 +542,7 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   saveBtn: {
     alignItems: 'center',
@@ -545,5 +556,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

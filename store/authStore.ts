@@ -178,12 +178,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ user: validUser });
             AsyncStorage.setItem('user', JSON.stringify(validUser));
           }
-        }).catch(() => {
-          AsyncStorage.removeItem('token');
-          AsyncStorage.removeItem('user');
-          AsyncStorage.removeItem('isGuest');
-          delete api.defaults.headers.common['Authorization'];
-          set({ user: null, token: null, isAuthenticated: false, isGuest: false });
+        }).catch((err) => {
+          // Only logout if server explicitly says token is invalid (401)
+          // Do NOT logout on network errors (offline, timeout, etc.)
+          if (err?.response?.status === 401) {
+            AsyncStorage.removeItem('token');
+            AsyncStorage.removeItem('user');
+            AsyncStorage.removeItem('isGuest');
+            delete api.defaults.headers.common['Authorization'];
+            set({ user: null, token: null, isAuthenticated: false, isGuest: false });
+          }
         });
       } else {
         set({ 

@@ -15,7 +15,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { operatorApi } from '@/services/api';
 import { Player } from '@/types';
 import { useRTL } from '@/contexts/RTLContext';
@@ -702,6 +702,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginBottom: SPACING.sm,
+    fontFamily: FONTS.bold,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -712,12 +713,14 @@ const styles = StyleSheet.create({
   clearAllText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   refereeLabel: {
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 4,
     textAlign: 'right',
+    fontFamily: FONTS.semiBold,
   },
   refereeInput: {
     borderWidth: 1,
@@ -727,6 +730,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     textAlign: 'right',
+    fontFamily: FONTS.medium,
   },
   teamSelector: {
     flexDirection: 'row',
@@ -747,6 +751,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     flex: 1,
+    fontFamily: FONTS.bold,
   },
   tabDivider: {
     width: 1,
@@ -760,6 +765,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   formationRow: {
     flexDirection: 'row',
@@ -775,6 +781,7 @@ const styles = StyleSheet.create({
   formationChipText: {
     fontSize: 14,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   playersList: {
     gap: SPACING.xs,
@@ -796,6 +803,7 @@ const styles = StyleSheet.create({
   posLabelText: {
     fontSize: 11,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   shirtNum: {
     width: 32,
@@ -808,15 +816,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   playerRowName: {
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   playerRowPos: {
     fontSize: 11,
     marginTop: 1,
+    fontFamily: FONTS.regular,
   },
   captainBtn: {
     width: 28,
@@ -830,6 +841,7 @@ const styles = StyleSheet.create({
   captainBtnText: {
     fontSize: 12,
     fontWeight: '900',
+    fontFamily: FONTS.extraBold,
   },
   emptyBox: {
     alignItems: 'center',
@@ -841,6 +853,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   availableRow: {
     flexDirection: 'row',
@@ -870,5 +883,6 @@ const styles = StyleSheet.create({
   addBtnLabel: {
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

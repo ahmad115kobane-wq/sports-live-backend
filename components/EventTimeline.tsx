@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { MatchEvent, Match } from '@/types';
 import { useRTL } from '@/contexts/RTLContext';
 import EventIcon from '@/components/ui/EventIcon';
@@ -16,21 +16,21 @@ interface EventTimelineProps {
 }
 
 // Get event color
-function getEventColor(type: string): string {
+function getEventColor(type: string, colors: any): string {
   switch (type) {
-    case 'goal': return '#22C55E';
-    case 'yellow_card': return '#EAB308';
-    case 'red_card': return '#EF4444';
-    case 'substitution': return '#3B82F6';
-    case 'penalty': return '#EC4899';
-    case 'var_review': return '#A855F7';
-    case 'corner': return '#06B6D4';
-    case 'offside': return '#64748B';
-    case 'injury': return '#F97316';
-    case 'start_half': return '#22C55E';
-    case 'end_half': return '#F59E0B';
-    case 'end_match': return '#6B7280';
-    default: return '#64748B';
+    case 'goal': return colors.goal || '#22C55E';
+    case 'yellow_card': return colors.yellowCard || '#EAB308';
+    case 'red_card': return colors.redCard || '#EF4444';
+    case 'substitution': return colors.substitution || '#3B82F6';
+    case 'penalty': return colors.error || '#EC4899';
+    case 'var_review': return colors.var || '#A855F7';
+    case 'corner': return colors.info || '#06B6D4';
+    case 'offside': return colors.secondary || '#64748B';
+    case 'injury': return colors.warning || '#F97316';
+    case 'start_half': return colors.pitch || '#059669';
+    case 'end_half': return colors.warning || '#F59E0B';
+    case 'end_match': return colors.textSecondary || '#6B7280';
+    default: return colors.textTertiary || '#64748B';
   }
 }
 
@@ -43,7 +43,7 @@ function TimelineSectionBadge({ event, match, colors }: { event: MatchEvent; mat
   const getLabel = () => {
     switch (event.type) {
       case 'end_match':
-        return `نهاية الـ 90 دقيقة ${match.homeScore}–${match.awayScore}`;
+        return `نهاية المباراة ${match.homeScore} - ${match.awayScore}`;
       case 'end_half':
         return 'نهاية الشوط الأول';
       case 'start_half':
@@ -54,7 +54,7 @@ function TimelineSectionBadge({ event, match, colors }: { event: MatchEvent; mat
   };
 
   return (
-    <View style={[sectionStyles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[sectionStyles.container, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
       <Text style={[sectionStyles.text, { color: colors.textSecondary }]}>
         {getLabel()}
       </Text>
@@ -66,20 +66,25 @@ const sectionStyles = StyleSheet.create({
   container: {
     alignSelf: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xs + 2,
+    paddingVertical: 6,
     borderRadius: RADIUS.full,
     borderWidth: 1,
     marginVertical: SPACING.md,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
+      android: { elevation: 1 }
+    }),
   },
   text: {
-    ...TYPOGRAPHY.labelSmall,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });
 
 function TimelineEventRow({ event, match, colors, isRTL }: { event: MatchEvent; match: Match; colors: any; isRTL: boolean }) {
   const isHomeTeam = event.teamId === match.homeTeamId;
-  const eventColor = getEventColor(event.type);
+  const eventColor = getEventColor(event.type, colors);
 
   const minuteText = event.extraTime
     ? `${event.minute}'+${event.extraTime}`
@@ -120,25 +125,25 @@ function TimelineEventRow({ event, match, colors, isRTL }: { event: MatchEvent; 
       {playerInfo.isSub ? (
         <>
           <View style={[styles.subRow, { flexDirection: showOnRight ? 'row-reverse' : 'row' }]}>  
-            <Ionicons name="arrow-up" size={12} color="#22C55E" style={{ marginHorizontal: 3 }} />
-            <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
+            <Ionicons name="arrow-up-circle" size={16} color={colors.success} style={{ marginHorizontal: 4 }} />
+            <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={1}>
               {playerInfo.primary}
             </Text>
           </View>
           <View style={[styles.subRow, { flexDirection: showOnRight ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="arrow-down" size={12} color="#EF4444" style={{ marginHorizontal: 3 }} />
-            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
+            <Ionicons name="arrow-down-circle" size={16} color={colors.error} style={{ marginHorizontal: 4 }} />
+            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={1}>
               {playerInfo.secondary}
             </Text>
           </View>
         </>
       ) : (
         <>
-          <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
+          <Text style={[styles.playerName, { color: colors.text, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={1}>
             {playerInfo.primary}
           </Text>
           {playerInfo.secondary ? (
-            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
+            <Text style={[styles.playerNameSecondary, { color: colors.textSecondary, textAlign: showOnRight ? 'right' : 'left' }]} numberOfLines={1}>
               {playerInfo.secondary}
             </Text>
           ) : null}
@@ -157,11 +162,18 @@ function TimelineEventRow({ event, match, colors, isRTL }: { event: MatchEvent; 
       {/* Center timeline */}
       <View style={styles.centerColumn}>
         <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />
+        
+        {/* Minute Bubble */}
         <View style={[styles.minuteBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <EventIcon type={event.type} size={18} color={eventColor} />
+          <Text style={[styles.minuteText, { color: colors.text }]}>{event.minute}</Text>
+          {event.extraTime && (
+            <Text style={[styles.extraTimeText, { color: colors.accent }]}>+{event.extraTime}</Text>
+          )}
         </View>
-        <View style={[styles.minuteContainer, { backgroundColor: colors.backgroundSecondary }]}>
-          <Text style={[styles.minuteText, { color: colors.textSecondary }]}>{minuteText}</Text>
+
+        {/* Event Icon Bubble (Overlapping) */}
+        <View style={[styles.iconBadge, { backgroundColor: colors.surface, borderColor: eventColor }]}>
+          <EventIcon type={event.type} size={14} color={eventColor} />
         </View>
       </View>
 
@@ -270,6 +282,7 @@ const styles = StyleSheet.create({
   minuteText: {
     fontSize: 10,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   playerContent: {
     flex: 1,
@@ -295,5 +308,28 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelMedium,
     fontWeight: '400',
     marginTop: 1,
+  },
+  extraTimeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    position: 'absolute',
+    top: -4,
+    right: -4,
+  },
+  iconBadge: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    bottom: -6,
+    right: -6,
+    zIndex: 3,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 1 },
+      android: { elevation: 1 }
+    }),
   },
 });

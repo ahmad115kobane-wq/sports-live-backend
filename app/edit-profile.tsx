@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { userApi } from '@/services/api';
 import { useRTL } from '@/contexts/RTLContext';
@@ -382,6 +382,7 @@ const styles = StyleSheet.create({
   avatarLetter: {
     fontSize: 36,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   cameraIcon: {
     position: 'absolute',

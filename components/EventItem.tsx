@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, FONTS } from '@/constants/Theme';
 import { MatchEvent } from '@/types';
 import { EVENT_TYPES } from '@/constants/config';
 import { useRTL } from '@/contexts/RTLContext';

@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { userApi } from '@/services/api';
 import AppDialog from '@/components/ui/AppDialog';
@@ -572,6 +572,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   bannedBadge: {
     position: 'absolute',
@@ -596,6 +597,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   roleBadge: {
     paddingHorizontal: SPACING.sm,
@@ -605,10 +607,12 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   userEmail: {
     fontSize: 13,
     marginBottom: 4,
+    fontFamily: FONTS.regular,
   },
   userMeta: {
     flexDirection: 'row',
@@ -616,6 +620,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
+    fontFamily: FONTS.regular,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -633,6 +638,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   emptyContainer: {
     flex: 1,
@@ -643,6 +649,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     marginTop: SPACING.md,
+    fontFamily: FONTS.regular,
   },
   modalOverlay: {
     flex: 1,
@@ -664,6 +671,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   modalBody: {
     padding: SPACING.lg,
@@ -688,19 +696,23 @@ const styles = StyleSheet.create({
   avatarTextLarge: {
     fontSize: 32,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   userNameModal: {
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 4,
+    fontFamily: FONTS.bold,
   },
   userEmailModal: {
     fontSize: 14,
+    fontFamily: FONTS.regular,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: SPACING.md,
+    fontFamily: FONTS.semiBold,
   },
   roleOptions: {
     gap: SPACING.sm,
@@ -718,6 +730,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   banButton: {
     flexDirection: 'row',
@@ -731,6 +744,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   loadMoreContainer: {
     flexDirection: 'row',
@@ -742,6 +756,7 @@ const styles = StyleSheet.create({
   loadMoreText: {
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   loadMoreBtn: {
     alignItems: 'center',
@@ -753,5 +768,6 @@ const styles = StyleSheet.create({
   loadMoreBtnText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
 });

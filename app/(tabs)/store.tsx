@@ -19,7 +19,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Product, Category } from '@/constants/storeData';
@@ -1112,6 +1112,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 9,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   searchBar: {
     alignItems: 'center',
@@ -1133,6 +1134,7 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     paddingVertical: 0,
     fontWeight: '400',
+    fontFamily: FONTS.regular,
   },
   searchClearBtn: {
     width: 26,
@@ -1177,11 +1179,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   bannerTitle: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
@@ -1190,6 +1194,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
     fontSize: 12,
     marginTop: 2,
+    fontFamily: FONTS.regular,
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
@@ -1249,6 +1254,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 12.5,
+    fontFamily: FONTS.semiBold,
   },
   productsGrid: {
     flexDirection: 'row',
@@ -1286,6 +1292,7 @@ const styles = StyleSheet.create({
   },
   reviewCount: {
     fontSize: 10,
+    fontFamily: FONTS.regular,
   },
   priceRow: {
     flexDirection: 'row',
@@ -1300,6 +1307,7 @@ const styles = StyleSheet.create({
   originalPrice: {
     fontSize: 11,
     textDecorationLine: 'line-through',
+    fontFamily: FONTS.regular,
   },
   badge: {
     position: 'absolute',
@@ -1315,6 +1323,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
+    fontFamily: FONTS.extraBold,
   },
   cardDiscountBadge: {
     position: 'absolute',
@@ -1445,10 +1454,12 @@ const styles = StyleSheet.create({
   modalPrice: {
     fontSize: 20,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   modalOriginalPrice: {
     fontSize: 13,
     textDecorationLine: 'line-through',
+    fontFamily: FONTS.regular,
   },
   optionLabel: {
     fontSize: 11,
@@ -1456,6 +1467,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontFamily: FONTS.semiBold,
   },
   colorsRow: {
     flexDirection: 'row',
@@ -1488,6 +1500,7 @@ const styles = StyleSheet.create({
   sizeText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   quantityRow: {
     flexDirection: 'row',
@@ -1507,6 +1520,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     minWidth: 26,
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   quantityStockRow: {
     flexDirection: 'row',
@@ -1524,6 +1538,7 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   modalBottom: {
     flexDirection: 'row',
@@ -1537,10 +1552,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 10,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   totalPrice: {
     fontSize: 17,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   addToCartBtn: {
     borderRadius: RADIUS.lg,
@@ -1557,6 +1574,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   // ── Horizontal Product Card styles ──
   hProductCard: {
@@ -1580,10 +1598,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 3,
     lineHeight: 17,
+    fontFamily: FONTS.semiBold,
   },
   hProductPrice: {
     fontSize: 14,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   hCardDiscountBadge: {
     position: 'absolute',
@@ -1623,6 +1643,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.2,
+    fontFamily: FONTS.bold,
   },
   viewMoreBtn: {
     flexDirection: 'row',
@@ -1635,5 +1656,6 @@ const styles = StyleSheet.create({
   viewMoreText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
 });

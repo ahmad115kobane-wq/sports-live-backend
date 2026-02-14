@@ -8,7 +8,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS, FONTS } from '@/constants/Theme';
 import AnimatedNumber from './AnimatedNumber';
 
 interface StatItem {
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     lineHeight: 32,
+    fontFamily: FONTS.extraBold,
   },
   statLabel: {
     ...TYPOGRAPHY.labelSmall,

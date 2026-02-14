@@ -11,7 +11,7 @@ import { Stack, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAuthStore } from '@/store/authStore';
 import PageHeader from '@/components/ui/PageHeader';
@@ -147,8 +147,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.1,
+    fontFamily: FONTS.semiBold,
   },
   tabLabelActive: {
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

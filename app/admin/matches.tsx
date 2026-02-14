@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { matchApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -415,6 +415,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+    fontFamily: FONTS.regular,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -431,6 +432,7 @@ const styles = StyleSheet.create({
   filterTabText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   listContainer: {
     padding: SPACING.md,
@@ -452,6 +454,7 @@ const styles = StyleSheet.create({
   competitionName: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -469,6 +472,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   teamsContainer: {
     flexDirection: 'row',
@@ -485,6 +489,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   scoreContainer: {
     alignItems: 'center',
@@ -493,10 +498,12 @@ const styles = StyleSheet.create({
   score: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   matchDate: {
     fontSize: 11,
     marginTop: 4,
+    fontFamily: FONTS.regular,
   },
   detailsRow: {
     flexDirection: 'row',
@@ -512,6 +519,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
+    fontFamily: FONTS.regular,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -530,6 +538,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   emptyContainer: {
     flex: 1,
@@ -540,6 +549,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     marginTop: SPACING.md,
+    fontFamily: FONTS.regular,
   },
   modalOverlay: {
     flex: 1,
@@ -561,6 +571,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   modalBody: {
     padding: SPACING.lg,
@@ -569,6 +580,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: SPACING.lg,
+    fontFamily: FONTS.regular,
   },
   inputGroup: {
     marginBottom: SPACING.md,
@@ -577,6 +589,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: SPACING.xs,
+    fontFamily: FONTS.semiBold,
   },
   input: {
     height: 48,
@@ -584,6 +597,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
     fontSize: 16,
+    fontFamily: FONTS.regular,
   },
   saveButton: {
     height: 50,
@@ -596,5 +610,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

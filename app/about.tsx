@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS } from '@/constants/Theme';
+import { SPACING, RADIUS, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import AppIcon from '@/components/AppIcon';
@@ -36,9 +36,9 @@ export default function AboutScreen() {
       <View style={[styles.infoIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
         <Ionicons name={icon as any} size={18} color={colors.accent} />
       </View>
-      <View style={[styles.infoContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.infoLabel, { color: colors.textTertiary }]}>{label}</Text>
-        <Text style={[styles.infoValue, { color: onPress ? colors.accent : colors.text }]}>{value}</Text>
+      <View style={styles.infoContent}>
+        <Text style={[styles.infoLabel, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
+        <Text style={[styles.infoValue, { color: onPress ? colors.accent : colors.text, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
       </View>
       {onPress && (
         <Ionicons name="open-outline" size={16} color={colors.textQuaternary} />
@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   scrollContent: {
     padding: SPACING.md,
@@ -177,17 +178,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     marginBottom: 4,
+    fontFamily: FONTS.extraBold,
   },
   appVersion: {
     fontSize: 13,
     fontWeight: '500',
     marginBottom: 8,
+    fontFamily: FONTS.medium,
   },
   appTagline: {
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
     paddingHorizontal: SPACING.xl,
+    fontFamily: FONTS.medium,
   },
   card: {
     borderRadius: RADIUS.lg,
@@ -201,6 +205,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: SPACING.sm,
     paddingHorizontal: 4,
+    fontFamily: FONTS.bold,
   },
   infoRow: {
     alignItems: 'center',
@@ -222,10 +227,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     marginBottom: 2,
+    fontFamily: FONTS.medium,
   },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   footer: {
     alignItems: 'center',
@@ -235,5 +242,6 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
 });

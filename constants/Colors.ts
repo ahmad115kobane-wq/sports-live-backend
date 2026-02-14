@@ -8,13 +8,20 @@ export const Colors = {
     primaryLight: '#E8E8E8',
     primaryDark: '#F5F5F5',
     
-    // ⚡ Accent - Dark Gray (inverse of dark's #9A9A9A)
-    accent: '#5C5C5C',
-    accentLight: '#4A4A4A',
-    accentDark: '#7A7A7A',
-    accentGlow: 'rgba(92, 92, 92, 0.12)',
+    // ⚡ Accent - Emerald Green
+    accent: '#059669',
+    accentLight: '#34D399',
+    accentDark: '#047857',
+    accentGlow: 'rgba(5, 150, 105, 0.12)',
     
-    // 🌊 Secondary - Medium Gray
+    // �️ Pitch / Sport Accents (The "Kohl" Touch)
+    pitch: '#059669',       // Emerald 600 - Professional Green
+    pitchLight: '#34D399',  // Emerald 400
+    pitchDark: '#065F46',   // Emerald 800
+    pitchGlow: 'rgba(5, 150, 105, 0.15)',
+    pitchBorder: 'rgba(5, 150, 105, 0.3)',
+    
+    // �🌊 Secondary - Medium Gray
     secondary: '#8A8A8A',
     secondaryLight: '#6B6B6B',
     secondaryDark: '#A0A0A0',
@@ -114,11 +121,11 @@ export const Colors = {
     // 🎨 Gradient Presets
     gradients: {
       primary: ['#F5F5F5', '#EBEBEB', '#E0E0E0'] as const,
-      accent: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
+      accent: ['#059669', '#047857', '#065F46'] as const,
       secondary: ['#9A9A9A', '#8A8A8A', '#7A7A7A'] as const,
       live: ['#DC2626', '#B91C1C', '#991B1B'] as const,
-      featured: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
-      premium: ['#5C5C5C', '#4A4A4A', '#3A3A3A'] as const,
+      featured: ['#059669', '#047857', '#065F46'] as const,
+      premium: ['#059669', '#047857', '#065F46'] as const,
       dark: ['#FAFAFA', '#F3F3F3', '#EDEDED'] as const,
       authDark: ['#000000', '#0A0A0A', '#141414'] as const,
       success: ['#16A34A', '#15803D', '#166534'] as const,
@@ -128,6 +135,7 @@ export const Colors = {
       glass: ['rgba(255, 255, 255, 0.97)', 'rgba(255, 255, 255, 0.92)'] as const,
       hero: ['#FAFAFA', '#F3F3F3', '#EDEDED'] as const,
       card: ['#FFFFFF', '#F7F7F7'] as const,
+      pitch: ['#059669', '#047857'] as const,
     },
     
     // 🌫️ Overlays & Glass
@@ -144,7 +152,7 @@ export const Colors = {
     // 🔘 Tab Bar
     tabBar: 'rgba(255, 255, 255, 0.98)',
     tabBarBorder: '#EEEEEE',
-    tabActive: '#111111',
+    tabActive: '#059669',
     tabInactive: '#AAAAAA',
     
     // 🌟 Special Effects
@@ -159,13 +167,20 @@ export const Colors = {
     primaryLight: '#141414',
     primaryDark: '#000000',
     
-    // ⚡ Accent - Silver Gray
-    accent: '#A8A8A8',
-    accentLight: '#C0C0C0',
-    accentDark: '#888888',
-    accentGlow: 'rgba(168, 168, 168, 0.2)',
+    // ⚡ Accent - Emerald Green
+    accent: '#10B981',
+    accentLight: '#34D399',
+    accentDark: '#059669',
+    accentGlow: 'rgba(16, 185, 129, 0.2)',
     
-    // 🌊 Secondary - Medium Gray
+    // �️ Pitch / Sport Accents (The "Kohl" Touch)
+    pitch: '#10B981',       // Emerald 500 - Brighter for Dark Mode
+    pitchLight: '#34D399',  // Emerald 400
+    pitchDark: '#047857',   // Emerald 700
+    pitchGlow: 'rgba(16, 185, 129, 0.2)',
+    pitchBorder: 'rgba(16, 185, 129, 0.4)',
+    
+    // �🌊 Secondary - Medium Gray
     secondary: '#6B6B6B',
     secondaryLight: '#8A8A8A',
     secondaryDark: '#4A4A4A',
@@ -265,11 +280,11 @@ export const Colors = {
     // 🎨 Gradient Presets
     gradients: {
       primary: ['#0A0A0A', '#141414', '#1E1E1E'] as const,
-      accent: ['#7A7A7A', '#8A8A8A', '#9A9A9A'] as const,
+      accent: ['#10B981', '#059669', '#047857'] as const,
       secondary: ['#5C5C5C', '#6B6B6B', '#7A7A7A'] as const,
       live: ['#EF4444', '#DC2626', '#B91C1C'] as const,
-      featured: ['#4A4A4A', '#5C5C5C', '#6B6B6B'] as const,
-      premium: ['#5C5C5C', '#6B6B6B', '#7A7A7A'] as const,
+      featured: ['#10B981', '#059669', '#047857'] as const,
+      premium: ['#10B981', '#059669', '#047857'] as const,
       dark: ['#000000', '#0A0A0A', '#141414'] as const,
       authDark: ['#000000', '#0A0A0A', '#141414'] as const,
       success: ['#22C55E', '#16A34A', '#15803D'] as const,
@@ -279,6 +294,7 @@ export const Colors = {
       glass: ['rgba(20, 20, 20, 0.95)', 'rgba(20, 20, 20, 0.9)'] as const,
       hero: ['#141414', '#1E1E1E', '#282828'] as const,
       card: ['#141414', '#1E1E1E'] as const,
+      pitch: ['#065F46', '#064E3B'] as const,
     },
     
     // 🌫️ Overlays & Glass
@@ -295,7 +311,7 @@ export const Colors = {
     // 🔘 Tab Bar
     tabBar: 'rgba(12, 12, 12, 0.98)',
     tabBarBorder: '#1C1C1C',
-    tabActive: '#F5F5F5',
+    tabActive: '#34D399',
     tabInactive: '#606060',
     
     // 🌟 Special Effects

@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCartStore, CartItem } from '@/store/cartStore';
@@ -54,7 +54,7 @@ export default function CartScreen() {
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={() => router.push('/orders' as any)} style={[styles.trackBtn, { backgroundColor: isDark ? 'rgba(168,168,168,0.12)' : 'rgba(92,92,92,0.08)' }]}>
+          <TouchableOpacity onPress={() => router.push('/orders' as any)} style={[styles.trackBtn, { backgroundColor: isDark ? 'rgba(5,150,105,0.12)' : 'rgba(5,150,105,0.08)' }]}>
             <Ionicons name="receipt-outline" size={18} color={colors.accent} />
           </TouchableOpacity>
         </View>
@@ -103,11 +103,11 @@ export default function CartScreen() {
           {/* Bottom Checkout */}
           <View style={[styles.checkoutBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
             <View style={[styles.checkoutBarInner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={{ alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
-                <Text style={[styles.totalLabel, { color: colors.textTertiary }]}>
+              <View>
+                <Text style={[styles.totalLabel, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>
                   {t('store.total')}
                 </Text>
-                <Text style={[styles.totalPrice, { color: colors.text }]}>
+                <Text style={[styles.totalPrice, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
                   {formatPrice(total)}
                 </Text>
               </View>
@@ -151,8 +151,8 @@ function CartItemCard({
         </View>
 
         {/* Product Info */}
-        <View style={[styles.cartItemInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-          <Text style={[styles.cartItemName, { color: colors.text }]} numberOfLines={2}>
+        <View style={styles.cartItemInfo}>
+          <Text style={[styles.cartItemName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
             {getLocalizedName(item, language)}
           </Text>
           <View style={[styles.cartItemMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+    fontFamily: FONTS.medium,
   },
   trackBtn: {
     width: 40,
@@ -263,12 +264,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: SPACING.md,
+    fontFamily: FONTS.semiBold,
   },
   emptySubtitle: {
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: SPACING.lg,
+    fontFamily: FONTS.regular,
   },
   browseBtn: {
     flexDirection: 'row',
@@ -284,6 +287,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   cartItem: {
     borderRadius: RADIUS.xl,
@@ -322,6 +326,7 @@ const styles = StyleSheet.create({
   cartItemMetaText: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   cartItemColorDot: {
     width: 14,
@@ -338,10 +343,12 @@ const styles = StyleSheet.create({
   cartItemPrice: {
     fontSize: 15,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   cartItemOrigPrice: {
     fontSize: 12,
     textDecorationLine: 'line-through',
+    fontFamily: FONTS.regular,
   },
   removeBtn: {
     padding: 4,
@@ -372,10 +379,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     minWidth: 20,
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   itemTotal: {
     fontSize: 16,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   checkoutBar: {
     position: 'absolute',
@@ -395,10 +404,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   totalPrice: {
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   checkoutBtn: {
     borderRadius: RADIUS.lg,
@@ -415,5 +426,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 });

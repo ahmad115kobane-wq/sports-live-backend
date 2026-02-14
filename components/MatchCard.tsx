@@ -12,7 +12,7 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Match } from '@/types';
 import { MATCH_STATUS } from '@/constants/config';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { format, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import TeamLogo from './ui/TeamLogo';
@@ -136,7 +136,7 @@ function MatchCard({
                 { color: colors.text },
                 match.homeScore > match.awayScore && isFinished && styles.winnerName
               ]} 
-              numberOfLines={2} ellipsizeMode="tail"
+              numberOfLines={2}
             >
               {match.homeTeam.name}
             </Text>
@@ -194,7 +194,7 @@ function MatchCard({
                 { color: colors.text },
                 match.awayScore > match.homeScore && isFinished && styles.winnerName
               ]} 
-              numberOfLines={2} ellipsizeMode="tail"
+              numberOfLines={2}
             >
               {match.awayTeam.name}
             </Text>
@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     letterSpacing: 0.2,
+    fontFamily: FONTS.semiBold,
   },
   liveBadge: {
     flexDirection: 'row',
@@ -275,6 +276,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.3,
+    fontFamily: FONTS.extraBold,
   },
   countdownBadge: {
     flexDirection: 'row',
@@ -288,6 +290,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.extraBold,
   },
   timeBadge: {
     paddingHorizontal: 8,
@@ -298,6 +301,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.bold,
   },
   finishedBadge: {
     paddingHorizontal: 8,
@@ -309,6 +313,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+    fontFamily: FONTS.semiBold,
   },
   matchContent: {
     flexDirection: 'row',
@@ -327,9 +332,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 17,
     maxWidth: '100%',
+    fontFamily: FONTS.semiBold,
   },
   winnerName: {
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   scoreSection: {
     alignItems: 'center',
@@ -349,10 +356,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 1,
+    fontFamily: FONTS.extraBold,
   },
   matchDateText: {
     fontSize: 10,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   scoreContainer: {
     alignItems: 'center',
@@ -371,6 +380,7 @@ const styles = StyleSheet.create({
     minWidth: 24,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.extraBold,
   },
   scoreSeparator: {
     width: 3,
@@ -393,6 +403,7 @@ const styles = StyleSheet.create({
   eventText: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
 });
 export default memo(MatchCard);

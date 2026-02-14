@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { playerApi } from '@/services/api';
 import { Player } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -128,7 +128,9 @@ export default function PlayerProfileScreen() {
           <TouchableOpacity style={styles.navBtn} onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.navTitle} numberOfLines={2} ellipsizeMode="tail">
+          <Text 
+            style={styles.navTitle} 
+          >
             {t('player.profile')}
           </Text>
           <View style={{ width: 36 }} />
@@ -137,19 +139,19 @@ export default function PlayerProfileScreen() {
         {/* Player Hero */}
         <View style={styles.heroContent}>
           {/* Player Number Circle */}
-          <View style={[styles.numberCircle, { borderColor: 'rgba(255,255,255,0.25)' }]}>
+          <View style={[styles.numberCircle, { borderColor: 'rgba(255,255,255,0.25)', alignSelf: 'center' }]}>
             <Text style={styles.numberText}>
               {player?.shirtNumber || '?'}
             </Text>
           </View>
 
           {/* Player Name */}
-          <Text style={styles.playerName} numberOfLines={2} ellipsizeMode="tail">
+          <Text style={styles.playerName}>
             {player?.name}
           </Text>
 
           {/* Position Badge */}
-          <View style={[styles.positionBadge, { backgroundColor: getPositionColor(player?.position) }]}>
+          <View style={[styles.positionBadge, { backgroundColor: getPositionColor(player?.position), alignSelf: 'center' }]}>
             <Ionicons name={getPositionIcon(player?.position)} size={14} color="#fff" />
             <Text style={styles.positionText}>{player?.position ? (t(`positions.${player.position}`) || player.position) : t('operator.player')}</Text>
           </View>
@@ -157,7 +159,7 @@ export default function PlayerProfileScreen() {
           {/* Team Chip */}
           {player?.team && (
             <TouchableOpacity
-              style={styles.teamChip}
+              style={[styles.teamChip, { alignSelf: 'center' }]}
               onPress={() => router.push(`/team/${player.team?.id}` as any)}
               activeOpacity={0.7}
             >
@@ -307,7 +309,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   heroContent: {
-    alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     marginTop: SPACING.sm,
   },
@@ -325,6 +326,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#fff',
     fontVariant: ['tabular-nums'],
+    fontFamily: FONTS.extraBold,
   },
   playerName: {
     ...TYPOGRAPHY.titleLarge,

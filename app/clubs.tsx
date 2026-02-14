@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { teamApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -167,11 +167,11 @@ export default function ClubsScreen() {
           </View>
 
           {/* Info */}
-          <View style={[styles.teamInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-            <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2}>
+          <View style={styles.teamInfo}>
+            <Text style={[styles.teamName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
               {team.name}
             </Text>
-            <View style={[styles.teamMetaRow, { flexDirection }]}>
+            <View style={[styles.teamMetaRow, { flexDirection, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
               <View style={[styles.shortNameBadge, { backgroundColor: (team.primaryColor || colors.accent) + '15' }]}>
                 <Text style={[styles.shortNameText, { color: team.primaryColor || colors.accent }]}>
                   {team.shortName}
@@ -184,7 +184,7 @@ export default function ClubsScreen() {
                 </View>
               )}
             </View>
-            <View style={[styles.teamDetails, { flexDirection }]}>
+            <View style={[styles.teamDetails, { flexDirection, alignSelf: isRTL ? 'flex-end' : 'flex-start' }]}>
               {team.coach && (
                 <View style={[styles.detailItem, { flexDirection }]}>
                   <Ionicons name="person-outline" size={11} color={colors.textTertiary} />

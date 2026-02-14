@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { SPACING, RADIUS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { orderApi } from '@/services/api';
@@ -123,7 +123,13 @@ export default function OrdersScreen() {
               <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={colors.text} />
             </TouchableOpacity>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{t('orders.trackOrders')}</Text>
+              <Text 
+                style={[styles.headerTitle, { color: colors.text }]} 
+                numberOfLines={1} 
+                ellipsizeMode="tail"
+              >
+                {t('orders.trackOrders')}
+              </Text>
             </View>
             <View style={{ width: 40 }} />
           </View>
@@ -142,9 +148,21 @@ export default function OrdersScreen() {
             <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{t('orders.trackOrders')}</Text>
+            <Text 
+              style={[styles.headerTitle, { color: colors.text }]} 
+              numberOfLines={1} 
+              ellipsizeMode="tail"
+            >
+              {t('orders.trackOrders')}
+            </Text>
             {orders.length > 0 && (
-              <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>{orders.length} {t('orders.orderCount')}</Text>
+              <Text 
+                style={[styles.headerSubtitle, { color: colors.textTertiary }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {orders.length} {t('orders.orderCount')}
+              </Text>
             )}
           </View>
           <View style={{ width: 40 }} />
@@ -191,9 +209,9 @@ export default function OrdersScreen() {
                   <View style={[styles.orderStatusIcon, { backgroundColor: statusConf.bg }]}>
                     <Ionicons name={statusConf.icon as any} size={22} color={statusConf.color} />
                   </View>
-                  <View style={[styles.orderInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                    <Text style={[styles.orderStatusText, { color: statusConf.color }]}>{statusConf.label}</Text>
-                    <Text style={[styles.orderDate, { color: colors.textTertiary }]}>{formatDate(order.createdAt)}</Text>
+                  <View style={styles.orderInfo}>
+                    <Text style={[styles.orderStatusText, { color: statusConf.color, textAlign: isRTL ? 'right' : 'left' }]}>{statusConf.label}</Text>
+                    <Text style={[styles.orderDate, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>{formatDate(order.createdAt)}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={[styles.orderTotal, { color: colors.text }]}>{formatPrice(order.totalAmount)}</Text>
@@ -231,8 +249,8 @@ export default function OrdersScreen() {
                             <Ionicons name="cube-outline" size={18} color={colors.textTertiary} />
                           )}
                         </View>
-                        <View style={[styles.orderItemInfo, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-                          <Text style={[styles.orderItemName, { color: colors.text }]} numberOfLines={2}>
+                        <View style={styles.orderItemInfo}>
+                          <Text style={[styles.orderItemName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
                             {getLocalizedProductName(item, language)}
                           </Text>
                           <View style={[styles.orderItemMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -299,11 +317,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.3,
+    fontFamily: FONTS.bold,
   },
   headerSubtitle: {
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+    fontFamily: FONTS.medium,
   },
   emptyContainer: {
     flex: 1,
@@ -325,10 +345,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: SPACING.md,
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   emptySubtitle: {
     fontSize: 12,
     textAlign: 'center',
+    fontFamily: FONTS.regular,
   },
   shopBtn: {
     flexDirection: 'row',
@@ -344,6 +366,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   orderCard: {
     borderRadius: RADIUS.xl,
@@ -371,19 +394,23 @@ const styles = StyleSheet.create({
   orderStatusText: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   orderDate: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   orderTotal: {
     fontSize: 16,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   orderItemCount: {
     fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
+    fontFamily: FONTS.medium,
   },
   orderNote: {
     marginHorizontal: SPACING.lg,
@@ -402,6 +429,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     flex: 1,
+    fontFamily: FONTS.medium,
   },
   orderItems: {},
   orderItemRow: {
@@ -427,6 +455,7 @@ const styles = StyleSheet.create({
   orderItemName: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   orderItemMeta: {
     flexDirection: 'row',

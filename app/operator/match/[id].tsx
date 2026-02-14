@@ -16,7 +16,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { operatorApi, eventApi, statsApi } from '@/services/api';
 import { Match, Player, EventType, CreateEventPayload } from '@/types';
 import { EVENT_TYPES, MATCH_STATUS } from '@/constants/config';
@@ -1304,6 +1304,7 @@ const styles = StyleSheet.create({
   moreEventsText: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   selectedBanner: {
     flexDirection: 'row',
@@ -1325,17 +1326,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   selectedName: {
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   subLabel: {
     fontSize: 10,
     fontWeight: '600',
     marginBottom: SPACING.xs,
     marginTop: SPACING.xs,
+    fontFamily: FONTS.semiBold,
   },
   selectSubBtn: {
     flexDirection: 'row',
@@ -1371,11 +1375,13 @@ const styles = StyleSheet.create({
   playerNumText: {
     fontSize: 15,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   playerCardName: {
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+    fontFamily: FONTS.semiBold,
   },
   noPlayersBox: {
     flexDirection: 'row',
@@ -1388,6 +1394,7 @@ const styles = StyleSheet.create({
   noPlayersText: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   fieldToggle: {
     flexDirection: 'row',
@@ -1399,6 +1406,7 @@ const styles = StyleSheet.create({
   fieldToggleText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   positionDot: {
     width: 6,
@@ -1417,11 +1425,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     minWidth: 32,
+    fontFamily: FONTS.bold,
   },
   recentEventText: {
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
+    fontFamily: FONTS.medium,
   },
   floatingBar: {
     position: 'absolute',
@@ -1443,11 +1453,13 @@ const styles = StyleSheet.create({
   floatingEventName: {
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   floatingEventMeta: {
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+    fontFamily: FONTS.medium,
   },
   floatingResetBtn: {
     width: 40,
@@ -1470,6 +1482,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   modalOverlay: {
     flex: 1,
@@ -1490,6 +1503,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   possessionRow: {
     flexDirection: 'row',
@@ -1510,10 +1524,12 @@ const styles = StyleSheet.create({
   possessionBtnText: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   possessionPct: {
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
   possessionBarContainer: {
     width: 6,
@@ -1542,10 +1558,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: SPACING.xs,
+    fontFamily: FONTS.bold,
   },
   stoppageModalDesc: {
     fontSize: 13,
     marginBottom: SPACING.lg,
+    fontFamily: FONTS.regular,
   },
   stoppageInput: {
     width: 100,
@@ -1556,6 +1574,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: SPACING.lg,
+    fontFamily: FONTS.extraBold,
   },
   stoppageActions: {
     flexDirection: 'row',
@@ -1572,6 +1591,7 @@ const styles = StyleSheet.create({
   stoppageCancelText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   stoppageSubmitBtn: {
     flex: 1,
@@ -1584,5 +1604,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
+    fontFamily: FONTS.bold,
   },
 });
