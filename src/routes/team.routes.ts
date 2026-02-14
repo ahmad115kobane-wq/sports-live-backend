@@ -490,7 +490,7 @@ router.delete('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
 // ==================== PLAYER MANAGEMENT ====================
 
 // Add player to team
-router.post('/:teamId/players', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.post('/:teamId/players', authenticate, isAdmin, logoUpload.single('image'), async (req: AuthRequest, res) => {
   try {
     const { teamId } = req.params;
     const {
@@ -518,17 +518,24 @@ router.post('/:teamId/players', authenticate, isAdmin, async (req: AuthRequest, 
       }
     }
 
+    let finalImageUrl = imageUrl;
+    const file = (req as any).file;
+    if (file) {
+      const uploaded = await uploadToImgBB(file.buffer, `player-${Date.now()}`, file.mimetype);
+      if (uploaded) finalImageUrl = uploaded;
+    }
+
     const player = await prisma.player.create({
       data: {
         teamId,
         name,
-        shirtNumber,
+        shirtNumber: shirtNumber ? parseInt(shirtNumber) : undefined,
         position,
-        imageUrl,
+        imageUrl: finalImageUrl,
         nationality,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        height,
-        weight,
+        height: height ? parseInt(height) : undefined,
+        weight: weight ? parseInt(weight) : undefined,
         preferredFoot,
       },
     });
@@ -548,7 +555,7 @@ router.post('/:teamId/players', authenticate, isAdmin, async (req: AuthRequest, 
 });
 
 // Update player
-router.put('/:teamId/players/:playerId', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.put('/:teamId/players/:playerId', authenticate, isAdmin, logoUpload.single('image'), async (req: AuthRequest, res) => {
   try {
     const { playerId } = req.params;
     const {
@@ -563,17 +570,24 @@ router.put('/:teamId/players/:playerId', authenticate, isAdmin, async (req: Auth
       preferredFoot,
     } = req.body;
 
+    let finalImageUrl = imageUrl;
+    const file = (req as any).file;
+    if (file) {
+      const uploaded = await uploadToImgBB(file.buffer, `player-${Date.now()}`, file.mimetype);
+      if (uploaded) finalImageUrl = uploaded;
+    }
+
     const player = await prisma.player.update({
       where: { id: playerId },
       data: {
         name,
-        shirtNumber,
+        shirtNumber: shirtNumber !== undefined ? parseInt(shirtNumber) : undefined,
         position,
-        imageUrl,
+        imageUrl: finalImageUrl,
         nationality,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        height,
-        weight,
+        height: height ? parseInt(height) : undefined,
+        weight: weight ? parseInt(weight) : undefined,
         preferredFoot,
       },
     });
