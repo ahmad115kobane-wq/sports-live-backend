@@ -52,6 +52,7 @@ export async function uploadToImgBB(buffer: Buffer, name: string, mimetype?: str
     else if (name.startsWith('store')) folder = 'store';
     else if (name.startsWith('slider')) folder = 'sliders';
     else if (name.startsWith('videoad')) folder = 'videoads';
+    else if (name.startsWith('team')) folder = 'teams';
 
     // Detect extension from mimetype first, then from name, fallback to jpg
     let ext = 'jpg';

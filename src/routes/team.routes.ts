@@ -1,6 +1,24 @@
 import { Router } from 'express';
 import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
+import { uploadToImgBB } from '../services/imgbb.service';
+import { resolveTeamImages, resolveMatchImages } from '../utils/imageUrl';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const multer = require('multer');
+
+// Setup multer with memory storage for team logo upload
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req: any, file: any, cb: any) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
 
 const router = Router();
 
@@ -50,7 +68,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: teams,
+      data: teams.map(resolveTeamImages),
     });
   } catch (error) {
     console.error('Get teams error:', error);
@@ -90,7 +108,7 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      data: team,
+      data: resolveTeamImages(team),
     });
   } catch (error) {
     console.error('Get team error:', error);
@@ -151,7 +169,7 @@ router.get('/:id/matches', async (req, res) => {
 
     res.json({
       success: true,
-      data: matches,
+      data: matches.map(resolveMatchImages),
     });
   } catch (error) {
     console.error('Get team matches error:', error);
@@ -217,19 +235,19 @@ router.get('/:teamAId/vs/:teamBId', async (req, res) => {
     res.json({
       success: true,
       data: {
-        teamA: {
+        teamA: resolveTeamImages({
           ...teamA,
           wins: teamAWins,
           goals: teamAGoals,
-        },
-        teamB: {
+        }),
+        teamB: resolveTeamImages({
           ...teamB,
           wins: teamBWins,
           goals: teamBGoals,
-        },
+        }),
         draws,
         totalMatches: matches.length,
-        recentMatches: matches.slice(0, 5),
+        recentMatches: matches.slice(0, 5).map(resolveMatchImages),
       },
     });
   } catch (error) {
@@ -310,7 +328,7 @@ router.delete('/:teamId/competitions/:competitionId', authenticate, isAdmin, asy
 });
 
 // Create team with players
-router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.post('/', authenticate, isAdmin, logoUpload.single('logo'), async (req: AuthRequest, res) => {
   try {
     const {
       name,
@@ -326,20 +344,36 @@ router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
       players,
     } = req.body;
 
+    // Upload logo to R2 if a file was provided
+    let finalLogoUrl = logoUrl;
+    const file = (req as any).file;
+    if (file) {
+      const uploaded = await uploadToImgBB(file.buffer, `team-${Date.now()}`, file.mimetype);
+      if (uploaded) {
+        finalLogoUrl = uploaded;
+      }
+    }
+
+    // Parse players if sent as JSON string (from FormData)
+    let parsedPlayers = players;
+    if (typeof players === 'string') {
+      try { parsedPlayers = JSON.parse(players); } catch { parsedPlayers = undefined; }
+    }
+
     const team = await prisma.team.create({
       data: {
         name,
         shortName,
         category: category || 'FOOTBALL',
-        logoUrl,
+        logoUrl: finalLogoUrl,
         primaryColor,
         country,
         city,
         stadium,
         coach,
         founded,
-        players: players ? {
-          create: players.map((p: any) => ({
+        players: parsedPlayers ? {
+          create: parsedPlayers.map((p: any) => ({
             name: p.name,
             shirtNumber: p.shirtNumber,
             position: p.position,
@@ -360,7 +394,7 @@ router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
     res.status(201).json({
       success: true,
       message: 'Team created successfully',
-      data: team,
+      data: resolveTeamImages(team),
     });
   } catch (error) {
     console.error('Create team error:', error);
@@ -372,7 +406,7 @@ router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
 });
 
 // Update team
-router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.put('/:id', authenticate, isAdmin, logoUpload.single('logo'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const {
@@ -388,13 +422,23 @@ router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
       founded,
     } = req.body;
 
+    // Upload logo to R2 if a new file was provided
+    let finalLogoUrl = logoUrl;
+    const file = (req as any).file;
+    if (file) {
+      const uploaded = await uploadToImgBB(file.buffer, `team-${Date.now()}`, file.mimetype);
+      if (uploaded) {
+        finalLogoUrl = uploaded;
+      }
+    }
+
     const team = await prisma.team.update({
       where: { id },
       data: {
         name,
         shortName,
         category,
-        logoUrl,
+        ...(finalLogoUrl !== undefined && { logoUrl: finalLogoUrl }),
         primaryColor,
         country,
         city,
@@ -410,7 +454,7 @@ router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
     res.json({
       success: true,
       message: 'Team updated successfully',
-      data: team,
+      data: resolveTeamImages(team),
     });
   } catch (error) {
     console.error('Update team error:', error);

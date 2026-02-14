@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate, isOperator, AuthRequest } from '../middleware/auth.middleware';
 import { sendMatchEventNotification } from '../services/notification.service.firebase';
 import prisma from '../utils/prisma';
+import { resolveMatchImages } from '../utils/imageUrl';
 
 const router = Router();
 
@@ -69,7 +70,7 @@ router.get('/matches', authenticate, isOperator, async (req: AuthRequest, res) =
 
     res.json({
       success: true,
-      data: matches,
+      data: matches.map(resolveMatchImages),
     });
   } catch (error) {
     console.error('Get operator matches error:', error);
@@ -150,10 +151,10 @@ router.get('/matches/:matchId', authenticate, isOperator, async (req: AuthReques
 
     res.json({
       success: true,
-      data: {
+      data: resolveMatchImages({
         ...match,
         currentMinute: liveMinute ?? match.currentMinute,
-      },
+      }),
     });
   } catch (error) {
     console.error('Get match error:', error);
