@@ -188,6 +188,106 @@ router.get('/:id/matches', async (req, res) => {
   }
 });
 
+// Get competition standings (computed from finished matches)
+router.get('/:id/standings', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get all finished matches for this competition
+    const matches = await prisma.match.findMany({
+      where: {
+        competitionId: id,
+        status: 'finished',
+      },
+      select: {
+        homeTeamId: true,
+        awayTeamId: true,
+        homeScore: true,
+        awayScore: true,
+      },
+    });
+
+    // Get teams in this competition
+    const teamComps = await prisma.teamCompetition.findMany({
+      where: { competitionId: id },
+      include: {
+        team: {
+          select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true },
+        },
+      },
+    });
+
+    // Build standings map
+    const standingsMap: Record<string, {
+      teamId: string;
+      team: any;
+      played: number;
+      won: number;
+      drawn: number;
+      lost: number;
+      goalsFor: number;
+      goalsAgainst: number;
+      goalDifference: number;
+      points: number;
+    }> = {};
+
+    // Initialize all teams
+    for (const tc of teamComps) {
+      standingsMap[tc.teamId] = {
+        teamId: tc.teamId,
+        team: tc.team,
+        played: 0, won: 0, drawn: 0, lost: 0,
+        goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+      };
+    }
+
+    // Process matches
+    for (const m of matches) {
+      const home = standingsMap[m.homeTeamId];
+      const away = standingsMap[m.awayTeamId];
+
+      if (home) {
+        home.played++;
+        home.goalsFor += m.homeScore;
+        home.goalsAgainst += m.awayScore;
+        if (m.homeScore > m.awayScore) { home.won++; home.points += 3; }
+        else if (m.homeScore === m.awayScore) { home.drawn++; home.points += 1; }
+        else { home.lost++; }
+        home.goalDifference = home.goalsFor - home.goalsAgainst;
+      }
+
+      if (away) {
+        away.played++;
+        away.goalsFor += m.awayScore;
+        away.goalsAgainst += m.homeScore;
+        if (m.awayScore > m.homeScore) { away.won++; away.points += 3; }
+        else if (m.awayScore === m.homeScore) { away.drawn++; away.points += 1; }
+        else { away.lost++; }
+        away.goalDifference = away.goalsFor - away.goalsAgainst;
+      }
+    }
+
+    // Sort: points desc, goal difference desc, goals for desc
+    const standings = Object.values(standingsMap).sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+      return b.goalsFor - a.goalsFor;
+    });
+
+    // Resolve team images
+    const resolved = standings.map((s, i) => ({
+      ...s,
+      rank: i + 1,
+      team: resolveTeamImages(s.team),
+    }));
+
+    res.json({ success: true, data: resolved });
+  } catch (error) {
+    console.error('Get standings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get standings' });
+  }
+});
+
 // Admin: Create competition
 router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {

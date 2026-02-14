@@ -27,6 +27,7 @@ import sliderRoutes from './routes/slider.routes';
 import legalRoutes from './routes/legal.routes';
 import seedRoutes from './routes/seed.routes';
 import videoAdRoutes from './routes/videoad.routes';
+import refereeRoutes from './routes/referee.routes';
 
 // Import Socket handler
 import { setupSocketHandlers } from './socket/socketHandler';
@@ -118,6 +119,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/video-ads', videoAdRoutes);
+app.use('/api/referees', refereeRoutes);
 app.use('/api/legal', legalRoutes);
 // Seed routes — protected by admin auth in production
 if (process.env.NODE_ENV === 'production') {

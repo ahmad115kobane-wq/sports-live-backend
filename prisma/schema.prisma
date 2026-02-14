@@ -53,6 +53,7 @@ model Team {
   city         String?
   stadium      String?
   coach        String?
+  coachImageUrl String?  @map("coach_image_url")
   founded      Int?
   wins         Int      @default(0)
   draws        Int      @default(0)
@@ -133,6 +134,25 @@ model Competition {
   @@map("competitions")
 }
 
+// Referees table
+model Referee {
+  id          String   @id @default(uuid())
+  name        String
+  imageUrl    String?  @map("image_url")
+  nationality String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  mainMatches       Match[] @relation("MainReferee")
+  assistant1Matches Match[] @relation("Assistant1Referee")
+  assistant2Matches Match[] @relation("Assistant2Referee")
+  fourthMatches     Match[] @relation("FourthReferee")
+
+  @@map("referees")
+}
+
 // Matches table
 model Match {
   id            String   @id @default(uuid())
@@ -152,6 +172,10 @@ model Match {
   assistantReferee1 String? @map("assistant_referee_1")
   assistantReferee2 String? @map("assistant_referee_2")
   fourthReferee     String? @map("fourth_referee")
+  refereeId             String? @map("referee_id")
+  assistantReferee1Id   String? @map("assistant_referee_1_id")
+  assistantReferee2Id   String? @map("assistant_referee_2_id")
+  fourthRefereeId       String? @map("fourth_referee_id")
   attendance    Int?
   weather       String?
   matchday      Int?     // round/matchday number
@@ -163,6 +187,10 @@ model Match {
   competition Competition?    @relation(fields: [competitionId], references: [id])
   homeTeam    Team            @relation("HomeTeam", fields: [homeTeamId], references: [id])
   awayTeam    Team            @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  refereeRef          Referee? @relation("MainReferee", fields: [refereeId], references: [id])
+  assistantReferee1Ref Referee? @relation("Assistant1Referee", fields: [assistantReferee1Id], references: [id])
+  assistantReferee2Ref Referee? @relation("Assistant2Referee", fields: [assistantReferee2Id], references: [id])
+  fourthRefereeRef    Referee? @relation("FourthReferee", fields: [fourthRefereeId], references: [id])
   operators   MatchOperator[]
   events      Event[]
   favorites   Favorite[]
@@ -236,6 +264,7 @@ model MatchLineup {
   teamId        String   @map("team_id")
   formation     String?  // e.g., "4-3-3", "4-4-2"
   coach         String?
+  coachImageUrl String?  @map("coach_image_url")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
