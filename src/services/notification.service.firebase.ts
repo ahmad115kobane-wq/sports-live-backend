@@ -203,6 +203,9 @@ async function buildEnrichedData(
     homePossession,
     awayPossession,
     competitionName,
+    status: match.status || '',
+    liveStartedAt: match.liveStartedAt ? match.liveStartedAt.toISOString() : '',
+    secondHalfStartedAt: match.secondHalfStartedAt ? match.secondHalfStartedAt.toISOString() : '',
     ...extra,
   };
 }
