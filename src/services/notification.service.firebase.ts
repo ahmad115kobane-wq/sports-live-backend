@@ -1,6 +1,6 @@
 import { User, Match } from '@prisma/client';
 import { notificationTemplates, getUserLanguage } from '../utils/notification-templates';
-import { sendFCMNotification, sendFCMMulticastNotification } from './firebase.service';
+import { sendFCMNotification, sendFCMMulticastNotification, sendFCMDataMessage } from './firebase.service';
 import prisma from '../utils/prisma';
 
 interface NotificationPayload {
@@ -128,6 +128,36 @@ function convertDataToStrings(data: Record<string, any>): Record<string, string>
 }
 
 /**
+ * حساب الدقيقة الحالية للمباراة ديناميكياً بناءً على timestamps
+ */
+function computeLiveMinute(match: any): number {
+  const now = Date.now();
+
+  if (match.status === 'live') {
+    if (match.secondHalfStartedAt) {
+      const elapsed = Math.floor((now - new Date(match.secondHalfStartedAt).getTime()) / 60000);
+      return Math.max(46, 46 + elapsed);
+    }
+    if (match.liveStartedAt) {
+      const elapsed = Math.floor((now - new Date(match.liveStartedAt).getTime()) / 60000);
+      return Math.max(1, 1 + elapsed);
+    }
+  }
+
+  if (match.status === 'extra_time') {
+    const base = match.currentMinute || 91;
+    const elapsed = Math.floor((now - new Date(match.updatedAt).getTime()) / 60000);
+    return Math.max(base, base + elapsed);
+  }
+
+  if (match.status === 'halftime') return 45;
+  if (match.status === 'extra_time_halftime') return 105;
+  if (match.status === 'penalties') return 120;
+
+  return match.currentMinute || 0;
+}
+
+/**
  * بناء بيانات إضافية غنية للإشعار (شعارات الفرق، الاستحواذ، الوقت، المسابقة)
  */
 async function buildEnrichedData(
@@ -156,6 +186,9 @@ async function buildEnrichedData(
     }
   } catch {}
 
+  // Compute live minute dynamically
+  const liveMinute = computeLiveMinute(match);
+
   return {
     matchId: match.id,
     homeTeamId: homeTeam.id,
@@ -166,7 +199,7 @@ async function buildEnrichedData(
     awayTeamLogo: awayTeam.logoUrl || '',
     homeScore: (match.homeScore ?? 0).toString(),
     awayScore: (match.awayScore ?? 0).toString(),
-    minute: (match.currentMinute ?? '').toString(),
+    minute: liveMinute.toString(),
     homePossession,
     awayPossession,
     competitionName,
@@ -652,11 +685,12 @@ export async function sendPreMatchNotifications(): Promise<void> {
 
 /**
  * إرسال تحديثات دورية للمباريات المباشرة (FCM data-only) لتحديث الإشعارات الثابتة
+ * يستخدم sendFCMDataMessage بدون notification payload حتى لا يعرض Android إشعار جديد تلقائياً
  * يتم استدعاؤها كل دقيقتين من الـ scheduler
  */
 export async function sendLiveMatchUpdates(): Promise<void> {
   try {
-    // Get all live matches
+    // Get all live matches with timestamps needed for live minute computation
     const liveMatches = await prisma.match.findMany({
       where: {
         status: { in: ['live', 'halftime', 'extra_time', 'extra_time_halftime', 'penalties'] },
@@ -677,7 +711,7 @@ export async function sendLiveMatchUpdates(): Promise<void> {
         const interestedUsers = await getInterestedUsers(match);
         if (interestedUsers.length === 0) continue;
 
-        // Build enriched data for live update
+        // Build enriched data with live-computed minute
         const enrichedData = await buildEnrichedData(
           match,
           match.homeTeam,
@@ -685,27 +719,27 @@ export async function sendLiveMatchUpdates(): Promise<void> {
           { type: 'live_update', status: match.status }
         );
 
-        // Send data-only FCM (no notification payload = silent update)
-        for (const user of interestedUsers) {
-          if (!user.pushToken) continue;
+        // Send DATA-ONLY FCM (no notification payload = no auto-display by Android)
+        // The mobile app's background/foreground handler will update the persistent notification
+        const tokens = interestedUsers
+          .map(u => u.pushToken)
+          .filter((t): t is string => !!t);
 
+        for (const token of tokens) {
           try {
-            await sendFCMNotification({
-              token: user.pushToken,
-              title: `${match.homeTeam.name} ${match.homeScore}-${match.awayScore} ${match.awayTeam.name}`,
-              body: `⏱ ${match.currentMinute || ''}'`,
-              data: enrichedData,
-            });
+            await sendFCMDataMessage(token, enrichedData);
           } catch (tokenError: any) {
-            // Remove invalid tokens silently
             if (
               tokenError?.code === 'messaging/registration-token-not-registered' ||
               tokenError?.code === 'messaging/invalid-registration-token'
             ) {
-              await prisma.user.update({
-                where: { id: user.id },
-                data: { pushToken: null },
-              }).catch(() => {});
+              const user = interestedUsers.find(u => u.pushToken === token);
+              if (user) {
+                await prisma.user.update({
+                  where: { id: user.id },
+                  data: { pushToken: null },
+                }).catch(() => {});
+              }
             }
           }
         }
