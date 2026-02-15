@@ -128,6 +128,53 @@ function convertDataToStrings(data: Record<string, any>): Record<string, string>
 }
 
 /**
+ * بناء بيانات إضافية غنية للإشعار (شعارات الفرق، الاستحواذ، الوقت، المسابقة)
+ */
+async function buildEnrichedData(
+  match: Match,
+  homeTeam: { id: string; name: string; logoUrl?: string | null },
+  awayTeam: { id: string; name: string; logoUrl?: string | null },
+  extra: Record<string, string> = {}
+): Promise<Record<string, string>> {
+  // Fetch match stats for possession
+  let homePossession = '';
+  let awayPossession = '';
+  try {
+    const stats = await prisma.matchStats.findFirst({ where: { matchId: match.id } });
+    if (stats) {
+      homePossession = (stats.homePossession ?? '').toString();
+      awayPossession = (stats.awayPossession ?? '').toString();
+    }
+  } catch {}
+
+  // Fetch competition name
+  let competitionName = '';
+  try {
+    if (match.competitionId) {
+      const comp = await prisma.competition.findUnique({ where: { id: match.competitionId }, select: { name: true } });
+      competitionName = comp?.name || '';
+    }
+  } catch {}
+
+  return {
+    matchId: match.id,
+    homeTeamId: homeTeam.id,
+    awayTeamId: awayTeam.id,
+    homeTeamName: homeTeam.name,
+    awayTeamName: awayTeam.name,
+    homeTeamLogo: homeTeam.logoUrl || '',
+    awayTeamLogo: awayTeam.logoUrl || '',
+    homeScore: (match.homeScore ?? 0).toString(),
+    awayScore: (match.awayScore ?? 0).toString(),
+    minute: (match.currentMinute ?? '').toString(),
+    homePossession,
+    awayPossession,
+    competitionName,
+    ...extra,
+  };
+}
+
+/**
  * إرسال إشعار بداية المباراة
  */
 export async function sendMatchStartNotification(match: Match): Promise<void> {
@@ -149,6 +196,8 @@ export async function sendMatchStartNotification(match: Match): Promise<void> {
       return;
     }
 
+    const startEnrichedData = await buildEnrichedData(match, homeTeam, awayTeam, { type: 'match_start' });
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
       const template = notificationTemplates.matchStart(homeTeam.name, awayTeam.name)[lang];
@@ -160,12 +209,7 @@ export async function sendMatchStartNotification(match: Match): Promise<void> {
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'match_start',
-          matchId: match.id,
-          homeTeamId: homeTeam.id,
-          awayTeamId: awayTeam.id,
-        },
+        data: startEnrichedData,
       });
 
       await prisma.notification.create({
@@ -209,6 +253,8 @@ export async function sendPreMatchNotification(match: Match): Promise<void> {
       return;
     }
 
+    const preMatchEnrichedData = await buildEnrichedData(match, homeTeam, awayTeam, { type: 'pre_match' });
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
       const template = notificationTemplates.preMatch(homeTeam.name, awayTeam.name)[lang];
@@ -220,12 +266,7 @@ export async function sendPreMatchNotification(match: Match): Promise<void> {
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'pre_match',
-          matchId: match.id,
-          homeTeamId: homeTeam.id,
-          awayTeamId: awayTeam.id,
-        },
+        data: preMatchEnrichedData,
       });
 
       await prisma.notification.create({
@@ -264,16 +305,27 @@ export async function sendGoalNotification(
       return;
     }
 
-    const team = await prisma.team.findUnique({ where: { id: teamId } });
-    if (!team) {
+    const [goalTeam, homeTeamGoal, awayTeamGoal] = await Promise.all([
+      prisma.team.findUnique({ where: { id: teamId } }),
+      prisma.team.findUnique({ where: { id: match.homeTeamId } }),
+      prisma.team.findUnique({ where: { id: match.awayTeamId } }),
+    ]);
+    if (!goalTeam) {
       console.error('❌ Team not found');
       return;
     }
 
+    const enrichedData = await buildEnrichedData(
+      match,
+      homeTeamGoal || { id: match.homeTeamId, name: '' },
+      awayTeamGoal || { id: match.awayTeamId, name: '' },
+      { type: 'goal', teamId, playerName, minute: minute.toString() }
+    );
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
       const score = `${match.homeScore}-${match.awayScore}`;
-      const template = notificationTemplates.goal(team.name, playerName, minute, score)[lang];
+      const template = notificationTemplates.goal(goalTeam.name, playerName, minute, score)[lang];
 
       const pushToken = user.pushToken;
       if (!pushToken) continue;
@@ -282,13 +334,7 @@ export async function sendGoalNotification(
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'goal',
-          matchId: match.id,
-          teamId: teamId,
-          playerName,
-          minute: minute.toString(),
-        },
+        data: enrichedData,
       });
 
       await prisma.notification.create({
@@ -327,15 +373,26 @@ export async function sendRedCardNotification(
       return;
     }
 
-    const team = await prisma.team.findUnique({ where: { id: teamId } });
-    if (!team) {
+    const [rcTeam, homeTeamRC, awayTeamRC] = await Promise.all([
+      prisma.team.findUnique({ where: { id: teamId } }),
+      prisma.team.findUnique({ where: { id: match.homeTeamId } }),
+      prisma.team.findUnique({ where: { id: match.awayTeamId } }),
+    ]);
+    if (!rcTeam) {
       console.error('❌ Team not found');
       return;
     }
 
+    const enrichedData = await buildEnrichedData(
+      match,
+      homeTeamRC || { id: match.homeTeamId, name: '' },
+      awayTeamRC || { id: match.awayTeamId, name: '' },
+      { type: 'red_card', teamId, playerName, minute: minute.toString() }
+    );
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
-      const template = notificationTemplates.redCard(team.name, playerName, minute)[lang];
+      const template = notificationTemplates.redCard(rcTeam.name, playerName, minute)[lang];
 
       const pushToken = user.pushToken;
       if (!pushToken) continue;
@@ -344,13 +401,7 @@ export async function sendRedCardNotification(
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'red_card',
-          matchId: match.id,
-          teamId: teamId,
-          playerName,
-          minute: minute.toString(),
-        },
+        data: enrichedData,
       });
 
       await prisma.notification.create({
@@ -388,15 +439,26 @@ export async function sendPenaltyNotification(
       return;
     }
 
-    const team = await prisma.team.findUnique({ where: { id: teamId } });
-    if (!team) {
+    const [penTeam, homeTeamPen, awayTeamPen] = await Promise.all([
+      prisma.team.findUnique({ where: { id: teamId } }),
+      prisma.team.findUnique({ where: { id: match.homeTeamId } }),
+      prisma.team.findUnique({ where: { id: match.awayTeamId } }),
+    ]);
+    if (!penTeam) {
       console.error('❌ Team not found');
       return;
     }
 
+    const enrichedData = await buildEnrichedData(
+      match,
+      homeTeamPen || { id: match.homeTeamId, name: '' },
+      awayTeamPen || { id: match.awayTeamId, name: '' },
+      { type: 'penalty', teamId, minute: minute.toString() }
+    );
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
-      const template = notificationTemplates.penalty(team.name, minute)[lang];
+      const template = notificationTemplates.penalty(penTeam.name, minute)[lang];
 
       const pushToken = user.pushToken;
       if (!pushToken) continue;
@@ -405,12 +467,7 @@ export async function sendPenaltyNotification(
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'penalty',
-          matchId: match.id,
-          teamId: teamId,
-          minute: minute.toString(),
-        },
+        data: enrichedData,
       });
 
       await prisma.notification.create({
@@ -454,6 +511,8 @@ export async function sendHalftimeNotification(match: Match): Promise<void> {
       return;
     }
 
+    const halftimeEnrichedData = await buildEnrichedData(match, homeTeam, awayTeam, { type: 'end_half' });
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
       const score = `${match.homeScore}-${match.awayScore}`;
@@ -466,14 +525,7 @@ export async function sendHalftimeNotification(match: Match): Promise<void> {
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'end_half',
-          matchId: match.id,
-          homeTeamId: homeTeam.id,
-          awayTeamId: awayTeam.id,
-          homeScore: match.homeScore.toString(),
-          awayScore: match.awayScore.toString(),
-        },
+        data: halftimeEnrichedData,
       });
 
       await prisma.notification.create({
@@ -517,6 +569,8 @@ export async function sendMatchEndNotification(match: Match): Promise<void> {
       return;
     }
 
+    const matchEndEnrichedData = await buildEnrichedData(match, homeTeam, awayTeam, { type: 'match_end' });
+
     for (const user of interestedUsers) {
       const lang = getUserLanguage(user);
       const score = `${match.homeScore}-${match.awayScore}`;
@@ -529,14 +583,7 @@ export async function sendMatchEndNotification(match: Match): Promise<void> {
         token: pushToken,
         title: template.title,
         body: template.body,
-        data: {
-          type: 'match_end',
-          matchId: match.id,
-          homeTeamId: homeTeam.id,
-          awayTeamId: awayTeam.id,
-          homeScore: match.homeScore.toString(),
-          awayScore: match.awayScore.toString(),
-        },
+        data: matchEndEnrichedData,
       });
 
       await prisma.notification.create({

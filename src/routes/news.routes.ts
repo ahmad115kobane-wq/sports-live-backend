@@ -1,15 +1,59 @@
 import { Router, Request } from 'express';
-import { authenticate, isPublisher, isAdmin, AuthRequest } from '../middleware/auth.middleware';
+import { authenticate, isPublisher, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import admin from 'firebase-admin';
 import { uploadToImgBB } from '../services/imgbb.service';
 import { resolveImageUrl, toRelativeImagePath } from '../utils/imageUrl';
 
+const MAX_ARTICLE_IMAGES = 9;
+
+function normalizeArticleImageUrls(raw: unknown): string[] {
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    return raw.filter((item): item is string => typeof item === 'string' && item.length > 0);
+  }
+
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string' && item.length > 0);
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function collectUploadedImages(req: Request): any[] {
+  const files = (req as any).files;
+  if (!files) return [];
+  if (Array.isArray(files)) return files;
+  return [...(files.image || []), ...(files.images || [])];
+}
+
 // Resolve author avatar + article imageUrl for mobile consumption
 function resolveArticle(article: any) {
   if (!article) return article;
   const resolved = { ...article };
-  if (resolved.imageUrl) resolved.imageUrl = resolveImageUrl(resolved.imageUrl);
+  const imageUrls = normalizeArticleImageUrls(resolved.imageUrls)
+    .map(url => resolveImageUrl(url))
+    .filter((url): url is string => !!url);
+
+  const legacyImageUrl = resolveImageUrl(resolved.imageUrl);
+  const mergedImageUrls = [...imageUrls];
+
+  if (legacyImageUrl && !mergedImageUrls.includes(legacyImageUrl)) {
+    mergedImageUrls.unshift(legacyImageUrl);
+  }
+
+  const finalImageUrls = mergedImageUrls.slice(0, MAX_ARTICLE_IMAGES);
+  resolved.imageUrls = finalImageUrls;
+  resolved.imageUrl = finalImageUrls[0] || null;
+
   if (resolved.author && resolved.author.avatar) {
     resolved.author = { ...resolved.author, avatar: toRelativeImagePath(resolved.author.avatar) };
   }
@@ -33,6 +77,11 @@ const upload = multer({
     }
   },
 });
+
+const uploadArticleImages = upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'images', maxCount: MAX_ARTICLE_IMAGES },
+]);
 
 // Get all published news (public)
 router.get('/', async (req, res) => {
@@ -115,7 +164,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create article (publisher/admin only)
-router.post('/', authenticate, isPublisher, upload.single('image'), async (req: AuthRequest, res) => {
+router.post('/', authenticate, isPublisher, uploadArticleImages, async (req: AuthRequest, res) => {
   try {
     const { title, content } = req.body;
 
@@ -123,17 +172,22 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
       return res.status(400).json({ success: false, message: 'Title and content are required' });
     }
 
-    let imageUrl: string | undefined;
-    if ((req as any).file) {
-      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
-      if (uploaded) imageUrl = uploaded;
+    const uploadedFiles = collectUploadedImages(req).slice(0, MAX_ARTICLE_IMAGES);
+    const uploadedImageUrls: string[] = [];
+
+    for (const file of uploadedFiles) {
+      const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`);
+      if (uploaded) uploadedImageUrls.push(uploaded);
     }
+
+    const coverImageUrl = uploadedImageUrls[0];
 
     const article = await (prisma as any).newsArticle.create({
       data: {
         title,
         content,
-        imageUrl,
+        imageUrl: coverImageUrl,
+        imageUrls: uploadedImageUrls,
         authorId: req.user!.id,
       },
       include: {
@@ -144,16 +198,17 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
     });
 
     // Emit socket event for real-time feed
+    const resolvedArticle = resolveArticle(article);
     const io = req.app.get('io');
-    io.emit('news:new', { article });
+    io.emit('news:new', { article: resolvedArticle });
 
     // Respond immediately so the client doesn't timeout
-    res.status(201).json({ success: true, message: 'Article published', data: resolveArticle(article) });
+    res.status(201).json({ success: true, message: 'Article published', data: resolvedArticle });
 
     // Send push notification to ALL users (fire-and-forget, after response)
     // Use the raw R2 public URL directly — FCM fetches from Google servers,
     // so it needs a direct public URL, not our backend proxy
-    const fullImageUrl = imageUrl || undefined;
+    const fullImageUrl = coverImageUrl || undefined;
 
     (async () => {
       try {
@@ -230,7 +285,7 @@ router.post('/', authenticate, isPublisher, upload.single('image'), async (req: 
 });
 
 // Update article (publisher who owns it, or admin)
-router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req: AuthRequest, res) => {
+router.put('/:id', authenticate, isPublisher, uploadArticleImages, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const { title, content, isPublished } = req.body;
@@ -249,9 +304,18 @@ router.put('/:id', authenticate, isPublisher, upload.single('image'), async (req
     if (title) updateData.title = title;
     if (content) updateData.content = content;
     if (isPublished !== undefined) updateData.isPublished = isPublished === 'true' || isPublished === true;
-    if ((req as any).file) {
-      const uploaded = await uploadToImgBB((req as any).file.buffer, `news-${Date.now()}`);
-      if (uploaded) updateData.imageUrl = uploaded;
+    const uploadedFiles = collectUploadedImages(req).slice(0, MAX_ARTICLE_IMAGES);
+    if (uploadedFiles.length > 0) {
+      const uploadedImageUrls: string[] = [];
+      for (const file of uploadedFiles) {
+        const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`);
+        if (uploaded) uploadedImageUrls.push(uploaded);
+      }
+
+      if (uploadedImageUrls.length > 0) {
+        updateData.imageUrls = uploadedImageUrls;
+        updateData.imageUrl = uploadedImageUrls[0];
+      }
     }
 
     const updated = await (prisma as any).newsArticle.update({

@@ -539,6 +539,7 @@ model NewsArticle {
   title       String
   content     String
   imageUrl    String?  @map("image_url")
+  imageUrls   Json?    @map("image_urls")
   authorId    String   @map("author_id")
   isPublished Boolean  @default(true) @map("is_published")
   createdAt   DateTime @default(now()) @map("created_at")
