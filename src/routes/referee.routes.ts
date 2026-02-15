@@ -87,7 +87,7 @@ router.post('/', authenticate, isAdmin, imageUpload.single('image'), async (req:
 
     let imageUrl: string | undefined;
     if (req.file) {
-      imageUrl = await uploadToImgBB(req.file.buffer, `referee-${Date.now()}`);
+      imageUrl = (await uploadToImgBB(req.file.buffer, `referee-${Date.now()}`)) || undefined;
     }
 
     const referee = await prisma.referee.create({
