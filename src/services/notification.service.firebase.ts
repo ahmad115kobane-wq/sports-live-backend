@@ -140,7 +140,7 @@ async function buildEnrichedData(
   let homePossession = '';
   let awayPossession = '';
   try {
-    const stats = await prisma.matchStats.findFirst({ where: { matchId: match.id } });
+    const stats = await prisma.matchStats.findUnique({ where: { matchId: match.id } });
     if (stats) {
       homePossession = (stats.homePossession ?? '').toString();
       awayPossession = (stats.awayPossession ?? '').toString();
@@ -650,6 +650,74 @@ export async function sendPreMatchNotifications(): Promise<void> {
   }
 }
 
+/**
+ * إرسال تحديثات دورية للمباريات المباشرة (FCM data-only) لتحديث الإشعارات الثابتة
+ * يتم استدعاؤها كل دقيقتين من الـ scheduler
+ */
+export async function sendLiveMatchUpdates(): Promise<void> {
+  try {
+    // Get all live matches
+    const liveMatches = await prisma.match.findMany({
+      where: {
+        status: { in: ['live', 'halftime', 'extra_time', 'extra_time_halftime', 'penalties'] },
+      },
+      include: {
+        homeTeam: true,
+        awayTeam: true,
+        competition: true,
+      },
+    });
+
+    if (liveMatches.length === 0) return;
+
+    console.log(`📡 Sending live updates for ${liveMatches.length} matches`);
+
+    for (const match of liveMatches) {
+      try {
+        const interestedUsers = await getInterestedUsers(match);
+        if (interestedUsers.length === 0) continue;
+
+        // Build enriched data for live update
+        const enrichedData = await buildEnrichedData(
+          match,
+          match.homeTeam,
+          match.awayTeam,
+          { type: 'live_update', status: match.status }
+        );
+
+        // Send data-only FCM (no notification payload = silent update)
+        for (const user of interestedUsers) {
+          if (!user.pushToken) continue;
+
+          try {
+            await sendFCMNotification({
+              token: user.pushToken,
+              title: `${match.homeTeam.name} ${match.homeScore}-${match.awayScore} ${match.awayTeam.name}`,
+              body: `⏱ ${match.currentMinute || ''}'`,
+              data: enrichedData,
+            });
+          } catch (tokenError: any) {
+            // Remove invalid tokens silently
+            if (
+              tokenError?.code === 'messaging/registration-token-not-registered' ||
+              tokenError?.code === 'messaging/invalid-registration-token'
+            ) {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { pushToken: null },
+              }).catch(() => {});
+            }
+          }
+        }
+      } catch (matchError) {
+        console.error(`❌ Error sending live update for match ${match.id}:`, matchError);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error in sendLiveMatchUpdates:', error);
+  }
+}
+
 export default {
   sendPushNotification,
   sendMatchStartNotification,
@@ -660,6 +728,7 @@ export default {
   sendHalftimeNotification,
   sendMatchEndNotification,
   sendPreMatchNotifications,
+  sendLiveMatchUpdates,
 };
 
 
