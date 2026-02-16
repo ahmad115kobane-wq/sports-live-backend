@@ -153,6 +153,22 @@ model Referee {
   @@map("referees")
 }
 
+// Supervisors table
+model Supervisor {
+  id          String   @id @default(uuid())
+  name        String
+  imageUrl    String?  @map("image_url")
+  nationality String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  matches Match[] @relation("MatchSupervisor")
+
+  @@map("supervisors")
+}
+
 // Matches table
 model Match {
   id            String   @id @default(uuid())
@@ -176,6 +192,7 @@ model Match {
   assistantReferee1Id   String? @map("assistant_referee_1_id")
   assistantReferee2Id   String? @map("assistant_referee_2_id")
   fourthRefereeId       String? @map("fourth_referee_id")
+  supervisorId          String? @map("supervisor_id")
   attendance    Int?
   weather       String?
   matchday      Int?     // round/matchday number
@@ -191,6 +208,7 @@ model Match {
   assistantReferee1Ref Referee? @relation("Assistant1Referee", fields: [assistantReferee1Id], references: [id])
   assistantReferee2Ref Referee? @relation("Assistant2Referee", fields: [assistantReferee2Id], references: [id])
   fourthRefereeRef    Referee? @relation("FourthReferee", fields: [fourthRefereeId], references: [id])
+  supervisorRef       Supervisor? @relation("MatchSupervisor", fields: [supervisorId], references: [id])
   operators   MatchOperator[]
   events      Event[]
   favorites   Favorite[]
