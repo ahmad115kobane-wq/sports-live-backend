@@ -13,6 +13,12 @@ import { registerForPushNotifications, handleNotificationTap } from '@/services/
 import { requestNotificationPermission, setupForegroundNotificationHandler } from '@/services/firebase';
 import AnimatedSplash from '@/components/AnimatedSplash';
 import VideoAdOverlay from '@/components/VideoAdOverlay';
+import LiveMatchBanner from '@/components/LiveMatchBanner';
+import { LiveMatchBannerProvider, useLiveMatchBanner } from '@/contexts/LiveMatchBannerContext';
+import { liveBannerBridge } from '@/utils/liveBannerBridge';
+import { matchUpdateEmitter } from '@/utils/matchEvents';
+import { showOrUpdateLiveNotification, cancelLiveNotification, hasActiveNotification } from '@/services/liveNotificationManager';
+import notifee, { EventType } from '@notifee/react-native';
 import '@/i18n';
 
 // Enable native screens for maximum performance
@@ -23,6 +29,7 @@ function RootLayoutContent() {
   const colors = Colors[colorScheme];
   const { loadStoredAuth, isLoading, isAuthenticated, hasSeenWelcome } = useAuthStore();
   const { t, isRTL } = useRTL();
+  const { showBanner } = useLiveMatchBanner();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
   const notificationListener = useRef<any>(null);
@@ -31,6 +38,59 @@ function RootLayoutContent() {
 
   useEffect(() => {
     loadStoredAuth();
+  }, []);
+
+  // Connect live match banner bridge to context
+  useEffect(() => {
+    liveBannerBridge.register(showBanner);
+    return () => liveBannerBridge.unregister();
+  }, [showBanner]);
+
+  // Handle notifee notification taps (for persistent live match notifications)
+  useEffect(() => {
+    return notifee.onForegroundEvent(({ type, detail }) => {
+      if (type === EventType.PRESS && detail.notification?.data?.matchId) {
+        router.push(`/match/${detail.notification.data.matchId}` as any);
+      }
+    });
+  }, []);
+
+  // Subscribe to socket-based match updates to keep persistent notifications live
+  useEffect(() => {
+    const unsubscribe = matchUpdateEmitter.subscribe((updated) => {
+      if (!hasActiveNotification(updated.id)) return;
+
+      // Determine event type from socket update
+      let eventType = 'live_update';
+      if (updated.status === 'finished') eventType = 'match_end';
+      else if (updated.status === 'halftime') eventType = 'end_half';
+
+      if (updated.homeTeam && updated.awayTeam) {
+        const notifData = {
+          matchId: updated.id,
+          type: eventType,
+          homeTeamName: updated.homeTeam.name,
+          awayTeamName: updated.awayTeam.name,
+          homeTeamLogo: updated.homeTeam.logoUrl,
+          awayTeamLogo: updated.awayTeam.logoUrl,
+          homeScore: (updated.homeScore ?? 0).toString(),
+          awayScore: (updated.awayScore ?? 0).toString(),
+          minute: updated.currentMinute?.toString(),
+          status: updated.status,
+          liveStartedAt: updated.liveStartedAt,
+          secondHalfStartedAt: updated.secondHalfStartedAt,
+        };
+
+        if (updated.status === 'finished') {
+          cancelLiveNotification(updated.id);
+        } else {
+          showOrUpdateLiveNotification(notifData);
+        }
+      } else if (updated.status === 'finished') {
+        cancelLiveNotification(updated.id);
+      }
+    });
+    return unsubscribe;
   }, []);
 
   // Request notification permission immediately on app start (regardless of auth)
@@ -295,6 +355,7 @@ function RootLayoutContent() {
           }}
         />
       </Stack>
+      <LiveMatchBanner />
     </>
   );
 }
@@ -304,7 +365,9 @@ export default function RootLayout() {
     <ThemeProvider>
       <RTLProvider>
         <AlertProvider>
-          <RootLayoutContent />
+          <LiveMatchBannerProvider>
+            <RootLayoutContent />
+          </LiveMatchBannerProvider>
         </AlertProvider>
       </RTLProvider>
     </ThemeProvider>

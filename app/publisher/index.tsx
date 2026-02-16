@@ -23,6 +23,8 @@ import { useAlert } from '@/contexts/AlertContext';
 import { newsApi } from '@/services/api';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import axios from 'axios';
 import { SOCKET_URL } from '@/constants/config';
 
 interface NewsArticle {
@@ -30,6 +32,7 @@ interface NewsArticle {
   title: string;
   content: string;
   imageUrl?: string;
+  imageUrls?: string[];
   isPublished: boolean;
   createdAt: string;
   author: {
@@ -38,6 +41,9 @@ interface NewsArticle {
     avatar?: string;
   };
 }
+
+const MAX_NEWS_IMAGES = 9;
+const MAX_UPLOAD_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB (matches backend multer limit)
 
 export default function PublisherScreen() {
   const colorScheme = useColorScheme();
@@ -54,13 +60,13 @@ export default function PublisherScreen() {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
   // Edit article state
   const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
-  const [editImage, setEditImage] = useState<string | null>(null);
+  const [editImages, setEditImages] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -80,16 +86,75 @@ export default function PublisherScreen() {
     }
   };
 
-  const pickImage = async () => {
+  const pickImages = async (mode: 'create' | 'edit') => {
+    const currentImages = mode === 'create' ? selectedImages : editImages;
+
+    if (currentImages.length >= MAX_NEWS_IMAGES) {
+      alert(
+        t('common.error'),
+        t('news.imagesLimitReached', { count: MAX_NEWS_IMAGES })
+      );
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.5,
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_NEWS_IMAGES - currentImages.length,
+      allowsEditing: false,
+      quality: 0.7,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      setSelectedImage(result.assets[0].uri);
+    if (!result.canceled && result.assets.length > 0) {
+      const picked: string[] = [];
+      let rejectedCount = 0;
+
+      for (const asset of result.assets) {
+        const assetUri = asset.uri;
+        let size = asset.fileSize;
+
+        if (size == null) {
+          try {
+            const info = await FileSystem.getInfoAsync(assetUri);
+            size = info.exists ? (info as any).size : undefined;
+          } catch {
+            size = undefined;
+          }
+        }
+
+        if (typeof size === 'number' && size > MAX_UPLOAD_IMAGE_SIZE_BYTES) {
+          rejectedCount += 1;
+          continue;
+        }
+
+        picked.push(assetUri);
+      }
+
+      if (rejectedCount > 0) {
+        alert(
+          t('common.error'),
+          `بعض الصور أكبر من 5MB وتم تجاهلها (${rejectedCount})`
+        );
+      }
+
+      if (picked.length === 0) return;
+
+      const merged = [...currentImages, ...picked].slice(0, MAX_NEWS_IMAGES);
+      if (mode === 'create') {
+        setSelectedImages(merged);
+      } else {
+        setEditImages(merged);
+      }
     }
+  };
+
+  const removePickedImage = (mode: 'create' | 'edit', index: number) => {
+    if (mode === 'create') {
+      setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+
+    setEditImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handlePublish = async () => {
@@ -107,12 +172,12 @@ export default function PublisherScreen() {
       formData.append('title', title.trim());
       formData.append('content', content.trim());
 
-      if (selectedImage) {
-        const filename = selectedImage.split('/').pop() || 'image.jpg';
+      for (const imageUri of selectedImages.slice(0, MAX_NEWS_IMAGES)) {
+        const filename = imageUri.split('/').pop() || 'image.jpg';
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
-        formData.append('image', {
-          uri: selectedImage,
+        formData.append('images', {
+          uri: imageUri,
           name: filename,
           type,
         } as any);
@@ -123,12 +188,16 @@ export default function PublisherScreen() {
       alert(t('common.success'), t('news.published'));
       setTitle('');
       setContent('');
-      setSelectedImage(null);
+      setSelectedImages([]);
       setShowForm(false);
       loadMyArticles();
     } catch (error) {
       console.error('Publish error:', error);
-      alert(t('common.error'), t('news.publishFailed'));
+      if (axios.isAxiosError(error) && !error.response) {
+        alert(t('common.error'), 'فشل الاتصال بالخادم. تحقق من الإنترنت أو قلّل عدد/حجم الصور.');
+      } else {
+        alert(t('common.error'), t('news.publishFailed'));
+      }
     } finally {
       setPublishing(false);
     }
@@ -138,19 +207,8 @@ export default function PublisherScreen() {
     setEditingArticle(article);
     setEditTitle(article.title);
     setEditContent(article.content);
-    setEditImage(null);
+    setEditImages([]);
     setShowForm(false);
-  };
-
-  const pickEditImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.5,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setEditImage(result.assets[0].uri);
-    }
   };
 
   const handleUpdate = async () => {
@@ -163,12 +221,14 @@ export default function PublisherScreen() {
       const formData = new FormData();
       formData.append('title', editTitle.trim());
       formData.append('content', editContent.trim());
-      if (editImage) {
-        const filename = editImage.split('/').pop() || 'image.jpg';
+
+      for (const imageUri of editImages.slice(0, MAX_NEWS_IMAGES)) {
+        const filename = imageUri.split('/').pop() || 'image.jpg';
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
-        formData.append('image', { uri: editImage, name: filename, type } as any);
+        formData.append('images', { uri: imageUri, name: filename, type } as any);
       }
+
       await newsApi.update(editingArticle.id, formData);
       Vibration.vibrate(20);
       alert(t('common.success'), t('news.updated') || 'تم تحديث المقال');
@@ -176,7 +236,11 @@ export default function PublisherScreen() {
       loadMyArticles();
     } catch (error) {
       console.error('Update error:', error);
-      alert(t('common.error'), t('news.updateFailed') || 'فشل تحديث المقال');
+      if (axios.isAxiosError(error) && !error.response) {
+        alert(t('common.error'), 'فشل الاتصال بالخادم. تحقق من الإنترنت أو قلّل عدد/حجم الصور.');
+      } else {
+        alert(t('common.error'), t('news.updateFailed') || 'فشل تحديث المقال');
+      }
     } finally {
       setUpdating(false);
     }
@@ -209,6 +273,19 @@ export default function PublisherScreen() {
     if (!imageUrl) return null;
     if (imageUrl.startsWith('http')) return imageUrl;
     return `${SOCKET_URL}${imageUrl}`;
+  };
+
+  const getArticleImages = (article: NewsArticle): string[] => {
+    const normalized = (Array.isArray(article.imageUrls) ? article.imageUrls : [])
+      .map((img) => getImageUrl(img))
+      .filter((img): img is string => !!img);
+
+    const legacy = getImageUrl(article.imageUrl);
+    if (legacy && !normalized.includes(legacy)) {
+      normalized.unshift(legacy);
+    }
+
+    return normalized.slice(0, MAX_NEWS_IMAGES);
   };
 
   const formatDate = (dateString: string) => {
@@ -303,24 +380,48 @@ export default function PublisherScreen() {
             {/* Image Picker */}
             <TouchableOpacity
               style={[styles.imagePickerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={pickImage}
+              onPress={() => pickImages('create')}
             >
-              {selectedImage ? (
-                <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+              {selectedImages.length > 0 ? (
+                <View style={styles.selectedImagesWrap}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.selectedImagesRow}
+                  >
+                    {selectedImages.map((uri, index) => (
+                      <View key={`${uri}-${index}`} style={styles.selectedImageItem}>
+                        <Image source={{ uri }} style={styles.selectedImageThumb} />
+                        <TouchableOpacity
+                          style={styles.selectedImageRemove}
+                          onPress={() => removePickedImage('create', index)}
+                        >
+                          <Ionicons name="close" size={12} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                  <Text style={[styles.imageCountText, { color: colors.textSecondary }]}> 
+                    {selectedImages.length}/{MAX_NEWS_IMAGES}
+                  </Text>
+                </View>
               ) : (
                 <View style={styles.imagePickerContent}>
                   <Ionicons name="image-outline" size={32} color={colors.textTertiary} />
-                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}> 
                     {t('news.addImage')}
+                  </Text>
+                  <Text style={[styles.imageHintText, { color: colors.textTertiary }]}> 
+                    {t('news.maxImagesHint', { count: MAX_NEWS_IMAGES })}
                   </Text>
                 </View>
               )}
             </TouchableOpacity>
 
-            {selectedImage && (
+            {selectedImages.length > 0 && (
               <TouchableOpacity
                 style={styles.removeImageBtn}
-                onPress={() => setSelectedImage(null)}
+                onPress={() => setSelectedImages([])}
               >
                 <Ionicons name="trash-outline" size={16} color="#EF4444" />
                 <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '600' }}>
@@ -382,17 +483,56 @@ export default function PublisherScreen() {
 
             <TouchableOpacity
               style={[styles.imagePickerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={pickEditImage}
+              onPress={() => pickImages('edit')}
             >
-              {editImage ? (
-                <Image source={{ uri: editImage }} style={styles.previewImage} />
-              ) : editingArticle.imageUrl ? (
-                <Image source={{ uri: getImageUrl(editingArticle.imageUrl)! }} style={styles.previewImage} />
+              {editImages.length > 0 ? (
+                <View style={styles.selectedImagesWrap}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.selectedImagesRow}
+                  >
+                    {editImages.map((uri, index) => (
+                      <View key={`${uri}-${index}`} style={styles.selectedImageItem}>
+                        <Image source={{ uri }} style={styles.selectedImageThumb} />
+                        <TouchableOpacity
+                          style={styles.selectedImageRemove}
+                          onPress={() => removePickedImage('edit', index)}
+                        >
+                          <Ionicons name="close" size={12} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                  <Text style={[styles.imageCountText, { color: colors.textSecondary }]}> 
+                    {editImages.length}/{MAX_NEWS_IMAGES}
+                  </Text>
+                </View>
+              ) : getArticleImages(editingArticle).length > 0 ? (
+                <View style={styles.selectedImagesWrap}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.selectedImagesRow}
+                  >
+                    {getArticleImages(editingArticle).map((uri, index) => (
+                      <View key={`${uri}-${index}`} style={styles.selectedImageItem}>
+                        <Image source={{ uri }} style={styles.selectedImageThumb} />
+                      </View>
+                    ))}
+                  </ScrollView>
+                  <Text style={[styles.imageCountText, { color: colors.textSecondary }]}> 
+                    {t('news.addMoreImages')}
+                  </Text>
+                </View>
               ) : (
                 <View style={styles.imagePickerContent}>
                   <Ionicons name="image-outline" size={32} color={colors.textTertiary} />
-                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}> 
                     {t('news.changeImage') || 'تغيير الصورة'}
+                  </Text>
+                  <Text style={[styles.imageHintText, { color: colors.textTertiary }]}> 
+                    {t('news.maxImagesHint', { count: MAX_NEWS_IMAGES })}
                   </Text>
                 </View>
               )}
@@ -422,14 +562,23 @@ export default function PublisherScreen() {
           </View>
         ) : articles.length > 0 ? (
           articles.map((article) => {
-            const imgUrl = getImageUrl(article.imageUrl);
+            const articleImages = getArticleImages(article);
+            const imgUrl = articleImages[0];
             return (
               <View
                 key={article.id}
                 style={[styles.articleCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
               >
                 {imgUrl && (
-                  <Image source={{ uri: imgUrl }} style={styles.articleImage} resizeMode="cover" />
+                  <View>
+                    <Image source={{ uri: imgUrl }} style={styles.articleImage} resizeMode="cover" />
+                    {articleImages.length > 1 && (
+                      <View style={styles.articleImageCountBadge}>
+                        <Ionicons name="images-outline" size={12} color="#fff" />
+                        <Text style={styles.articleImageCountText}>{articleImages.length}</Text>
+                      </View>
+                    )}
+                  </View>
                 )}
                 <View style={styles.articleBody}>
                   <Text style={[styles.articleTitle, { color: colors.text }]}>{article.title}</Text>
@@ -570,6 +719,43 @@ const styles = StyleSheet.create({
   imagePickerText: {
     ...TYPOGRAPHY.bodyMedium,
   },
+  imageHintText: {
+    ...TYPOGRAPHY.labelSmall,
+    marginTop: 2,
+  },
+  selectedImagesWrap: {
+    padding: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  selectedImagesRow: {
+    gap: SPACING.sm,
+  },
+  selectedImageItem: {
+    width: 92,
+    height: 92,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  selectedImageThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  selectedImageRemove: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageCountText: {
+    ...TYPOGRAPHY.labelSmall,
+    fontFamily: FONTS.medium,
+  },
   previewImage: {
     width: '100%',
     height: 180,
@@ -612,6 +798,24 @@ const styles = StyleSheet.create({
   articleImage: {
     width: '100%',
     height: 180,
+  },
+  articleImageCountBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 5,
+  },
+  articleImageCountText: {
+    color: '#fff',
+    fontSize: 11,
+    fontFamily: FONTS.bold,
+    fontWeight: '700',
   },
   articleBody: {
     padding: SPACING.lg,

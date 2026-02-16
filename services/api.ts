@@ -104,12 +104,18 @@ export const teamApi = {
     headers: { 'Content-Type': 'multipart/form-data' },
   } : undefined),
   delete: (id: string) => api.delete(`/teams/${id}`),
-  addPlayer: (teamId: string, data: {
+  addPlayer: (teamId: string, data: FormData | {
     name: string;
     shirtNumber: number;
     position?: string;
     nationality?: string;
-  }) => api.post(`/teams/${teamId}/players`, data),
+  }) => api.post(`/teams/${teamId}/players`, data, data instanceof FormData ? {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  } : undefined),
+  updatePlayer: (teamId: string, playerId: string, data: FormData | Record<string, any>) =>
+    api.put(`/teams/${teamId}/players/${playerId}`, data, data instanceof FormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    } : undefined),
   addToCompetition: (teamId: string, competitionId: string) => 
     api.post(`/teams/${teamId}/competitions/${competitionId}`, { season: '2025-2026' }),
   removeFromCompetition: (teamId: string, competitionId: string) => 
@@ -186,10 +192,10 @@ export const newsApi = {
   getAll: (page = 1, limit = 20) => api.get(`/news?page=${page}&limit=${limit}`),
   getById: (id: string) => api.get(`/news/${id}`),
   create: (formData: FormData) => api.post('/news', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 180000,
   }),
   update: (id: string, formData: FormData) => api.put(`/news/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 180000,
   }),
   delete: (id: string) => api.delete(`/news/${id}`),
   getMyArticles: () => api.get('/news/my/articles'),
@@ -256,6 +262,19 @@ export const orderApi = {
   adminGetOrderCounts: () => api.get('/orders/admin/counts'),
 };
 
+export const refereeApi = {
+  getAll: (params?: { search?: string; active?: string }) =>
+    api.get('/referees', { params }),
+  getById: (id: string) => api.get(`/referees/${id}`),
+  create: (formData: FormData) => api.post('/referees', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update: (id: string, formData: FormData) => api.put(`/referees/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  delete: (id: string) => api.delete(`/referees/${id}`),
+};
+
 export const competitionApi = {
   getAll: (params?: { type?: string; active?: boolean }) =>
     api.get('/competitions', { params }),
@@ -269,6 +288,7 @@ export const competitionApi = {
   getById: (id: string) => api.get(`/competitions/${id}`),
   getMatches: (id: string, params?: { status?: string; date?: string }) =>
     api.get(`/competitions/${id}/matches`, { params }),
+  getStandings: (id: string) => api.get(`/competitions/${id}/standings`),
   create: (data: {
     name: string;
     shortName: string;

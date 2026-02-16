@@ -3,6 +3,8 @@ import * as Notifications from 'expo-notifications';
 import notifee, { AndroidStyle, AndroidImportance } from '@notifee/react-native';
 import { Platform, PermissionsAndroid } from 'react-native';
 import api from './api';
+import { liveBannerBridge } from '@/utils/liveBannerBridge';
+import { handleLiveMatchFCMData } from './liveNotificationManager';
 
 // طلب إذن الإشعارات
 export async function requestNotificationPermission() {
@@ -61,8 +63,12 @@ export async function registerFCMToken(userId: string) {
 }
 
 // معالجة الإشعارات في الخلفية (Background)
-// FCM مع notification payload يعرض الإشعار تلقائياً مع الصورة — لا حاجة لإشعار محلي
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+  // Update persistent live match notification in background
+  const data = remoteMessage.data || {};
+  if (data.matchId && data.homeTeamName && data.awayTeamName) {
+    await handleLiveMatchFCMData(data);
+  }
 });
 
 // معالجة الإشعارات عندما يكون التطبيق مفتوحاً (Foreground)
@@ -75,11 +81,44 @@ export function setupForegroundNotificationHandler() {
       || (remoteMessage.notification as any)?.imageUrl
       || (remoteMessage.data?.imageUrl as string | undefined);
 
+    // Check if this is a match-related notification
+    const data = remoteMessage.data || {};
+    const isMatchNotification = !!(data.matchId && data.homeTeamName && data.awayTeamName);
+    const isLiveUpdate = data.type === 'live_update';
+
+    if (isMatchNotification) {
+      // Update/create persistent system notification (stays in notification tray)
+      await handleLiveMatchFCMData(data);
+
+      // Show in-app banner for event notifications (goals, start, etc.) — NOT for silent live updates
+      if (!isLiveUpdate) {
+        liveBannerBridge.show({
+          matchId: data.matchId as string,
+          type: (data.type as string) || 'match_start',
+          title,
+          body,
+          homeTeamName: data.homeTeamName as string,
+          awayTeamName: data.awayTeamName as string,
+          homeTeamLogo: data.homeTeamLogo as string | undefined,
+          awayTeamLogo: data.awayTeamLogo as string | undefined,
+          homeScore: data.homeScore as string | undefined,
+          awayScore: data.awayScore as string | undefined,
+          minute: data.minute as string | undefined,
+          homePossession: data.homePossession as string | undefined,
+          awayPossession: data.awayPossession as string | undefined,
+          competitionName: data.competitionName as string | undefined,
+        });
+      }
+
+      // The persistent notification already handles the display — skip creating a normal notification
+      return;
+    }
+
+    // Non-match notifications: show normal one-time notification
     if (Platform.OS === 'android') {
-      // Use notifee for rich Android notifications with image support
       const channelId = await notifee.createChannel({
-        id: 'match-notifications',
-        name: 'Match Notifications',
+        id: 'general-notifications',
+        name: 'General Notifications',
         importance: AndroidImportance.HIGH,
         sound: 'default',
       });
@@ -105,7 +144,6 @@ export function setupForegroundNotificationHandler() {
         android: androidConfig,
       });
     } else {
-      // iOS: use expo-notifications (FCM handles image via mutable-content)
       await Notifications.scheduleNotificationAsync({
         content: {
           title,

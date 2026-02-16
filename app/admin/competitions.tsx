@@ -18,6 +18,7 @@ import { useRTL } from '@/contexts/RTLContext';
 import { competitionApi, teamApi } from '@/services/api';
 import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
+import TeamLogo from '@/components/ui/TeamLogo';
 
 interface Competition {
   id: string;
@@ -54,9 +55,12 @@ export default function CompetitionsManagementScreen() {
   // Modal states
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [showTeamsModal, setShowTeamsModal] = useState(false);
+  const [showStandingsModal, setShowStandingsModal] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [standings, setStandings] = useState<any[]>([]);
+  const [standingsLoading, setStandingsLoading] = useState(false);
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -235,6 +239,21 @@ export default function CompetitionsManagementScreen() {
     }
   };
 
+  const openStandingsModal = async (competition: Competition) => {
+    setSelectedCompetition(competition);
+    setShowStandingsModal(true);
+    setStandingsLoading(true);
+    try {
+      const response = await competitionApi.getStandings(competition.id);
+      setStandings(response.data?.data || []);
+    } catch (error) {
+      console.error('Error loading standings:', error);
+      setStandings([]);
+    } finally {
+      setStandingsLoading(false);
+    }
+  };
+
   const toggleTeam = (teamId: string) => {
     setSelectedTeamIds(prev => 
       prev.includes(teamId) 
@@ -274,21 +293,27 @@ export default function CompetitionsManagementScreen() {
         </View>
       </View>
 
-      {/* Manage Teams Button */}
-      <TouchableOpacity
-        style={[styles.manageTeamsButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-        onPress={() => openManageTeamsModal(competition)}
-      >
-        <Ionicons name="shield" size={18} color={colors.accent} />
-        <Text style={[styles.manageTeamsText, { color: colors.text }]}>
-          إدارة الأندية المشاركة
-        </Text>
-        <View style={[styles.teamCount, { backgroundColor: colors.accent }]}>
-          <Text style={styles.teamCountText}>
-            {competition.teams?.length || 0}
-          </Text>
-        </View>
-      </TouchableOpacity>
+      {/* Action Buttons */}
+      <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.cardActionBtn, { backgroundColor: colors.background }]}
+          onPress={() => openManageTeamsModal(competition)}
+        >
+          <Ionicons name="shield" size={16} color={colors.accent} />
+          <Text style={[styles.cardActionText, { color: colors.text }]}>الأندية</Text>
+          <View style={[styles.teamCount, { backgroundColor: colors.accent }]}>
+            <Text style={styles.teamCountText}>{competition.teams?.length || 0}</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.cardActionBtn, { backgroundColor: colors.background }]}
+          onPress={() => openStandingsModal(competition)}
+        >
+          <Ionicons name="podium" size={16} color={colors.accent} />
+          <Text style={[styles.cardActionText, { color: colors.text }]}>الترتيب</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -532,6 +557,80 @@ export default function CompetitionsManagementScreen() {
             </TouchableOpacity>
       </AppModal>
 
+      {/* Standings Modal */}
+      <AppModal
+        visible={showStandingsModal}
+        onClose={() => setShowStandingsModal(false)}
+        title="ترتيب البطولة"
+        subtitle={selectedCompetition?.name}
+        icon="podium"
+        maxHeight="85%"
+      >
+        {standingsLoading ? (
+          <View style={{ padding: SPACING.xxl, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.accent} />
+          </View>
+        ) : standings.length === 0 ? (
+          <View style={{ padding: SPACING.xxl, alignItems: 'center' }}>
+            <Ionicons name="podium-outline" size={48} color={colors.textTertiary} />
+            <Text style={{ color: colors.textSecondary, marginTop: SPACING.md, fontFamily: FONTS.regular, fontSize: 14, textAlign: 'center' }}>
+              لا توجد بيانات ترتيب{"\n"}يتم حساب الترتيب من المباريات المنتهية
+            </Text>
+          </View>
+        ) : (
+          <ScrollView style={{ padding: SPACING.sm }} showsVerticalScrollIndicator={false}>
+            {/* Table Header */}
+            <View style={[styles.standingsRow, styles.standingsHeader, { backgroundColor: colors.accent + '10' }]}>
+              <Text style={[styles.standingsRank, styles.standingsHeaderText, { color: colors.textSecondary }]}>#</Text>
+              <Text style={[styles.standingsTeam, styles.standingsHeaderText, { color: colors.textSecondary }]}>الفريق</Text>
+              <Text style={[styles.standingsCell, styles.standingsHeaderText, { color: colors.textSecondary }]}>لعب</Text>
+              <Text style={[styles.standingsCell, styles.standingsHeaderText, { color: colors.textSecondary }]}>ف</Text>
+              <Text style={[styles.standingsCell, styles.standingsHeaderText, { color: colors.textSecondary }]}>ت</Text>
+              <Text style={[styles.standingsCell, styles.standingsHeaderText, { color: colors.textSecondary }]}>خ</Text>
+              <Text style={[styles.standingsCell, styles.standingsHeaderText, { color: colors.textSecondary }]}>+/-</Text>
+              <Text style={[styles.standingsPts, styles.standingsHeaderText, { color: colors.textSecondary }]}>نقاط</Text>
+            </View>
+            {/* Table Body */}
+            {standings.map((item: any, index: number) => (
+              <View
+                key={item.teamId}
+                style={[
+                  styles.standingsRow,
+                  { borderBottomColor: colors.border, borderBottomWidth: index < standings.length - 1 ? 0.5 : 0 },
+                  index < 3 && { backgroundColor: (index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32') + '08' },
+                ]}
+              >
+                <Text style={[styles.standingsRank, {
+                  color: index < 3 ? colors.accent : colors.text,
+                  fontWeight: index < 3 ? '800' : '600',
+                }]}>{item.rank}</Text>
+                <View style={[styles.standingsTeam, { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs }]}>
+                  <TeamLogo team={item.team} size="small" />
+                  <Text style={[styles.standingsTeamName, { color: colors.text }]} numberOfLines={1}>{item.team?.shortName || item.team?.name}</Text>
+                </View>
+                <Text style={[styles.standingsCell, { color: colors.text }]}>{item.played}</Text>
+                <Text style={[styles.standingsCell, { color: '#10B981' }]}>{item.won}</Text>
+                <Text style={[styles.standingsCell, { color: colors.textSecondary }]}>{item.drawn}</Text>
+                <Text style={[styles.standingsCell, { color: '#DC2626' }]}>{item.lost}</Text>
+                <Text style={[styles.standingsCell, { color: item.goalDifference > 0 ? '#10B981' : item.goalDifference < 0 ? '#DC2626' : colors.textSecondary }]}>
+                  {item.goalDifference > 0 ? '+' : ''}{item.goalDifference}
+                </Text>
+                <Text style={[styles.standingsPts, {
+                  color: colors.accent,
+                  fontWeight: '800',
+                }]}>{item.points}</Text>
+              </View>
+            ))}
+            {/* Goals Detail */}
+            <View style={{ marginTop: SPACING.lg, padding: SPACING.md }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 11, textAlign: 'center', fontFamily: FONTS.regular }}>
+                يتم حساب الترتيب تلقائياً من نتائج المباريات المنتهية
+              </Text>
+            </View>
+          </ScrollView>
+        )}
+      </AppModal>
+
       <AppDialog
         visible={dialogVisible}
         type={dialogConfig.type}
@@ -638,17 +737,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  manageTeamsButton: {
+  cardActions: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    gap: 0,
+  },
+  cardActionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderTopWidth: 1,
-    gap: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
+    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xs,
   },
-  manageTeamsText: {
-    ...TYPOGRAPHY.labelMedium,
+  cardActionText: {
+    ...TYPOGRAPHY.labelSmall,
     fontWeight: '600',
     flex: 1,
   },
@@ -846,5 +950,53 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  standingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    minHeight: 40,
+  },
+  standingsHeader: {
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.xs,
+    marginHorizontal: SPACING.xs,
+  },
+  standingsHeaderText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+    textAlign: 'center',
+  },
+  standingsRank: {
+    width: 24,
+    textAlign: 'center',
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+  },
+  standingsTeam: {
+    flex: 1,
+    paddingHorizontal: SPACING.xs,
+  },
+  standingsTeamName: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: FONTS.medium,
+    flex: 1,
+  },
+  standingsCell: {
+    width: 28,
+    textAlign: 'center',
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+    fontVariant: ['tabular-nums'],
+  },
+  standingsPts: {
+    width: 32,
+    textAlign: 'center',
+    fontSize: 13,
+    fontFamily: FONTS.bold,
+    fontVariant: ['tabular-nums'],
   },
 });

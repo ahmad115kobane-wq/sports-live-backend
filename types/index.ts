@@ -147,6 +147,10 @@ export interface Match {
   assistantReferee1?: string;
   assistantReferee2?: string;
   fourthReferee?: string;
+  refereeRef?: { id: string; name: string; imageUrl?: string; nationality?: string };
+  assistantReferee1Ref?: { id: string; name: string; imageUrl?: string; nationality?: string };
+  assistantReferee2Ref?: { id: string; name: string; imageUrl?: string; nationality?: string };
+  fourthRefereeRef?: { id: string; name: string; imageUrl?: string; nationality?: string };
   homeTeam: Team;
   awayTeam: Team;
   competition?: Competition;

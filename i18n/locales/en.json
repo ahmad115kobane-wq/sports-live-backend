@@ -122,7 +122,27 @@
     "lineupNotAvailable": "The lineup for this team has not been announced yet",
     "venue": "Venue",
     "referee": "Referee",
-    "freeAgent": "Free Agent"
+    "freeAgent": "Free Agent",
+    "mainReferee": "Main Referee",
+    "assistantReferee1": "Assistant 1",
+    "assistantReferee2": "Assistant 2",
+    "fourthReferee": "Fourth Referee",
+    "supervisor": "Match Supervisor",
+    "refereeTeam": "Referee Team",
+    "noStandings": "No standings available"
+  },
+  "referee": {
+    "nationality": "Nationality"
+  },
+  "standings": {
+    "team": "Team",
+    "played": "P",
+    "won": "W",
+    "drawn": "D",
+    "lost": "L",
+    "goalDifference": "+/-",
+    "points": "Pts",
+    "noStandings": "No standings available"
   },
   "team": {
     "squad": "Squad",
@@ -595,6 +615,10 @@
     "titlePlaceholder": "Article title",
     "contentPlaceholder": "Write article content here...",
     "addImage": "Add Image",
+    "changeImage": "Change images",
+    "addMoreImages": "Tap to add more images",
+    "maxImagesHint": "You can add up to {{count}} images",
+    "imagesLimitReached": "Maximum {{count}} images per post",
     "removeImage": "Remove Image",
     "publish": "Publish",
     "published": "Article published successfully",
@@ -640,7 +664,9 @@
     "deleteNotification": "Delete Notification",
     "deleteConfirm": "Are you sure you want to delete this notification?",
     "noNotifications": "No notifications",
-    "noNotificationsDesc": "Notifications will appear here"
+    "noNotificationsDesc": "Notifications will appear here",
+    "tapToView": "Tap for details",
+    "liveMatchUpdate": "Live Update"
   },
   "notificationInfo": {
     "hint": "You will only receive notifications for your favorite teams and competitions"

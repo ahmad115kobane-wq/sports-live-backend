@@ -8,16 +8,25 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  Image,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
-import { matchApi } from '@/services/api';
+import { matchApi, refereeApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
 import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
+
+interface Referee {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  nationality?: string;
+}
 
 interface Match {
   id: string;
@@ -30,6 +39,13 @@ interface Match {
   startTime: string;
   venue?: string;
   referee?: string;
+  refereeId?: string;
+  assistantReferee1?: string;
+  assistantReferee1Id?: string;
+  assistantReferee2?: string;
+  assistantReferee2Id?: string;
+  fourthReferee?: string;
+  fourthRefereeId?: string;
 }
 
 export default function MatchesManagementScreen() {
@@ -48,7 +64,16 @@ export default function MatchesManagementScreen() {
   // Edit form
   const [editVenue, setEditVenue] = useState('');
   const [editReferee, setEditReferee] = useState('');
+  const [editRefereeId, setEditRefereeId] = useState('');
+  const [editAssistant1Id, setEditAssistant1Id] = useState('');
+  const [editAssistant2Id, setEditAssistant2Id] = useState('');
+  const [editFourthId, setEditFourthId] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Referees
+  const [referees, setReferees] = useState<Referee[]>([]);
+  const [showRefereePicker, setShowRefereePicker] = useState<'main' | 'assistant1' | 'assistant2' | 'fourth' | null>(null);
+  const safeReferees = Array.isArray(referees) ? referees : [];
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -68,7 +93,19 @@ export default function MatchesManagementScreen() {
 
   useEffect(() => {
     loadMatches();
+    loadReferees();
   }, []);
+
+  const loadReferees = async () => {
+    try {
+      const response = await refereeApi.getAll();
+      setReferees(response.data?.data || []);
+    } catch (error) {
+      console.error('Error loading referees:', error);
+    }
+  };
+
+  const getRefereeById = (id: string) => safeReferees.find(r => r.id === id);
 
   const loadMatches = async () => {
     try {
@@ -94,6 +131,10 @@ export default function MatchesManagementScreen() {
     setSelectedMatch(match);
     setEditVenue(match.venue || '');
     setEditReferee(match.referee || '');
+    setEditRefereeId(match.refereeId || '');
+    setEditAssistant1Id(match.assistantReferee1Id || '');
+    setEditAssistant2Id(match.assistantReferee2Id || '');
+    setEditFourthId(match.fourthRefereeId || '');
     setShowEditModal(true);
   };
 
@@ -104,7 +145,11 @@ export default function MatchesManagementScreen() {
       setSaving(true);
       await matchApi.update(selectedMatch.id, {
         venue: editVenue,
-        referee: editReferee,
+        referee: editRefereeId ? getRefereeById(editRefereeId)?.name : editReferee,
+        refereeId: editRefereeId || undefined,
+        assistantReferee1Id: editAssistant1Id || undefined,
+        assistantReferee2Id: editAssistant2Id || undefined,
+        fourthRefereeId: editFourthId || undefined,
       });
       setShowEditModal(false);
       loadMatches();
@@ -227,8 +272,14 @@ export default function MatchesManagementScreen() {
           )}
           {match.referee && (
             <View style={styles.detailItem}>
-              <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
+              <Ionicons name="flag" size={14} color={colors.textSecondary} />
               <Text style={[styles.detailText, { color: colors.textSecondary }]}>{match.referee}</Text>
+            </View>
+          )}
+          {match.assistantReferee1 && (
+            <View style={styles.detailItem}>
+              <Ionicons name="flag-outline" size={12} color={colors.textTertiary} />
+              <Text style={[styles.detailText, { color: colors.textTertiary, fontSize: 11 }]}>{match.assistantReferee1}</Text>
             </View>
           )}
         </View>
@@ -350,15 +401,61 @@ export default function MatchesManagementScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>الحكم</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-                value={editReferee}
-                onChangeText={setEditReferee}
-                placeholder="اسم الحكم"
-                placeholderTextColor={colors.textTertiary}
-                textAlign={isRTL ? 'right' : 'left'}
-              />
+              <Text style={[styles.inputLabel, { color: colors.text }]}>الحكام</Text>
+              <View style={{ gap: SPACING.xs }}>
+                <TouchableOpacity
+                  style={[styles.refereeSelector, { backgroundColor: colors.surface, borderColor: editRefereeId ? colors.accent : colors.border }]}
+                  onPress={() => setShowRefereePicker('main')}
+                >
+                  <Ionicons name="flag" size={16} color={editRefereeId ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.refereeSelectorText, { color: editRefereeId ? colors.text : colors.textTertiary }]} numberOfLines={1}>
+                    {editRefereeId ? getRefereeById(editRefereeId)?.name || 'حكم محذوف' : 'الحكم الرئيسي'}
+                  </Text>
+                  {editRefereeId ? (
+                    <TouchableOpacity onPress={() => setEditRefereeId('')}>
+                      <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                    </TouchableOpacity>
+                  ) : (
+                    <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
+                  )}
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: SPACING.xs }}>
+                  <TouchableOpacity
+                    style={[styles.refereeSelector, { flex: 1, backgroundColor: colors.surface, borderColor: editAssistant1Id ? colors.accent : colors.border }]}
+                    onPress={() => setShowRefereePicker('assistant1')}
+                  >
+                    <Ionicons name="flag-outline" size={14} color={editAssistant1Id ? colors.accent : colors.textTertiary} />
+                    <Text style={[styles.refereeSelectorText, { color: editAssistant1Id ? colors.text : colors.textTertiary, fontSize: 11 }]} numberOfLines={1}>
+                      {editAssistant1Id ? getRefereeById(editAssistant1Id)?.name || '-' : 'مساعد ١'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.refereeSelector, { flex: 1, backgroundColor: colors.surface, borderColor: editAssistant2Id ? colors.accent : colors.border }]}
+                    onPress={() => setShowRefereePicker('assistant2')}
+                  >
+                    <Ionicons name="flag-outline" size={14} color={editAssistant2Id ? colors.accent : colors.textTertiary} />
+                    <Text style={[styles.refereeSelectorText, { color: editAssistant2Id ? colors.text : colors.textTertiary, fontSize: 11 }]} numberOfLines={1}>
+                      {editAssistant2Id ? getRefereeById(editAssistant2Id)?.name || '-' : 'مساعد ٢'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={[styles.refereeSelector, { backgroundColor: colors.surface, borderColor: editFourthId ? colors.accent : colors.border }]}
+                  onPress={() => setShowRefereePicker('fourth')}
+                >
+                  <Ionicons name="person-outline" size={14} color={editFourthId ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.refereeSelectorText, { color: editFourthId ? colors.text : colors.textTertiary, fontSize: 12 }]} numberOfLines={1}>
+                    {editFourthId ? getRefereeById(editFourthId)?.name || '-' : 'الحكم الرابع'}
+                  </Text>
+                  {editFourthId ? (
+                    <TouchableOpacity onPress={() => setEditFourthId('')}>
+                      <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                    </TouchableOpacity>
+                  ) : (
+                    <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -374,6 +471,75 @@ export default function MatchesManagementScreen() {
             </TouchableOpacity>
           </View>
         )}
+      </AppModal>
+
+      {/* Referee Picker Modal */}
+      <AppModal
+        visible={showRefereePicker !== null}
+        onClose={() => setShowRefereePicker(null)}
+        title={
+          showRefereePicker === 'main' ? 'اختر الحكم الرئيسي' :
+          showRefereePicker === 'assistant1' ? 'اختر المساعد الأول' :
+          showRefereePicker === 'assistant2' ? 'اختر المساعد الثاني' :
+          'اختر الحكم الرابع'
+        }
+        icon="flag"
+        maxHeight="70%"
+      >
+        <ScrollView style={{ padding: SPACING.md }}>
+          <TouchableOpacity
+            style={[styles.refereePickerItem, { borderBottomColor: colors.border }]}
+            onPress={() => {
+              if (showRefereePicker === 'main') setEditRefereeId('');
+              else if (showRefereePicker === 'assistant1') setEditAssistant1Id('');
+              else if (showRefereePicker === 'assistant2') setEditAssistant2Id('');
+              else if (showRefereePicker === 'fourth') setEditFourthId('');
+              setShowRefereePicker(null);
+            }}
+          >
+            <Ionicons name="close-circle-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.refereePickerText, { color: colors.textSecondary }]}>بدون حكم</Text>
+          </TouchableOpacity>
+          {safeReferees.map((ref) => {
+            const currentId = showRefereePicker === 'main' ? editRefereeId :
+              showRefereePicker === 'assistant1' ? editAssistant1Id :
+              showRefereePicker === 'assistant2' ? editAssistant2Id : editFourthId;
+            return (
+              <TouchableOpacity
+                key={ref.id}
+                style={[
+                  styles.refereePickerItem,
+                  { borderBottomColor: colors.border },
+                  currentId === ref.id && { backgroundColor: colors.accent + '20' }
+                ]}
+                onPress={() => {
+                  if (showRefereePicker === 'main') setEditRefereeId(ref.id);
+                  else if (showRefereePicker === 'assistant1') setEditAssistant1Id(ref.id);
+                  else if (showRefereePicker === 'assistant2') setEditAssistant2Id(ref.id);
+                  else if (showRefereePicker === 'fourth') setEditFourthId(ref.id);
+                  setShowRefereePicker(null);
+                }}
+              >
+                {ref.imageUrl ? (
+                  <Image source={{ uri: ref.imageUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                ) : (
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent + '20', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name="person" size={18} color={colors.accent} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.refereePickerText, { color: colors.text }]}>{ref.name}</Text>
+                  {ref.nationality && (
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>{ref.nationality}</Text>
+                  )}
+                </View>
+                {currentId === ref.id && (
+                  <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </AppModal>
 
       <AppDialog
@@ -611,5 +777,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: FONTS.bold,
+  },
+  refereeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: 10,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  refereeSelectorText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+  },
+  refereePickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.xs,
+  },
+  refereePickerText: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
 });

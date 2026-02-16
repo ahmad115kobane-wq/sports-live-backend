@@ -250,11 +250,15 @@ export default function TeamDetailsScreen() {
                         onPress={() => router.push(`/player/${player.id}` as any)}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.playerNumber, { backgroundColor: team?.primaryColor || colors.accent }]}>
-                          <Text style={styles.playerNumberText}>
-                            {player.shirtNumber || '-'}
-                          </Text>
-                        </View>
+                        {player.imageUrl ? (
+                          <Image source={{ uri: player.imageUrl }} style={styles.playerAvatar} />
+                        ) : (
+                          <View style={[styles.playerNumber, { backgroundColor: team?.primaryColor || colors.accent }]}>
+                            <Text style={styles.playerNumberText}>
+                              {player.shirtNumber || '-'}
+                            </Text>
+                          </View>
+                        )}
                         <View style={[styles.playerInfo, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0, flex: 1 }]}>
                           <Text style={[styles.playerName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2} ellipsizeMode="tail">
                             {player.name}
@@ -418,6 +422,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     borderWidth: 1,
     ...SHADOWS.xs,
+  },
+  playerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   playerNumber: {
     width: 40,

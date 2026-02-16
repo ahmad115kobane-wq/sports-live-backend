@@ -29,6 +29,7 @@ interface Player {
   shirtNumber: number;
   position?: string;
   nationality?: string;
+  imageUrl?: string;
 }
 
 interface Team {
@@ -89,12 +90,16 @@ export default function TeamsManagementScreen() {
   const [showPlayerForm, setShowPlayerForm] = useState(false);
   const [editCoachMode, setEditCoachMode] = useState(false);
   const [coachName, setCoachName] = useState('');
+  const [coachImageUrl, setCoachImageUrl] = useState<string | null>(null);
+  const [coachImageFile, setCoachImageFile] = useState<any>(null);
 
   // Player form
   const [playerName, setPlayerName] = useState('');
   const [playerNumber, setPlayerNumber] = useState('');
   const [playerPosition, setPlayerPosition] = useState('');
   const [playerNationality, setPlayerNationality] = useState('العراق');
+  const [playerImageUrl, setPlayerImageUrl] = useState<string | null>(null);
+  const [playerImageFile, setPlayerImageFile] = useState<any>(null);
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -114,7 +119,7 @@ export default function TeamsManagementScreen() {
   const colorOptions = [
     '#1E3A8A', '#166534', '#DC2626', '#7C3AED', 
     '#EA580C', '#0891B2', '#4F46E5', '#BE185D',
-    '#059669', '#D97706', '#4F46E5', '#EC4899'
+    '#059669', '#D97706', '#EC4899'
   ];
 
   // Positions per category
@@ -214,7 +219,22 @@ export default function TeamsManagementScreen() {
     setShowPlayerForm(false);
     setEditCoachMode(false);
     setCoachName(team.coach || '');
+    setCoachImageUrl((team as any).coachImageUrl || null);
+    setCoachImageFile(null);
     setShowPlayersModal(true);
+  };
+
+  const pickCoachImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCoachImageUrl(result.assets[0].uri);
+      setCoachImageFile(result.assets[0]);
+    }
   };
 
   const openPlayerForm = (player?: Player) => {
@@ -224,14 +244,30 @@ export default function TeamsManagementScreen() {
       setPlayerNumber(String(player.shirtNumber));
       setPlayerPosition(player.position || 'midfielder');
       setPlayerNationality(player.nationality || 'العراق');
+      setPlayerImageUrl(player.imageUrl || null);
     } else {
       setEditingPlayer(null);
       setPlayerName('');
       setPlayerNumber('');
       setPlayerPosition('midfielder');
       setPlayerNationality('العراق');
+      setPlayerImageUrl(null);
     }
+    setPlayerImageFile(null);
     setShowPlayerForm(true);
+  };
+
+  const pickPlayerImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPlayerImageUrl(result.assets[0].uri);
+      setPlayerImageFile(result.assets[0]);
+    }
   };
 
   const openCompetitionsModal = async (team: Team) => {
@@ -325,17 +361,25 @@ export default function TeamsManagementScreen() {
 
     try {
       setSaving(true);
-      const playerData = {
-        name: playerName.trim(),
-        shirtNumber: parseInt(playerNumber),
-        position: playerPosition || 'midfielder',
-        nationality: playerNationality.trim() || 'العراق',
-      };
+      const formData = new FormData();
+      formData.append('name', playerName.trim());
+      formData.append('shirtNumber', playerNumber);
+      formData.append('position', playerPosition || 'midfielder');
+      formData.append('nationality', playerNationality.trim() || 'العراق');
+      if (playerImageFile) {
+        const uri = playerImageFile.uri;
+        const ext = uri.split('.').pop() || 'jpg';
+        formData.append('image', {
+          uri,
+          type: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+          name: `player-${Date.now()}.${ext}`,
+        } as any);
+      }
 
       if (editingPlayer) {
-        await playerApi.update(editingPlayer.id, playerData);
+        await teamApi.updatePlayer(selectedTeamForPlayers.id, editingPlayer.id, formData);
       } else {
-        await teamApi.addPlayer(selectedTeamForPlayers.id, playerData);
+        await teamApi.addPlayer(selectedTeamForPlayers.id, formData);
       }
 
       setShowPlayerForm(false);
@@ -379,8 +423,20 @@ export default function TeamsManagementScreen() {
     if (!selectedTeamForPlayers) return;
     try {
       setSaving(true);
-      await teamApi.update(selectedTeamForPlayers.id, { coach: coachName.trim() || null });
+      const formData = new FormData();
+      formData.append('coach', coachName.trim() || '');
+      if (coachImageFile) {
+        const uri = coachImageFile.uri;
+        const ext = uri.split('.').pop() || 'jpg';
+        formData.append('coachImage', {
+          uri,
+          type: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+          name: `coach-${Date.now()}.${ext}`,
+        } as any);
+      }
+      await teamApi.update(selectedTeamForPlayers.id, formData);
       setEditCoachMode(false);
+      setCoachImageFile(null);
       const response = await teamApi.getAllWithPlayers();
       const teamsData = response.data?.data || response.data || [];
       setTeams(Array.isArray(teamsData) ? teamsData : []);
@@ -682,9 +738,9 @@ export default function TeamsManagementScreen() {
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.text }]}>لون النادي</Text>
                 <View style={styles.colorPicker}>
-                  {colorOptions.map((color) => (
+                  {colorOptions.map((color, idx) => (
                     <TouchableOpacity
-                      key={color}
+                      key={`${idx}-${color}`}
                       style={[
                         styles.colorOption,
                         { backgroundColor: color },
@@ -770,6 +826,18 @@ export default function TeamsManagementScreen() {
             {showPlayerForm ? (
               <>
                 <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {/* Player Image */}
+                  <TouchableOpacity style={styles.playerImagePicker} onPress={pickPlayerImage}>
+                    {playerImageUrl ? (
+                      <Image source={{ uri: playerImageUrl }} style={styles.playerImagePreview} />
+                    ) : (
+                      <View style={[styles.playerImagePlaceholder, { backgroundColor: colors.accent + '15', borderColor: colors.border }]}>
+                        <Ionicons name="camera" size={28} color={colors.accent} />
+                        <Text style={{ fontSize: 11, color: colors.textSecondary, fontFamily: FONTS.medium, marginTop: 4 }}>صورة اللاعب</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+
                   <View style={styles.inputGroup}>
                     <Text style={[styles.inputLabel, { color: colors.text }]}>اسم اللاعب *</Text>
                     <TextInput
@@ -843,9 +911,28 @@ export default function TeamsManagementScreen() {
                   <View style={[styles.pmCoachSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <View style={[styles.pmCoachRow, { flexDirection }]}>
                       <View style={[styles.pmCoachInfo, { flexDirection }]}>
-                        <View style={[styles.pmCoachIcon, { backgroundColor: colors.accent + '20' }]}>
-                          <Ionicons name="person" size={18} color={colors.accent} />
-                        </View>
+                        {editCoachMode ? (
+                          <TouchableOpacity onPress={pickCoachImage} style={{ marginEnd: SPACING.sm }}>
+                            {coachImageUrl ? (
+                              <Image source={{ uri: coachImageUrl }} style={{ width: 48, height: 48, borderRadius: 24 }} />
+                            ) : (
+                              <View style={[styles.pmCoachIcon, { backgroundColor: colors.accent + '20', width: 48, height: 48, borderRadius: 24 }]}>
+                                <Ionicons name="camera" size={20} color={colors.accent} />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        ) : (
+                          coachImageUrl || (selectedTeamForPlayers as any)?.coachImageUrl ? (
+                            <Image 
+                              source={{ uri: coachImageUrl || (selectedTeamForPlayers as any)?.coachImageUrl }} 
+                              style={{ width: 40, height: 40, borderRadius: 20, marginEnd: SPACING.sm }} 
+                            />
+                          ) : (
+                            <View style={[styles.pmCoachIcon, { backgroundColor: colors.accent + '20' }]}>
+                              <Ionicons name="person" size={18} color={colors.accent} />
+                            </View>
+                          )
+                        )}
                         {editCoachMode ? (
                           <TextInput
                             style={[styles.pmCoachInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
@@ -867,7 +954,7 @@ export default function TeamsManagementScreen() {
                       </View>
                       {editCoachMode ? (
                         <View style={{ flexDirection: 'row', gap: 8 }}>
-                          <TouchableOpacity onPress={() => setEditCoachMode(false)}>
+                          <TouchableOpacity onPress={() => { setEditCoachMode(false); setCoachImageFile(null); }}>
                             <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
                           </TouchableOpacity>
                           <TouchableOpacity onPress={handleSaveCoach}>
@@ -902,9 +989,13 @@ export default function TeamsManagementScreen() {
                     selectedTeamForPlayers.players.map((player) => (
                       <View key={player.id} style={[styles.pmPlayerRow, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection }]}>
                         <View style={[styles.pmPlayerInfo, { flexDirection }]}>
-                          <View style={[styles.pmPlayerNum, { backgroundColor: selectedTeamForPlayers.primaryColor || colors.accent }]}>
-                            <Text style={styles.pmPlayerNumText}>{player.shirtNumber}</Text>
-                          </View>
+                          {player.imageUrl ? (
+                            <Image source={{ uri: player.imageUrl }} style={{ width: 36, height: 36, borderRadius: 18, marginEnd: SPACING.xs }} />
+                          ) : (
+                            <View style={[styles.pmPlayerNum, { backgroundColor: selectedTeamForPlayers.primaryColor || colors.accent }]}>
+                              <Text style={styles.pmPlayerNumText}>{player.shirtNumber}</Text>
+                            </View>
+                          )}
                           <View>
                             <Text style={[styles.pmPlayerName, { color: colors.text }]}>{player.name}</Text>
                             <Text style={[styles.pmPlayerMeta, { color: colors.textSecondary }]}>
@@ -1570,5 +1661,23 @@ const styles = StyleSheet.create({
   pmEmptyText: {
     fontSize: 14,
     fontFamily: FONTS.regular,
+  },
+  playerImagePicker: {
+    alignSelf: 'center',
+    marginBottom: SPACING.lg,
+  },
+  playerImagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  playerImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
   },
 });

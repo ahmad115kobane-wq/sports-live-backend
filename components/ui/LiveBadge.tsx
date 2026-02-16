@@ -8,6 +8,7 @@ import {
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
+import { useRTL } from '@/contexts/RTLContext';
 
 interface LiveBadgeProps {
   minute?: number;
@@ -24,6 +25,7 @@ export default function LiveBadge({
 }: LiveBadgeProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const { t } = useRTL();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
 
@@ -134,7 +136,7 @@ export default function LiveBadge({
           },
         ]}
       >
-        LIVE
+        {t('match.live')}
       </Text>
       
       {/* Minute */}

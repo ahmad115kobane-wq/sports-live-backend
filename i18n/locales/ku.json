@@ -123,7 +123,27 @@
     "lineupNotAvailable": "هێڵکاری ئەم تیمە هێشتا ڕاگەیەندراو نییە",
     "venue": "یاریگا",
     "referee": "حاکم",
-    "freeAgent": "بێ تیم"
+    "freeAgent": "بێ تیم",
+    "mainReferee": "حاکمی سەرەکی",
+    "assistantReferee1": "یاریدەدەر ١",
+    "assistantReferee2": "یاریدەدەر ٢",
+    "fourthReferee": "حاکمی چوارەم",
+    "supervisor": "سەرپەرشتیاری یاری",
+    "refereeTeam": "تیمی حاکمان",
+    "noStandings": "هیچ ڕیزبەندییەک بەردەست نییە"
+  },
+  "referee": {
+    "nationality": "نەتەوە"
+  },
+  "standings": {
+    "team": "تیم",
+    "played": "یاری",
+    "won": "بردن",
+    "drawn": "یەکسان",
+    "lost": "دۆڕاندن",
+    "goalDifference": "+/-",
+    "points": "خاڵ",
+    "noStandings": "هیچ ڕیزبەندییەک بەردەست نییە"
   },
   "team": {
     "squad": "تیم",
@@ -596,6 +616,10 @@
     "titlePlaceholder": "ناونیشانی بابەت",
     "contentPlaceholder": "ناوەڕۆکی بابەت لێرە بنووسە...",
     "addImage": "وێنە زیادبکە",
+    "changeImage": "گۆڕینی وێنەکان",
+    "addMoreImages": "کرتە بکە بۆ زیادکردنی وێنەی زیاتر",
+    "maxImagesHint": "دەتوانیت تا {{count}} وێنە زیاد بکەیت",
+    "imagesLimitReached": "زۆرترین ژمارە {{count}} وێنە بۆ هەر بڵاوکراوەیەک",
     "removeImage": "وێنە لاببە",
     "publish": "بڵاوکردنەوە",
     "published": "بابەت بە سەرکەوتوویی بڵاوکرایەوە",
@@ -641,7 +665,9 @@
     "deleteNotification": "سڕینەوەی ئاگادارکردنەوە",
     "deleteConfirm": "دڵنیایت لە سڕینەوەی ئەم ئاگادارکردنەوەیە؟",
     "noNotifications": "هیچ ئاگادارکردنەوەیەک نییە",
-    "noNotificationsDesc": "ئاگادارکردنەوەکان لێرە دەردەکەون"
+    "noNotificationsDesc": "ئاگادارکردنەوەکان لێرە دەردەکەون",
+    "tapToView": "دابگرە بۆ وردەکاری",
+    "liveMatchUpdate": "نوێکردنەوەی ڕاستەوخۆ"
   },
   "notificationInfo": {
     "hint": "تەنها ئاگادارکردنەوە وەردەگریت بۆ تیم و پاڵەوانییە دڵخوازەکانت"

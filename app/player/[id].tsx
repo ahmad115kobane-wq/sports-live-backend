@@ -10,6 +10,7 @@ import {
   Platform,
   RefreshControl,
   InteractionManager,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -138,12 +139,16 @@ export default function PlayerProfileScreen() {
 
         {/* Player Hero */}
         <View style={styles.heroContent}>
-          {/* Player Number Circle */}
-          <View style={[styles.numberCircle, { borderColor: 'rgba(255,255,255,0.25)', alignSelf: 'center' }]}>
-            <Text style={styles.numberText}>
-              {player?.shirtNumber || '?'}
-            </Text>
-          </View>
+          {/* Player Image or Number Circle */}
+          {player?.imageUrl ? (
+            <Image source={{ uri: player.imageUrl }} style={[styles.playerHeroImage, { alignSelf: 'center' }]} />
+          ) : (
+            <View style={[styles.numberCircle, { borderColor: 'rgba(255,255,255,0.25)', alignSelf: 'center' }]}>
+              <Text style={styles.numberText}>
+                {player?.shirtNumber || '?'}
+              </Text>
+            </View>
+          )}
 
           {/* Player Name */}
           <Text style={styles.playerName}>
@@ -311,6 +316,13 @@ const styles = StyleSheet.create({
   heroContent: {
     paddingHorizontal: SPACING.lg,
     marginTop: SPACING.sm,
+  },
+  playerHeroImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   numberCircle: {
     width: 68,

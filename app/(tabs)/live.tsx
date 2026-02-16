@@ -1,20 +1,21 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   RefreshControl,
-  Animated,
   TouchableOpacity,
   StatusBar,
   Platform,
   Dimensions,
+  LayoutChangeEvent,
   ActivityIndicator,
   InteractionManager,
+  I18nManager,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
@@ -29,65 +30,99 @@ import PageHeader from '@/components/ui/PageHeader';
 import { SOCKET_URL } from '@/constants/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IMAGE_PADDING = SPACING.md * 2;
-const IMAGE_WIDTH = SCREEN_WIDTH - (SPACING.md * 2) - IMAGE_PADDING;
+const MAX_NEWS_IMAGES = 9;
 
-// مكوّن صورة مرنة — يقرأ أبعاد الصورة الحقيقية ويعرضها بنسبتها الأصلية
-function AutoImage({ uri, colors }: { uri: string; colors: any }) {
-  const [ratio, setRatio] = useState(4 / 3);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+function NewsMediaCarousel({ uris, colors, isRTL }: { uris: string[]; colors: any; isRTL?: boolean }) {
+  const validUris = uris.slice(0, MAX_NEWS_IMAGES);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [carouselWidth, setCarouselWidth] = useState(SCREEN_WIDTH - SPACING.md * 2 - 2);
+  const scrollRef = useRef<ScrollView>(null);
 
-  if (error) return null;
+  useEffect(() => {
+    setActiveIndex(0);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+    });
+  }, [validUris.join('|')]);
+
+  if (validUris.length === 0) return null;
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width > 0 && Math.abs(width - carouselWidth) > 1) {
+      setCarouselWidth(width);
+    }
+  };
+
+  const onScrollEnd = (event: any) => {
+    if (!carouselWidth) return;
+    const rawIndex = Math.round(event.nativeEvent.contentOffset.x / carouselWidth);
+    const nextIndex = isRTL ? validUris.length - 1 - rawIndex : rawIndex;
+    if (nextIndex >= 0 && nextIndex < validUris.length) {
+      setActiveIndex(nextIndex);
+    }
+  };
+
+  const rtlScrollStyle = isRTL ? { transform: [{ scaleX: -1 as number }] } : undefined;
+  const rtlItemStyle = isRTL ? { transform: [{ scaleX: -1 as number }] } : undefined;
 
   return (
-    <View style={[autoImgStyles.container, { backgroundColor: colors.backgroundSecondary }]}>
-      {loading && (
-        <View style={autoImgStyles.placeholder}>
-          <ActivityIndicator size="small" color={colors.accent} />
-        </View>
+    <View style={[styles.mediaWrap, { backgroundColor: colors.backgroundSecondary }]} onLayout={onLayout}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onScrollEnd}
+        bounces={false}
+        decelerationRate="fast"
+        style={rtlScrollStyle}
+      >
+        {validUris.map((uri, index) => (
+          <View key={`${uri}-${index}`} style={[styles.mediaSlide, { width: carouselWidth }, rtlItemStyle]}>
+            <Image
+              source={{ uri }}
+              style={styles.mediaImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          </View>
+        ))}
+      </ScrollView>
+
+      {validUris.length > 1 && (
+        <>
+          <View style={styles.mediaCounterBadge}>
+            <Text style={styles.mediaCounterText}>
+              {activeIndex + 1}/{validUris.length}
+            </Text>
+          </View>
+
+          <View style={styles.mediaDotsRow}>
+            {validUris.map((_, dotIndex) => (
+              <View
+                key={dotIndex}
+                style={[
+                  styles.mediaDot,
+                  dotIndex === activeIndex
+                    ? { backgroundColor: colors.accent, width: 16 }
+                    : { backgroundColor: 'rgba(255,255,255,0.55)' },
+                ]}
+              />
+            ))}
+          </View>
+        </>
       )}
-      <Image
-        source={{ uri }}
-        style={[autoImgStyles.image, { aspectRatio: ratio }]}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        onLoad={(e: any) => {
-          if (e?.source?.width && e?.source?.height) {
-            setRatio(e.source.width / e.source.height);
-          }
-          setLoading(false);
-        }}
-        onError={() => setError(true)}
-      />
     </View>
   );
 }
-
-const autoImgStyles = StyleSheet.create({
-  container: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
-  },
-  placeholder: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  image: {
-    width: '100%',
-    borderRadius: RADIUS.lg,
-  },
-});
 
 interface NewsArticle {
   id: string;
   title: string;
   content: string;
   imageUrl?: string;
+  imageUrls?: string[];
   isPublished: boolean;
   createdAt: string;
   author: {
@@ -107,21 +142,16 @@ export default function NewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const waveAnim = useRef(new Animated.Value(0)).current;
 
   const isPublisher = user?.role === 'publisher';
   const [loadingMore, setLoadingMore] = useState(false);
   const [expandedArticles, setExpandedArticles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const shimmer = Animated.loop(
-      Animated.timing(waveAnim, { toValue: 1, duration: 2000, useNativeDriver: true })
-    );
-    shimmer.start();
     const task = InteractionManager.runAfterInteractions(() => {
       loadNews();
     });
-    return () => { task.cancel(); shimmer.stop(); };
+    return () => { task.cancel(); };
   }, []);
 
   const loadNews = async (pageNum = 1) => {
@@ -180,10 +210,18 @@ export default function NewsScreen() {
     return `${SOCKET_URL}${imageUrl}`;
   };
 
-  const waveTranslate = waveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
-  });
+  const getArticleImages = (article: NewsArticle): string[] => {
+    const normalized = (Array.isArray(article.imageUrls) ? article.imageUrls : [])
+      .map((img) => getImageUrl(img))
+      .filter((img): img is string => !!img);
+
+    const legacy = getImageUrl(article.imageUrl);
+    if (legacy && !normalized.includes(legacy)) {
+      normalized.unshift(legacy);
+    }
+
+    return normalized.slice(0, MAX_NEWS_IMAGES);
+  };
 
   const toggleExpanded = (articleId: string) => {
     setExpandedArticles(prev => {
@@ -198,25 +236,26 @@ export default function NewsScreen() {
   };
 
   const renderArticle = ({ item }: { item: NewsArticle }) => {
-    const imgUrl = getImageUrl(item.imageUrl);
+    const articleImages = getArticleImages(item);
+
     return (
-      <TouchableOpacity
-        activeOpacity={0.85}
-        style={[styles.articleCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-      >
+      <View style={[styles.articleCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}> 
+        <View style={[styles.articleAccent, { backgroundColor: colors.accent }]} />
+
         {/* Author Row - Top */}
         <View style={styles.authorSection}>
-          <View style={[styles.authorRow, { flexDirection }]}>
-            <View style={[styles.authorAvatar, { backgroundColor: colors.accent + '20' }]}>
+          <View style={[styles.authorRow, { flexDirection }]}> 
+            <View style={[styles.authorAvatar, { backgroundColor: colors.accent + '20' }]}> 
               {item.author.avatar ? (
                 <Image source={{ uri: `${SOCKET_URL}${item.author.avatar}` }} style={styles.authorAvatarImg} />
               ) : (
                 <Ionicons name="person" size={26} color={colors.accent} />
               )}
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <View style={styles.authorInfoWrap}>
+              <View style={[styles.authorNameRow, { flexDirection }]}> 
               <Text 
-                style={[styles.authorName, { color: colors.text, flex: 1 }]} 
+                style={[styles.authorName, { color: colors.text }]} 
                 numberOfLines={1} 
                 ellipsizeMode="tail"
               >
@@ -225,24 +264,30 @@ export default function NewsScreen() {
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark" size={11} color="#fff" />
               </View>
+
+              </View>
+
+              <Text style={[styles.articleTime, { color: colors.textTertiary }]}> 
+                {getTimeAgo(item.createdAt)}
+              </Text>
             </View>
-            <View style={{ flex: 1 }} />
-            <Text style={[styles.articleTime, { color: colors.textTertiary }]}>
-              {getTimeAgo(item.createdAt)}
-            </Text>
-            <View style={[styles.newsBadge, { backgroundColor: colors.accent + '15' }]}>
+
+            <View style={[styles.newsBadge, { backgroundColor: colors.accent + '15' }]}> 
               <Ionicons name="newspaper-outline" size={12} color={colors.accent} />
             </View>
           </View>
         </View>
 
-        {/* Title */}
-        <Text style={[styles.articleTitle, { color: colors.text }]} numberOfLines={3}>
-          {item.title}
-        </Text>
+        {/* Images Carousel */}
+        {articleImages.length > 0 && <NewsMediaCarousel uris={articleImages} colors={colors} isRTL={isRTL} />}
 
-        {/* Content Preview */}
-        <View>
+        <View style={styles.articleBody}>
+          {/* Title */}
+          <Text style={[styles.articleTitle, { color: colors.text }]} numberOfLines={3}>
+            {item.title}
+          </Text>
+
+          {/* Content Preview */}
           <Text
             style={[styles.articleContent, { color: colors.textSecondary }]}
             numberOfLines={expandedArticles.has(item.id) ? undefined : 5}
@@ -255,17 +300,13 @@ export default function NewsScreen() {
               style={styles.expandButton}
               activeOpacity={0.7}
             >
-              <Text style={[styles.expandText, { color: colors.accent }]}>
+              <Text style={[styles.expandText, { color: colors.accent }]}> 
                 {expandedArticles.has(item.id) ? 'عرض أقل' : 'عرض المزيد'}
               </Text>
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Image */}
-        {imgUrl && <AutoImage uri={imgUrl} colors={colors} />}
-
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -426,6 +467,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     ...SHADOWS.sm,
   },
+  articleAccent: {
+    height: 3,
+    width: '100%',
+  },
   authorSection: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
@@ -455,11 +500,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: FONTS.bold,
   },
+  authorInfoWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  authorNameRow: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
   authorName: {
     ...TYPOGRAPHY.titleMedium,
     fontWeight: '800',
     letterSpacing: -0.3,
-    flex: 1,
+    flexShrink: 1,
+    maxWidth: '92%',
     fontSize: 17,
   },
   verifiedBadge: {
@@ -476,7 +532,57 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     fontWeight: '500',
     fontSize: 11,
-    paddingHorizontal: SPACING.xs,
+  },
+  mediaWrap: {
+    width: '100%',
+    aspectRatio: 1,
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+  },
+  mediaSlide: {
+    height: '100%',
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mediaCounterBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: SPACING.sm,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaCounterText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+  },
+  mediaDotsRow: {
+    position: 'absolute',
+    bottom: SPACING.sm,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 5,
+    borderRadius: RADIUS.full,
+  },
+  mediaDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  articleBody: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.lg,
   },
   newsBadge: {
     width: 30,
@@ -489,7 +595,7 @@ const styles = StyleSheet.create({
   articleTitle: {
     ...TYPOGRAPHY.headlineSmall,
     fontWeight: '900',
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: 0,
     marginBottom: SPACING.sm,
     letterSpacing: -0.3,
     lineHeight: 26,
@@ -497,13 +603,13 @@ const styles = StyleSheet.create({
   articleContent: {
     ...TYPOGRAPHY.bodyMedium,
     lineHeight: 24,
-    marginTop: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xs,
+    paddingHorizontal: 0,
     fontSize: 15,
   },
   expandButton: {
     marginTop: SPACING.sm,
-    marginLeft: SPACING.lg,
+    marginLeft: 0,
     alignSelf: 'flex-start',
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,

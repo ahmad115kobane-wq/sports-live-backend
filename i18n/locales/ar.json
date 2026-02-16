@@ -123,7 +123,27 @@
     "lineupNotAvailable": "لم يتم الإعلان عن تشكيلة هذا الفريق بعد",
     "venue": "الملعب",
     "referee": "الحكم",
-    "freeAgent": "بدون فريق"
+    "mainReferee": "الحكم الرئيسي",
+    "assistantReferee1": "مساعد ١",
+    "assistantReferee2": "مساعد ٢",
+    "fourthReferee": "الحكم الرابع",
+    "supervisor": "مشرف المباراة",
+    "freeAgent": "بدون فريق",
+    "refereeTeam": "طاقم التحكيم",
+    "noStandings": "لا يوجد ترتيب متاح حالياً"
+  },
+  "referee": {
+    "nationality": "الجنسية"
+  },
+  "standings": {
+    "team": "الفريق",
+    "played": "لعب",
+    "won": "ف",
+    "drawn": "ت",
+    "lost": "خ",
+    "goalDifference": "+/-",
+    "points": "نقاط",
+    "noStandings": "لا يوجد ترتيب متاح حالياً"
   },
   "player": {
     "profile": "الملف الشخصي",
@@ -596,6 +616,10 @@
     "titlePlaceholder": "عنوان المقالة",
     "contentPlaceholder": "اكتب محتوى المقالة هنا...",
     "addImage": "إضافة صورة",
+    "changeImage": "تغيير الصور",
+    "addMoreImages": "اضغط لإضافة صور جديدة",
+    "maxImagesHint": "يمكنك إضافة حتى {{count}} صور",
+    "imagesLimitReached": "الحد الأقصى {{count}} صور لكل منشور",
     "removeImage": "إزالة الصورة",
     "publish": "نشر",
     "published": "تم نشر المقالة بنجاح",
@@ -641,7 +665,9 @@
     "deleteNotification": "حذف الإشعار",
     "deleteConfirm": "هل تريد حذف هذا الإشعار؟",
     "noNotifications": "لا توجد إشعارات",
-    "noNotificationsDesc": "ستظهر الإشعارات هنا"
+    "noNotificationsDesc": "ستظهر الإشعارات هنا",
+    "tapToView": "اضغط للتفاصيل",
+    "liveMatchUpdate": "تحديث مباشر"
   },
   "notificationInfo": {
     "hint": "ستتلقى إشعارات فقط للفرق والبطولات المفضلة لديك"

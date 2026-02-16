@@ -21,7 +21,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
-import { matchApi, teamApi, competitionApi, adminApi, videoAdApi } from '@/services/api';
+import { matchApi, teamApi, competitionApi, adminApi, videoAdApi, refereeApi } from '@/services/api';
 import TeamLogo from '@/components/ui/TeamLogo';
 import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
@@ -54,6 +54,7 @@ export default function AdminScreen() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
+  const [refereesList, setRefereesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
 
@@ -61,6 +62,7 @@ export default function AdminScreen() {
   const safeTeams = Array.isArray(teams) ? teams : [];
   const safeCompetitions = Array.isArray(competitions) ? competitions : [];
   const safeOperators = Array.isArray(operators) ? operators : [];
+  const safeReferees = Array.isArray(refereesList) ? refereesList : [];
 
   // Form state
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
@@ -70,6 +72,10 @@ export default function AdminScreen() {
   const [matchDate, setMatchDate] = useState(new Date());
   const [venue, setVenue] = useState('');
   const [referee, setReferee] = useState('');
+  const [selectedRefereeId, setSelectedRefereeId] = useState('');
+  const [selectedAssistant1Id, setSelectedAssistant1Id] = useState('');
+  const [selectedAssistant2Id, setSelectedAssistant2Id] = useState('');
+  const [selectedFourthId, setSelectedFourthId] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
 
   // Video Ad form state
@@ -96,6 +102,7 @@ export default function AdminScreen() {
   const [showTeamPicker, setShowTeamPicker] = useState<'home' | 'away' | null>(null);
   const [showCompetitionPicker, setShowCompetitionPicker] = useState(false);
   const [showOperatorPicker, setShowOperatorPicker] = useState(false);
+  const [showRefereePicker, setShowRefereePicker] = useState<'main' | 'assistant1' | 'assistant2' | 'fourth' | null>(null);
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -132,16 +139,18 @@ export default function AdminScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [teamsRes, competitionsRes, operatorsRes] = await Promise.all([
+      const [teamsRes, competitionsRes, operatorsRes, refereesRes] = await Promise.all([
         teamApi.getAll(),
         competitionApi.getAll(),
         adminApi.getOperators(),
+        refereeApi.getAll(),
       ]);
       // API returns { success: true, data: [...] }
       // axios wraps it in response.data
       setTeams(teamsRes.data?.data || teamsRes.data || []);
       setCompetitions(competitionsRes.data?.data || competitionsRes.data || []);
       setOperators(operatorsRes.data?.data || operatorsRes.data || []);
+      setRefereesList(refereesRes.data?.data || refereesRes.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
       showError(t('admin.error'), t('admin.loadFailed'));
@@ -169,10 +178,14 @@ export default function AdminScreen() {
         awayTeamId,
         startTime: matchDate.toISOString(),
         venue,
-        referee,
+        referee: selectedRefereeId ? safeReferees.find(r => r.id === selectedRefereeId)?.name : referee,
+        refereeId: selectedRefereeId || undefined,
+        assistantReferee1Id: selectedAssistant1Id || undefined,
+        assistantReferee2Id: selectedAssistant2Id || undefined,
+        fourthRefereeId: selectedFourthId || undefined,
         isFeatured,
         operatorId: selectedOperator || undefined,
-      });
+      } as any);
 
       // If operator selected, assign them to the match
       if (selectedOperator && response.data?.data?.id) {
@@ -327,12 +340,17 @@ export default function AdminScreen() {
     setMatchDate(new Date());
     setVenue('');
     setReferee('');
+    setSelectedRefereeId('');
+    setSelectedAssistant1Id('');
+    setSelectedAssistant2Id('');
+    setSelectedFourthId('');
     setIsFeatured(false);
   };
 
   const getTeamById = (id: string) => safeTeams.find(t => t.id === id);
   const getCompetitionById = (id: string) => safeCompetitions.find(c => c.id === id);
   const getOperatorById = (id: string) => safeOperators.find(o => o.id === id);
+  const getRefereeById = (id: string) => safeReferees.find(r => r.id === id);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('ar-IQ', {
@@ -504,29 +522,69 @@ export default function AdminScreen() {
             </View>
           </View>
 
-          {/* Venue & Referee Row */}
-          <View style={styles.fieldRow}>
-            <View style={[styles.field, { flex: 1 }]}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الملعب</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="ملعب الشعب"
-                placeholderTextColor={colors.textTertiary}
-                value={venue}
-                onChangeText={setVenue}
-                textAlign={isRTL ? 'right' : 'left'}
-              />
+          {/* Venue */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الملعب</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+              placeholder="ملعب الشعب"
+              placeholderTextColor={colors.textTertiary}
+              value={venue}
+              onChangeText={setVenue}
+              textAlign={isRTL ? 'right' : 'left'}
+            />
+          </View>
+
+          {/* Referees Selection */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الحكام</Text>
+            <View style={styles.fieldRow}>
+              <TouchableOpacity
+                style={[styles.selector, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
+                onPress={() => setShowRefereePicker('main')}
+              >
+                <View style={styles.selectorInner}>
+                  <Ionicons name="flag" size={16} color={selectedRefereeId ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.selectorText, { color: selectedRefereeId ? colors.text : colors.textTertiary, fontSize: 12 }]} numberOfLines={1}>
+                    {selectedRefereeId ? getRefereeById(selectedRefereeId)?.name : 'الحكم الرئيسي'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.selector, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
+                onPress={() => setShowRefereePicker('assistant1')}
+              >
+                <View style={styles.selectorInner}>
+                  <Ionicons name="flag-outline" size={16} color={selectedAssistant1Id ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.selectorText, { color: selectedAssistant1Id ? colors.text : colors.textTertiary, fontSize: 12 }]} numberOfLines={1}>
+                    {selectedAssistant1Id ? getRefereeById(selectedAssistant1Id)?.name : 'مساعد أول'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
-            <View style={[styles.field, { flex: 1 }]}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الحكم</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                placeholder="اسم الحكم"
-                placeholderTextColor={colors.textTertiary}
-                value={referee}
-                onChangeText={setReferee}
-                textAlign={isRTL ? 'right' : 'left'}
-              />
+            <View style={[styles.fieldRow, { marginTop: SPACING.xs }]}>
+              <TouchableOpacity
+                style={[styles.selector, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
+                onPress={() => setShowRefereePicker('assistant2')}
+              >
+                <View style={styles.selectorInner}>
+                  <Ionicons name="flag-outline" size={16} color={selectedAssistant2Id ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.selectorText, { color: selectedAssistant2Id ? colors.text : colors.textTertiary, fontSize: 12 }]} numberOfLines={1}>
+                    {selectedAssistant2Id ? getRefereeById(selectedAssistant2Id)?.name : 'مساعد ثاني'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.selector, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
+                onPress={() => setShowRefereePicker('fourth')}
+              >
+                <View style={styles.selectorInner}>
+                  <Ionicons name="person-outline" size={16} color={selectedFourthId ? colors.accent : colors.textTertiary} />
+                  <Text style={[styles.selectorText, { color: selectedFourthId ? colors.text : colors.textTertiary, fontSize: 12 }]} numberOfLines={1}>
+                    {selectedFourthId ? getRefereeById(selectedFourthId)?.name : 'الحكم الرابع'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -940,6 +998,92 @@ export default function AdminScreen() {
               <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 لا يوجد مشغلين{'\n'}قم بترقية مستخدم إلى مشغل من صفحة المستخدمين
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </AppModal>
+
+      {/* Referee Picker Modal */}
+      <AppModal
+        visible={showRefereePicker !== null}
+        onClose={() => setShowRefereePicker(null)}
+        title={
+          showRefereePicker === 'main' ? 'اختر الحكم الرئيسي' :
+          showRefereePicker === 'assistant1' ? 'اختر المساعد الأول' :
+          showRefereePicker === 'assistant2' ? 'اختر المساعد الثاني' :
+          'اختر الحكم الرابع'
+        }
+        icon="flag"
+        maxHeight="70%"
+      >
+        <ScrollView style={styles.modalList}>
+          {/* Option to clear selection */}
+          <TouchableOpacity
+            style={[
+              styles.modalItem,
+              { borderBottomColor: colors.border },
+              !(showRefereePicker === 'main' ? selectedRefereeId :
+                showRefereePicker === 'assistant1' ? selectedAssistant1Id :
+                showRefereePicker === 'assistant2' ? selectedAssistant2Id :
+                selectedFourthId) && { backgroundColor: colors.accent + '20' }
+            ]}
+            onPress={() => {
+              if (showRefereePicker === 'main') setSelectedRefereeId('');
+              else if (showRefereePicker === 'assistant1') setSelectedAssistant1Id('');
+              else if (showRefereePicker === 'assistant2') setSelectedAssistant2Id('');
+              else if (showRefereePicker === 'fourth') setSelectedFourthId('');
+              setShowRefereePicker(null);
+            }}
+          >
+            <Ionicons name="close-circle-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.modalItemText, { color: colors.textSecondary }]}>بدون حكم</Text>
+          </TouchableOpacity>
+          {safeReferees.map((ref) => {
+            const currentId = showRefereePicker === 'main' ? selectedRefereeId :
+              showRefereePicker === 'assistant1' ? selectedAssistant1Id :
+              showRefereePicker === 'assistant2' ? selectedAssistant2Id :
+              selectedFourthId;
+            return (
+              <TouchableOpacity
+                key={ref.id}
+                style={[
+                  styles.modalItem,
+                  { borderBottomColor: colors.border },
+                  currentId === ref.id && { backgroundColor: colors.accent + '20' }
+                ]}
+                onPress={() => {
+                  if (showRefereePicker === 'main') setSelectedRefereeId(ref.id);
+                  else if (showRefereePicker === 'assistant1') setSelectedAssistant1Id(ref.id);
+                  else if (showRefereePicker === 'assistant2') setSelectedAssistant2Id(ref.id);
+                  else if (showRefereePicker === 'fourth') setSelectedFourthId(ref.id);
+                  setShowRefereePicker(null);
+                }}
+              >
+                {ref.imageUrl ? (
+                  <Image source={{ uri: ref.imageUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                ) : (
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent + '20', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name="person" size={18} color={colors.accent} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.modalItemText, { color: colors.text }]}>{ref.name}</Text>
+                  {ref.nationality && (
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>{ref.nationality}</Text>
+                  )}
+                </View>
+                {currentId === ref.id && (
+                  <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+          {safeReferees.length === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="flag-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                لا يوجد حكام{'\n'}قم بإضافة حكام من صفحة الحكام
               </Text>
             </View>
           )}

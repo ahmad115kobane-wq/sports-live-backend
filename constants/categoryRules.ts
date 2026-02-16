@@ -27,11 +27,11 @@ export const CATEGORY_RULES: Record<string, CategoryRule> = {
   },
   FUTSAL: {
     category: 'FUTSAL',
-    maxStarters: 5,
+    maxStarters: 6,
     maxSubs: 7,
     maxSquad: 14,
     formations: [
-      '1-2-2', '2-2', '1-2-1', '1-1-2', '1-3', '3-1', '2-1-1',
+      '2-2-1', '1-2-2', '2-1-2', '1-3-1', '3-1-1', '2-3',
     ],
     fieldType: 'futsal',
     halfDuration: 20,
@@ -76,8 +76,29 @@ export const CATEGORY_RULES: Record<string, CategoryRule> = {
   },
 };
 
+function normalizeCategoryKey(category?: string): string {
+  if (!category) return 'FOOTBALL';
+
+  const raw = category.trim();
+  const upper = raw.toUpperCase().replace(/[-\s]+/g, '_');
+
+  // Support common mini-football aliases and Arabic labels
+  if (
+    upper === 'FUTSAL' ||
+    upper === 'MINI_FOOTBALL' ||
+    upper === 'MINIFOOTBALL' ||
+    raw.includes('مصغرة') ||
+    raw.includes('مصغره')
+  ) {
+    return 'FUTSAL';
+  }
+
+  return upper;
+}
+
 export function getCategoryRules(category?: string): CategoryRule {
-  return CATEGORY_RULES[category || 'FOOTBALL'] || CATEGORY_RULES['FOOTBALL'];
+  const normalized = normalizeCategoryKey(category);
+  return CATEGORY_RULES[normalized] || CATEGORY_RULES['FOOTBALL'];
 }
 
 // Formation position mappings per category (positionX, positionY in percentage 0-100)
@@ -148,43 +169,40 @@ export const FOOTBALL_FORMATION_POSITIONS: Record<string, { x: number; y: number
 };
 
 export const FUTSAL_FORMATION_POSITIONS: Record<string, { x: number; y: number; pos: string }[]> = {
+  '2-2-1': [
+    { x: 50, y: 88, pos: 'GK' },
+    { x: 30, y: 68, pos: 'FIX' }, { x: 70, y: 68, pos: 'FIX' },
+    { x: 30, y: 45, pos: 'ALA' }, { x: 70, y: 45, pos: 'ALA' },
+    { x: 50, y: 22, pos: 'PIV' },
+  ],
   '1-2-2': [
     { x: 50, y: 88, pos: 'GK' },
-    { x: 30, y: 60, pos: 'FIX' }, { x: 70, y: 60, pos: 'FIX' },
-    { x: 30, y: 30, pos: 'ALA' }, { x: 70, y: 30, pos: 'PIV' },
-  ],
-  '2-2': [
-    { x: 50, y: 88, pos: 'GK' },
-    { x: 30, y: 60, pos: 'FIX' }, { x: 70, y: 60, pos: 'FIX' },
-    { x: 30, y: 30, pos: 'ALA' }, { x: 70, y: 30, pos: 'PIV' },
-  ],
-  '1-2-1': [
-    { x: 50, y: 88, pos: 'GK' },
-    { x: 50, y: 65, pos: 'FIX' },
-    { x: 25, y: 45, pos: 'ALA' }, { x: 75, y: 45, pos: 'ALA' },
-    { x: 50, y: 22, pos: 'PIV' },
-  ],
-  '1-1-2': [
-    { x: 50, y: 88, pos: 'GK' },
-    { x: 50, y: 65, pos: 'FIX' },
-    { x: 50, y: 45, pos: 'ALA' },
+    { x: 50, y: 68, pos: 'FIX' },
+    { x: 25, y: 48, pos: 'ALA' }, { x: 75, y: 48, pos: 'ALA' },
     { x: 30, y: 25, pos: 'PIV' }, { x: 70, y: 25, pos: 'PIV' },
   ],
-  '1-3': [
+  '2-1-2': [
     { x: 50, y: 88, pos: 'GK' },
-    { x: 50, y: 65, pos: 'FIX' },
-    { x: 20, y: 35, pos: 'ALA' }, { x: 50, y: 30, pos: 'ALA' }, { x: 80, y: 35, pos: 'PIV' },
+    { x: 30, y: 68, pos: 'FIX' }, { x: 70, y: 68, pos: 'FIX' },
+    { x: 50, y: 45, pos: 'ALA' },
+    { x: 30, y: 22, pos: 'PIV' }, { x: 70, y: 22, pos: 'PIV' },
   ],
-  '3-1': [
+  '1-3-1': [
     { x: 50, y: 88, pos: 'GK' },
-    { x: 20, y: 60, pos: 'FIX' }, { x: 50, y: 65, pos: 'FIX' }, { x: 80, y: 60, pos: 'FIX' },
-    { x: 50, y: 25, pos: 'PIV' },
+    { x: 50, y: 68, pos: 'FIX' },
+    { x: 20, y: 45, pos: 'ALA' }, { x: 50, y: 42, pos: 'ALA' }, { x: 80, y: 45, pos: 'ALA' },
+    { x: 50, y: 22, pos: 'PIV' },
   ],
-  '2-1-1': [
+  '3-1-1': [
     { x: 50, y: 88, pos: 'GK' },
-    { x: 30, y: 65, pos: 'FIX' }, { x: 70, y: 65, pos: 'FIX' },
+    { x: 20, y: 68, pos: 'FIX' }, { x: 50, y: 70, pos: 'FIX' }, { x: 80, y: 68, pos: 'FIX' },
     { x: 50, y: 42, pos: 'ALA' },
     { x: 50, y: 22, pos: 'PIV' },
+  ],
+  '2-3': [
+    { x: 50, y: 88, pos: 'GK' },
+    { x: 30, y: 65, pos: 'FIX' }, { x: 70, y: 65, pos: 'FIX' },
+    { x: 20, y: 35, pos: 'ALA' }, { x: 50, y: 30, pos: 'PIV' }, { x: 80, y: 35, pos: 'ALA' },
   ],
 };
 

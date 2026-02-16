@@ -20,6 +20,7 @@
       "bundleIdentifier": "com.sportslive.app",
       "infoPlist": {
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ]
       }
@@ -31,6 +32,9 @@
       },
       "package": "com.sportslive.app",
       "permissions": [
+        "NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "VIBRATE",
         "NOTIFICATIONS",
         "POST_NOTIFICATIONS",
         "VIBRATE"
@@ -94,6 +98,12 @@
         "projectId": "50dea23a-24aa-438f-a124-d6a517f0d06a"
       }
     },
-    "owner": "afa750"
+    "owner": "afa750",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/50dea23a-24aa-438f-a124-d6a517f0d06a"
+    }
   }
 }

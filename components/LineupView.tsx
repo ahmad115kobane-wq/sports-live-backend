@@ -5,11 +5,10 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  ScrollView,
-  I18nManager,
   Platform,
+  Image,
 } from 'react-native';
-import Svg, { Rect, Line, Circle, G, Defs, LinearGradient, Stop, Path, Ellipse } from 'react-native-svg';
+import Svg, { Rect, Line, Circle, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -211,7 +210,6 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
   const currentLineup = selectedTeam === 'home' ? homeLineup : awayLineup;
   const currentTeam = selectedTeam === 'home' ? homeTeam : awayTeam;
   const teamColor = currentTeam.primaryColor || (selectedTeam === 'home' ? '#3B82F6' : '#EF4444');
-  const teamColorDark = selectedTeam === 'home' ? '#2563EB' : '#DC2626';
 
   const starters = currentLineup?.players?.filter(p => p.isStarter) || [];
   const substitutes = currentLineup?.players?.filter(p => !p.isStarter) || [];
@@ -223,12 +221,85 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
     return parts[parts.length - 1];
   };
 
+  // Translate position to Arabic
+  const translatePosition = (position?: string) => {
+    if (!position) return t('operator.sub');
+
+    const normalizedPosition = position.trim();
+    const upperPosition = normalizedPosition.toUpperCase();
+
+    const positionAliases: Record<string, string> = {
+      DEF: 'DF',
+      MID: 'MF',
+      FWD: 'FW',
+      ATT: 'FW',
+      GOALKEEPER: 'Goalkeeper',
+      DEFENDER: 'Defender',
+      MIDFIELDER: 'Midfielder',
+      FORWARD: 'Forward',
+    };
+
+    const translationKey = positionAliases[upperPosition] || normalizedPosition;
+    const translated = t(`positions.${translationKey}`);
+
+    // If translation key doesn't exist, return original
+    return translated.startsWith('positions.') ? normalizedPosition : translated;
+  };
+
   const getPlayerPixelPosition = (player: LineupPlayer) => {
     const posY = selectedTeam === 'away' ? 100 - (player.positionY || 50) : (player.positionY || 50);
     const posX = player.positionX || 50;
     const pixelX = (posX / 100) * (FIELD_WIDTH - FIELD_PADDING * 2) + FIELD_PADDING;
     const pixelY = (posY / 100) * (FIELD_HEIGHT - FIELD_PADDING * 2) + FIELD_PADDING;
     return { pixelX, pixelY };
+  };
+
+  const renderPlayerCard = (player: any, index: number) => {
+    const rawName = player?.player?.name || player?.name;
+    const shirtNumber = player?.player?.shirtNumber ?? player?.shirtNumber ?? '-';
+    const playerPosition = player?.position || player?.player?.position;
+    const imageUrl = player?.player?.imageUrl || player?.imageUrl;
+
+    return (
+      <View
+        key={player.id || index}
+        style={[styles.playerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
+        <View style={[styles.playerCardAccent, { backgroundColor: teamColor }]} />
+
+        <View style={[styles.playerCardBody, { flexDirection }]}> 
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.playerAvatarImage} />
+          ) : (
+            <View style={[styles.playerAvatarNumber, { backgroundColor: teamColor }]}> 
+              <Text style={styles.playerAvatarNumberText}>{shirtNumber}</Text>
+            </View>
+          )}
+
+          <View style={styles.playerCardTexts}>
+            <Text
+              style={[styles.playerCardName, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {getPlayerLastName(rawName) || rawName}
+            </Text>
+
+            <View style={[styles.playerCardMetaRow, { flexDirection }]}> 
+              <View style={[styles.playerMetaPill, { backgroundColor: colors.backgroundSecondary || colors.background }]}> 
+                <Text style={[styles.playerMetaText, { color: colors.textSecondary }]}> 
+                  {translatePosition(playerPosition)}
+                </Text>
+              </View>
+
+              <View style={[styles.playerMetaPill, { backgroundColor: colors.backgroundSecondary || colors.background }]}> 
+                <Text style={[styles.playerMetaText, { color: colors.textSecondary }]}>#{shirtNumber}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -366,12 +437,18 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                   >
                     {/* Shadow */}
                     <View style={[styles.playerMarkerShadow, { backgroundColor: 'rgba(0,0,0,0.25)' }]} />
-                    {/* Circle */}
-                    <View style={[styles.playerMarker, { backgroundColor: teamColor, borderColor: '#fff' }]}>
-                      <Text style={styles.playerMarkerNumber}>
-                        {player.player?.shirtNumber || ''}
-                      </Text>
-                    </View>
+                    {/* Circle with photo or number */}
+                    {player.player?.imageUrl ? (
+                      <View style={[styles.playerMarker, { backgroundColor: teamColor, borderColor: '#fff', overflow: 'hidden' }]}>
+                        <Image source={{ uri: player.player.imageUrl }} style={styles.playerPhotoField} />
+                      </View>
+                    ) : (
+                      <View style={[styles.playerMarker, { backgroundColor: teamColor, borderColor: '#fff' }]}>
+                        <Text style={styles.playerMarkerNumber}>
+                          {player.player?.shirtNumber || ''}
+                        </Text>
+                      </View>
+                    )}
                     {/* Captain badge */}
                     {player.isCaptain && (
                       <View style={styles.captainBadge}>
@@ -397,88 +474,47 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
           {substitutes.length > 0 && (
             <View style={styles.substitutesSection}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIcon, { backgroundColor: teamColor + '15' }]}>
+                <View style={[styles.sectionIcon, { backgroundColor: teamColor + '15' }]}> 
                   <Ionicons name="swap-horizontal" size={16} color={teamColor} />
                 </View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}> 
                   {t('match.substitutes')} <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '400' }}>({substitutes.length})</Text>
                 </Text>
               </View>
-              
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={[styles.substitutesList, isRTL && { flexDirection: 'row-reverse' }]}
-              >
-                {substitutes.map((player, index) => (
-                  <View
-                    key={player.id || index}
-                    style={[styles.substituteCard, { backgroundColor: colors.surfaceElevated || colors.surface }]}
-                  >
-                    <View style={styles.subCardTop}>
-                      <View style={[styles.substituteNumber, { backgroundColor: teamColor }]}>
-                        <Text style={styles.substituteNumberText}>
-                          {player.player?.shirtNumber || '-'}
-                        </Text>
-                      </View>
-                      <View style={[styles.positionBadge, { backgroundColor: colors.background }]}>
-                        <Text style={[styles.positionText, { color: colors.textSecondary }]}>
-                          {player.position || player.player?.position || 'SUB'}
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <Text
-                      style={[styles.substituteName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={2} 
-                      ellipsizeMode="tail"
-                    >
-                      {getPlayerLastName(player.player?.name) || player.player?.name}
-                    </Text>
-                  </View>
-                ))}
-              </ScrollView>
+
+              <View style={styles.playersStack}>
+                {substitutes.map((player, index) => renderPlayerCard(player, index))}
+              </View>
             </View>
           )}
         </>
       ) : (
-        /* No Lineup - Show team players grid */
+        /* No Lineup - Show team players as professional list cards */
         <View>
           {/* Show team players if available */}
           {currentTeam.players && currentTeam.players.length > 0 ? (
             <View>
-              <View style={[styles.noLineupHeader, { backgroundColor: colors.surface }]}>
-                <TeamLogo team={currentTeam} size="small" />
-                <Text style={[styles.noLineupHeaderText, { color: colors.text }]}>
-                  {currentTeam.name} ({currentTeam.players.length})
-                </Text>
+              <View style={[styles.noLineupHeader, { backgroundColor: colors.surface }]}> 
+                <View style={[styles.noLineupHeaderMain, { flexDirection }]}> 
+                  <TeamLogo team={currentTeam} size="small" />
+                  <Text style={[styles.noLineupHeaderText, { color: colors.text }]}> 
+                    {currentTeam.name}
+                  </Text>
+                </View>
+
+                <View style={[styles.noLineupCountBadge, { backgroundColor: teamColor + '15' }]}> 
+                  <Text style={[styles.noLineupCountText, { color: teamColor }]}> 
+                    {currentTeam.players.length}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.noLineupGrid}>
-                {currentTeam.players.map((player: any, index: number) => (
-                  <View
-                    key={player.id || index}
-                    style={[styles.noLineupCard, { backgroundColor: colors.surface }]}
-                  >
-                    <View style={[styles.noLineupNumber, { backgroundColor: teamColor }]}>
-                      <Text style={styles.noLineupNumberText}>
-                        {player.shirtNumber || '-'}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[styles.noLineupName, { color: colors.text, writingDirection: isRTL ? 'rtl' : 'ltr' }]}
-                      numberOfLines={2} ellipsizeMode="tail"
-                    >
-                      {player.name}
-                    </Text>
-                    <Text style={[styles.noLineupPosition, { color: teamColor }]}>
-                      {player.position ? (t(`positions.${player.position}`) || player.position) : '-'}
-                    </Text>
-                  </View>
-                ))}
+
+              <View style={styles.playersStack}>
+                {currentTeam.players.map((player: any, index: number) => renderPlayerCard(player, index))}
               </View>
             </View>
           ) : (
-            <View style={[styles.noLineupEmpty, { backgroundColor: colors.surface }]}>
+            <View style={[styles.noLineupEmpty, { backgroundColor: colors.surface }]}> 
               <Ionicons name="people-outline" size={36} color={colors.textTertiary} />
               <Text style={[styles.noLineupEmptyText, { color: colors.textSecondary }]}>
                 {t('match.lineupNotAvailable')}
@@ -487,6 +523,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
           )}
         </View>
       )}
+
     </View>
   );
 }
@@ -660,6 +697,75 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xl,
     paddingBottom: SPACING.md,
   },
+  playersStack: {
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  playerCard: {
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  playerCardAccent: {
+    height: 3,
+    width: '100%',
+  },
+  playerCardBody: {
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  playerAvatarImage: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  playerAvatarNumber: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 3,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  playerAvatarNumberText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+  },
+  playerCardTexts: {
+    flex: 1,
+    gap: SPACING.xs,
+  },
+  playerCardName: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+  },
+  playerCardMetaRow: {
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  playerMetaPill: {
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 3,
+  },
+  playerMetaText: {
+    ...TYPOGRAPHY.labelMedium,
+    fontFamily: FONTS.medium,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -678,128 +784,35 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.titleMedium,
     fontWeight: '700',
   },
-  substitutesList: {
-    paddingHorizontal: SPACING.xs,
-    paddingBottom: SPACING.sm,
-    gap: SPACING.md,
-  },
-  substituteCard: {
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
-    width: 110,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  subCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: SPACING.md,
-  },
-  substituteNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  substituteNumberText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-    fontFamily: FONTS.extraBold,
-  },
-  positionBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-  },
-  positionText: {
-    fontSize: 10,
-    fontWeight: '600',
-    fontFamily: FONTS.semiBold,
-  },
-  substituteName: {
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-    fontFamily: FONTS.semiBold,
-    textAlign: 'left',
-  },
   noLineupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     marginBottom: SPACING.md,
+    justifyContent: 'space-between',
+  },
+  noLineupHeaderMain: {
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   noLineupHeaderText: {
     ...TYPOGRAPHY.bodyMedium,
     fontWeight: '700',
     flex: 1,
   },
-  noLineupGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-  },
-  noLineupCard: {
-    width: (SCREEN_WIDTH - 32 - SPACING.sm * 3) / 3,
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xs,
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-  },
-  noLineupNumber: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  noLineupCountBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-      },
-      android: { elevation: 3 },
-    }),
+    paddingHorizontal: SPACING.sm,
   },
-  noLineupNumberText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '800',
-    fontFamily: FONTS.extraBold,
-  },
-  noLineupName: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 2,
-    lineHeight: 16,
-    fontFamily: FONTS.semiBold,
-  },
-  noLineupPosition: {
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
-    fontFamily: FONTS.semiBold,
+  noLineupCountText: {
+    ...TYPOGRAPHY.labelMedium,
+    fontFamily: FONTS.bold,
+    fontWeight: '700',
   },
   noLineupEmpty: {
     alignItems: 'center',
@@ -831,4 +844,12 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'left',
   },
+
+  // ── Player Photos ──
+  playerPhotoField: {
+    width: PLAYER_MARKER_SIZE,
+    height: PLAYER_MARKER_SIZE,
+    borderRadius: PLAYER_MARKER_SIZE / 2,
+  },
+
 });

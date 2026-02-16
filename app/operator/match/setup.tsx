@@ -610,7 +610,7 @@ export default function MatchSetupScreen() {
                 <TouchableOpacity
                   style={[styles.addStarterBtn, { backgroundColor: teamColor + '15', borderColor: teamColor }]}
                   onPress={() => toggleStarter(player)}
-                  disabled={currentStarters.length >= 11}
+                  disabled={currentStarters.length >= maxStarters}
                 >
                   <Ionicons name="add" size={16} color={teamColor} />
                   <Text style={[styles.addBtnLabel, { color: teamColor }]}>{t('operator.starter')}</Text>

@@ -16,7 +16,7 @@ import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
+import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '@/constants/Theme';
 import { teamApi, playerApi, matchApi } from '@/services/api';
 import { Team, Player, Match } from '@/types';
 import TeamLogo from '@/components/ui/TeamLogo';
@@ -216,9 +216,7 @@ export default function SearchScreen() {
           <View style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection }]}>
               <Ionicons name="shield-outline" size={18} color={colors.accent} style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }} />
-              <Text 
-                style={[styles.sectionTitle, { color: colors.text }]}
-              >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {t('search.teams')} ({teams.length})
               </Text>
             </View>
@@ -230,7 +228,7 @@ export default function SearchScreen() {
               >
                 <TeamLogo team={team} size="medium" />
                 <View style={[styles.teamInfo, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0 }]}>
-                  <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{team.name}</Text>
+                  <Text style={[styles.teamName, { color: colors.text }]}>{team.name}</Text>
                   <Text style={[styles.teamCountry, { color: colors.textSecondary }]}>
                     {team.country} • {team.shortName}
                   </Text>
@@ -260,8 +258,8 @@ export default function SearchScreen() {
                   <Text style={styles.playerNumberText}>{player.shirtNumber || '-'}</Text>
                 </View>
                 <View style={[styles.playerInfo, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0 }]}>
-                  <Text style={[styles.playerName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{player.name}</Text>
-                  <Text style={[styles.playerDetails, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
+                  <Text style={[styles.playerName, { color: colors.text }]}>{player.name}</Text>
+                  <Text style={[styles.playerDetails, { color: colors.textSecondary }]}>
                     {player.position ? (t(`positions.${player.position}`) || player.position) : '-'} • {player.team?.name || t('match.freeAgent')}
                   </Text>
                 </View>
@@ -438,7 +436,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
     fontVariant: ['tabular-nums'],
-    fontFamily: FONTS.extraBold,
   },
   playerInfo: {
     flex: 1,
