@@ -456,6 +456,13 @@ export default function HomeScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <TouchableOpacity 
               style={styles.headerBtn}
+              onPress={() => router.push('/previous-matches' as any)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="time-outline" size={20} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerBtn}
               onPress={() => router.push('/search' as any)}
               activeOpacity={0.7}
             >

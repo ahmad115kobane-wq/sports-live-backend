@@ -16,6 +16,7 @@ import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { getCategoryRules } from '@/constants/categoryRules';
+import { SOCKET_URL } from '@/constants/config';
 
 interface LineupPlayer {
   id: string;
@@ -38,6 +39,7 @@ interface Lineup {
   id: string;
   formation?: string;
   coach?: string;
+  coachImageUrl?: string;
   team?: {
     id: string;
     name: string;
@@ -282,7 +284,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {getPlayerLastName(rawName) || rawName}
+              {rawName}
             </Text>
 
             <View style={[styles.playerCardMetaRow, { flexDirection }]}> 
@@ -366,9 +368,22 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
           {/* Coach Info Bar (Compact) */}
           {currentLineup.coach && (
             <View style={[styles.coachBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="person-circle-outline" size={20} color={colors.textSecondary} />
-              <Text style={[styles.coachLabel, { color: colors.textSecondary }]}>{t('match.coach')}:</Text>
-              <Text style={[styles.coachName, { color: colors.text }]}>{currentLineup.coach}</Text>
+              {(() => {
+                const imgUrl = currentLineup.coachImageUrl
+                  ? (currentLineup.coachImageUrl.startsWith('http') ? currentLineup.coachImageUrl : `${SOCKET_URL}${currentLineup.coachImageUrl}`)
+                  : null;
+                return imgUrl ? (
+                  <Image source={{ uri: imgUrl }} style={styles.coachAvatar} />
+                ) : (
+                  <View style={[styles.coachAvatarFallback, { backgroundColor: teamColor + '15' }]}>
+                    <Ionicons name="person" size={18} color={teamColor} />
+                  </View>
+                );
+              })()}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.coachNameFull, { color: colors.text }]}>{currentLineup.coach}</Text>
+                <Text style={[styles.coachLabel, { color: colors.textSecondary }]}>{t('match.coach')}</Text>
+              </View>
             </View>
           )}
 
@@ -461,7 +476,7 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
                         style={[styles.playerNameText, { writingDirection: isRTL ? 'rtl' : 'ltr' }]}
                         numberOfLines={2} ellipsizeMode="tail"
                       >
-                        {getPlayerLastName(player.player?.name)}
+                        {player.player?.name}
                       </Text>
                     </View>
                   </View>
@@ -834,15 +849,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: SPACING.sm,
   },
-  coachLabel: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '600',
+  coachAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
-  coachName: {
+  coachAvatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coachNameFull: {
     ...TYPOGRAPHY.bodyMedium,
     fontWeight: '700',
-    flex: 1,
-    textAlign: 'left',
+  },
+  coachLabel: {
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '500',
+    marginTop: 2,
   },
 
   // ── Player Photos ──
