@@ -78,6 +78,7 @@ export default function AdminScreen() {
   const [selectedAssistant1Id, setSelectedAssistant1Id] = useState('');
   const [selectedAssistant2Id, setSelectedAssistant2Id] = useState('');
   const [selectedFourthId, setSelectedFourthId] = useState('');
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
 
   // Video Ad form state
@@ -105,6 +106,7 @@ export default function AdminScreen() {
   const [showCompetitionPicker, setShowCompetitionPicker] = useState(false);
   const [showOperatorPicker, setShowOperatorPicker] = useState(false);
   const [showRefereePicker, setShowRefereePicker] = useState<'main' | 'assistant1' | 'assistant2' | 'fourth' | null>(null);
+  const [showSupervisorPicker, setShowSupervisorPicker] = useState(false);
 
   // Supervisor form state
   const [supervisorForm, setSupervisorForm] = useState({ name: '', nationality: '', isActive: true });
@@ -194,6 +196,7 @@ export default function AdminScreen() {
         assistantReferee1Id: selectedAssistant1Id || undefined,
         assistantReferee2Id: selectedAssistant2Id || undefined,
         fourthRefereeId: selectedFourthId || undefined,
+        supervisorId: selectedSupervisorId || undefined,
         isFeatured,
         operatorId: selectedOperator || undefined,
       } as any);
@@ -355,6 +358,7 @@ export default function AdminScreen() {
     setSelectedAssistant1Id('');
     setSelectedAssistant2Id('');
     setSelectedFourthId('');
+    setSelectedSupervisorId('');
     setIsFeatured(false);
   };
 
@@ -689,6 +693,27 @@ export default function AdminScreen() {
                 </View>
               </TouchableOpacity>
             </View>
+          </View>
+
+          {/* Supervisor */}
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>مشرف المباراة</Text>
+            <TouchableOpacity
+              style={[styles.selector, { backgroundColor: colors.background, borderColor: selectedSupervisorId ? colors.accent : colors.border }]}
+              onPress={() => setShowSupervisorPicker(true)}
+            >
+              <View style={styles.selectorInner}>
+                {selectedSupervisorId && getSupervisorById(selectedSupervisorId)?.imageUrl ? (
+                  <Image source={{ uri: getSupervisorById(selectedSupervisorId)?.imageUrl }} style={{ width: 24, height: 24, borderRadius: 12 }} />
+                ) : (
+                  <Ionicons name="eye-outline" size={18} color={selectedSupervisorId ? colors.accent : colors.textTertiary} />
+                )}
+                <Text style={[styles.selectorText, { color: selectedSupervisorId ? colors.text : colors.textTertiary }]}>
+                  {selectedSupervisorId ? getSupervisorById(selectedSupervisorId)?.name : 'اختر مشرف المباراة'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-down" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
           </View>
 
           {/* Operator */}
@@ -1336,6 +1361,72 @@ export default function AdminScreen() {
               <Ionicons name="flag-outline" size={48} color={colors.textTertiary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 لا يوجد حكام{'\n'}قم بإضافة حكام من صفحة الحكام
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </AppModal>
+
+      {/* Supervisor Picker Modal */}
+      <AppModal
+        visible={showSupervisorPicker}
+        onClose={() => setShowSupervisorPicker(false)}
+        title="اختر مشرف المباراة"
+        icon="eye"
+        maxHeight="70%"
+      >
+        <ScrollView style={styles.modalList}>
+          {/* Option to clear selection */}
+          <TouchableOpacity
+            style={[
+              styles.modalItem,
+              { borderBottomColor: colors.border },
+              !selectedSupervisorId && { backgroundColor: colors.accent + '20' }
+            ]}
+            onPress={() => {
+              setSelectedSupervisorId('');
+              setShowSupervisorPicker(false);
+            }}
+          >
+            <Ionicons name="close-circle-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.modalItemText, { color: colors.textSecondary }]}>بدون مشرف</Text>
+          </TouchableOpacity>
+          {safeSupervisors.map((sup: any) => (
+            <TouchableOpacity
+              key={sup.id}
+              style={[
+                styles.modalItem,
+                { borderBottomColor: colors.border },
+                selectedSupervisorId === sup.id && { backgroundColor: colors.accent + '20' }
+              ]}
+              onPress={() => {
+                setSelectedSupervisorId(sup.id);
+                setShowSupervisorPicker(false);
+              }}
+            >
+              {sup.imageUrl ? (
+                <Image source={{ uri: sup.imageUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+              ) : (
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent + '20', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name="eye" size={18} color={colors.accent} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalItemText, { color: colors.text }]}>{sup.name}</Text>
+                {sup.nationality && (
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{sup.nationality}</Text>
+                )}
+              </View>
+              {selectedSupervisorId === sup.id && (
+                <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
+              )}
+            </TouchableOpacity>
+          ))}
+          {safeSupervisors.length === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="eye-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                لا يوجد مشرفين{'\n'}قم بإضافة مشرفين من تبويب المشرفون
               </Text>
             </View>
           )}

@@ -19,24 +19,25 @@ import { supervisorApi } from '@/services/api';
 import AppDialog from '@/components/ui/AppDialog';
 import AppModal from '@/components/ui/AppModal';
 
-interface Supervisor {
+interface MatchSupervisor {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   avatar?: string;
   isActive: boolean;
-  permissions: string[];
+  experience: string; // سنوات الخبرة
+  specialization: string; // التخصص
   assignedMatches: number;
   createdAt: string;
 }
 
-export default function SupervisorsManagementScreen() {
+export default function MatchSupervisorsManagementScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
 
-  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [supervisors, setSupervisors] = useState<MatchSupervisor[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -45,8 +46,9 @@ export default function SupervisorsManagementScreen() {
   const [totalSupervisors, setTotalSupervisors] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedSupervisor, setSelectedSupervisor] = useState<Supervisor | null>(null);
+  const [selectedSupervisor, setSelectedSupervisor] = useState<MatchSupervisor | null>(null);
   const [showSupervisorModal, setShowSupervisorModal] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
 
   const loadSupervisors = async (pageNum = 1, isRefresh = false) => {
     try {
@@ -57,10 +59,8 @@ export default function SupervisorsManagementScreen() {
       }
 
       const response = await supervisorApi.getAll({
-        page: pageNum,
-        limit: 20,
         search: searchQuery,
-        status: filterStatus !== 'all' ? filterStatus : undefined,
+        active: filterStatus !== 'all' ? filterStatus : undefined,
       });
 
       if (isRefresh) {
@@ -69,11 +69,11 @@ export default function SupervisorsManagementScreen() {
         setSupervisors(prev => [...prev, ...response.data.data]);
       }
 
-      setTotalSupervisors(response.data.total);
-      setHasMore(response.data.data.length === 20);
+      setTotalSupervisors(response.data.data?.length || 0);
+      setHasMore(false); // API doesn't support pagination
       setPage(pageNum);
     } catch (error) {
-      console.error('Error loading supervisors:', error);
+      console.error('Error loading match supervisors:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -105,21 +105,23 @@ export default function SupervisorsManagementScreen() {
     loadSupervisors(1, true);
   };
 
-  const handleSupervisorPress = (supervisor: Supervisor) => {
+  const handleSupervisorPress = (supervisor: MatchSupervisor) => {
     setSelectedSupervisor(supervisor);
     setShowSupervisorModal(true);
   };
 
   const handleToggleStatus = async (supervisorId: string, currentStatus: boolean) => {
     try {
-      await supervisorApi.updateStatus(supervisorId, !currentStatus);
+      const formData = new FormData();
+      formData.append('isActive', (!currentStatus).toString());
+      await supervisorApi.update(supervisorId, formData);
       setSupervisors(prev =>
         prev.map(s =>
           s.id === supervisorId ? { ...s, isActive: !currentStatus } : s
         )
       );
     } catch (error) {
-      console.error('Error updating supervisor status:', error);
+      console.error('Error updating match supervisor status:', error);
     }
   };
 
@@ -128,7 +130,7 @@ export default function SupervisorsManagementScreen() {
       await supervisorApi.delete(supervisorId);
       setSupervisors(prev => prev.filter(s => s.id !== supervisorId));
     } catch (error) {
-      console.error('Error deleting supervisor:', error);
+      console.error('Error deleting match supervisor:', error);
     }
   };
 
@@ -136,7 +138,7 @@ export default function SupervisorsManagementScreen() {
     loadSupervisors();
   }, []);
 
-  const renderSupervisorItem = ({ item }: { item: Supervisor }) => (
+  const renderSupervisorItem = ({ item }: { item: MatchSupervisor }) => (
     <TouchableOpacity
       style={[styles.supervisorCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
       onPress={() => handleSupervisorPress(item)}
@@ -183,23 +185,19 @@ export default function SupervisorsManagementScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={[styles.permissionsContainer, { borderTopColor: colors.divider }]}>
-        <Text style={[styles.permissionsLabel, { color: colors.textTertiary }]}>الصلاحيات:</Text>
-        <View style={styles.permissionsList}>
-          {item.permissions.slice(0, 3).map((permission, index) => (
-            <View key={index} style={[styles.permissionTag, { backgroundColor: colors.accent + '20' }]}>
-              <Text style={[styles.permissionText, { color: colors.accent }]} numberOfLines={1} ellipsizeMode="tail">
-                {permission}
-              </Text>
-            </View>
-          ))}
-          {item.permissions.length > 3 && (
-            <View style={[styles.moreTag, { backgroundColor: colors.textTertiary + '20' }]}>
-              <Text style={[styles.moreText, { color: colors.textTertiary }]}>
-                +{item.permissions.length - 3}
-              </Text>
-            </View>
-          )}
+      <View style={[styles.specializationContainer, { borderTopColor: colors.divider }]}>
+        <Text style={[styles.specializationLabel, { color: colors.textTertiary }]}>التخصص:</Text>
+        <View style={styles.specializationList}>
+          <View style={[styles.specializationTag, { backgroundColor: colors.accent + '20' }]}>
+            <Text style={[styles.specializationText, { color: colors.accent }]} numberOfLines={1} ellipsizeMode="tail">
+              {item.specialization}
+            </Text>
+          </View>
+          <View style={[styles.experienceTag, { backgroundColor: colors.success + '20' }]}>
+            <Text style={[styles.experienceText, { color: colors.success }]} numberOfLines={1} ellipsizeMode="tail">
+              {item.experience} سنوات خبرة
+            </Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -307,19 +305,102 @@ export default function SupervisorsManagementScreen() {
       <TouchableOpacity
         style={[styles.addBtn, { backgroundColor: colors.accent }]}
         onPress={() => {
-          // TODO: Implement add supervisor
+          setSelectedSupervisor(null);
+          setIsAddingNew(true);
+          setShowSupervisorModal(true);
         }}
       >
         <Ionicons name="add" size={24} color={colors.background} />
       </TouchableOpacity>
 
-      {/* Supervisor Details Modal */}
+      {/* Supervisor Details/Add Modal */}
       <AppModal
         visible={showSupervisorModal}
-        onClose={() => setShowSupervisorModal(false)}
-        title="تفاصيل المشرف"
+        onClose={() => {
+          setShowSupervisorModal(false);
+          setIsAddingNew(false);
+        }}
+        title={isAddingNew ? "إضافة مشرف جديد" : "تفاصيل المشرف"}
       >
-        {selectedSupervisor && (
+        {isAddingNew ? (
+          <View style={styles.modalContent}>
+            <Text style={[styles.modalName, { color: colors.text }]}>إضافة مشرف جديد</Text>
+            <Text style={[styles.modalEmail, { color: colors.textTertiary }]}>املأ بيانات المشرف الجديد</Text>
+            
+            <View style={[styles.modalSection, { borderTopColor: colors.divider }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>معلومات المشرف</Text>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>الاسم</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                  placeholder="أدخل اسم المشرف"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>البريد الإلكتروني</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                  placeholder="أدخل البريد الإلكتروني"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="email-address"
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>رقم الهاتف</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                  placeholder="أدخل رقم الهاتف"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
+
+            <View style={[styles.modalSection, { borderTopColor: colors.divider }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>التخصص والخبرة</Text>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>التخصص</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                  placeholder="أدخل التخصص (مثال: كرة قدم، كرة سلة)"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>سنوات الخبرة</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                  placeholder="أدخل سنوات الخبرة"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalActionBtn, { backgroundColor: colors.accent }]}
+                onPress={() => {
+                  // TODO: Implement save new supervisor
+                  setShowSupervisorModal(false);
+                  setIsAddingNew(false);
+                }}
+              >
+                <Text style={[styles.modalActionText, { color: colors.background }]}>حفظ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalActionBtn, { backgroundColor: colors.error + '20' }]}
+                onPress={() => {
+                  setShowSupervisorModal(false);
+                  setIsAddingNew(false);
+                }}
+              >
+                <Text style={[styles.modalActionText, { color: colors.error }]}>إلغاء</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : selectedSupervisor && (
           <View style={styles.modalContent}>
             <View style={styles.modalAvatarContainer}>
               {selectedSupervisor.avatar ? (
@@ -353,13 +434,14 @@ export default function SupervisorsManagementScreen() {
               </Text>
             </View>
             <View style={[styles.modalSection, { borderTopColor: colors.divider }]}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>الصلاحيات</Text>
-              <View style={styles.modalPermissions}>
-                {selectedSupervisor.permissions.map((permission, index) => (
-                  <View key={index} style={[styles.modalPermissionTag, { backgroundColor: colors.accent + '20' }]}>
-                    <Text style={[styles.modalPermissionText, { color: colors.accent }]}>{permission}</Text>
-                  </View>
-                ))}
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>التخصص والخبرة</Text>
+              <View style={styles.modalSpecialization}>
+                <View style={[styles.modalSpecializationTag, { backgroundColor: colors.accent + '20' }]}>
+                  <Text style={[styles.modalSpecializationText, { color: colors.accent }]}>{selectedSupervisor.specialization}</Text>
+                </View>
+                <View style={[styles.modalExperienceTag, { backgroundColor: colors.success + '20' }]}>
+                  <Text style={[styles.modalExperienceText, { color: colors.success }]}>{selectedSupervisor.experience} سنوات خبرة</Text>
+                </View>
               </View>
             </View>
             <View style={styles.modalActions}>
@@ -375,16 +457,9 @@ export default function SupervisorsManagementScreen() {
               <TouchableOpacity
                 style={[styles.modalActionBtn, { backgroundColor: colors.error + '20' }]}
                 onPress={() => {
-                  AppDialog.show({
-                    title: 'حذف المشرف',
-                    message: `هل أنت متأكد من حذف المشرف ${selectedSupervisor.name}؟`,
-                    confirmText: 'حذف',
-                    cancelText: 'إلغاء',
-                    onConfirm: () => {
-                      handleDeleteSupervisor(selectedSupervisor.id);
-                      setShowSupervisorModal(false);
-                    },
-                  });
+                  // TODO: Implement delete confirmation dialog
+                  handleDeleteSupervisor(selectedSupervisor.id);
+                  setShowSupervisorModal(false);
                 }}
               >
                 <Text style={[styles.modalActionText, { color: colors.error }]}>حذف</Text>
@@ -691,5 +766,76 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     fontFamily: FONTS.semiBold,
+  },
+  inputContainer: {
+    marginBottom: SPACING.md,
+  },
+  inputLabel: {
+    fontSize: 14,
+    marginBottom: SPACING.xs,
+    fontFamily: FONTS.medium,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    fontSize: 15,
+    fontFamily: FONTS.regular,
+  },
+  specializationContainer: {
+    padding: SPACING.md,
+    borderTopWidth: 1,
+  },
+  specializationLabel: {
+    fontSize: 13,
+    marginBottom: SPACING.xs,
+    fontFamily: FONTS.medium,
+  },
+  specializationList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+  },
+  specializationTag: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+  },
+  specializationText: {
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+  },
+  experienceTag: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+  },
+  experienceText: {
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+  },
+  modalSpecialization: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+  },
+  modalSpecializationTag: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+  },
+  modalSpecializationText: {
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+  },
+  modalExperienceTag: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+  },
+  modalExperienceText: {
+    fontSize: 12,
+    fontFamily: FONTS.medium,
   },
 });
