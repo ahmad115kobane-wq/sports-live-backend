@@ -551,19 +551,23 @@ router.get('/:id/lineup', async (req, res) => {
 router.post('/:matchId/lineup/:teamId', authenticate, isOperator, async (req: AuthRequest, res) => {
   try {
     const { matchId, teamId } = req.params;
-    const { formation, coach, players } = req.body;
+    const { formation, coach, coachImageUrl, players } = req.body;
     // players: [{ playerId, position, positionX, positionY, isStarter, isCaptain }]
 
-    // Validate starters count based on team category
-    const team = await prisma.team.findUnique({ where: { id: teamId }, select: { category: true } });
-    if (team) {
+    // Validate starters count based on competition type
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      select: { competition: { select: { type: true } } },
+    });
+    if (match?.competition) {
       const { getCategoryRules } = require('../utils/categoryRules');
-      const rules = getCategoryRules(team.category);
+      const compType = (match.competition.type || 'football').toUpperCase();
+      const rules = getCategoryRules(compType);
       const starterCount = players.filter((p: any) => p.isStarter).length;
       if (starterCount > rules.maxStarters) {
         return res.status(400).json({
           success: false,
-          message: `Maximum ${rules.maxStarters} starters allowed for ${team.category}`,
+          message: `Maximum ${rules.maxStarters} starters allowed for ${compType}`,
         });
       }
     }
@@ -587,6 +591,7 @@ router.post('/:matchId/lineup/:teamId', authenticate, isOperator, async (req: Au
         data: {
           formation,
           coach,
+          coachImageUrl,
           players: {
             create: players.map((p: any) => ({
               playerId: p.playerId,
@@ -613,6 +618,7 @@ router.post('/:matchId/lineup/:teamId', authenticate, isOperator, async (req: Au
           teamId,
           formation,
           coach,
+          coachImageUrl,
           players: {
             create: players.map((p: any) => ({
               playerId: p.playerId,

@@ -27,11 +27,11 @@ export const CATEGORY_RULES: Record<string, CategoryRule> = {
   },
   FUTSAL: {
     category: 'FUTSAL',
-    maxStarters: 5,
+    maxStarters: 6,
     maxSubs: 7,
     maxSquad: 14,
     formations: [
-      '1-2-2', '2-2', '1-2-1', '1-1-2', '1-3', '3-1', '2-1-1',
+      '2-2-1', '1-2-2', '2-1-2', '1-3-1', '3-1-1', '2-3',
     ],
     fieldType: 'futsal',
     halfDuration: 20,
@@ -147,45 +147,42 @@ export const FOOTBALL_FORMATION_POSITIONS: Record<string, { position: string; x:
   ],
 };
 
-// Formation positions for FUTSAL (5 players)
+// Formation positions for FUTSAL (6 players: GK + 5 outfield)
 export const FUTSAL_FORMATION_POSITIONS: Record<string, { position: string; x: number; y: number }[]> = {
+  '2-2-1': [
+    { position: 'GK', x: 50, y: 88 },
+    { position: 'FIX', x: 30, y: 68 }, { position: 'FIX', x: 70, y: 68 },
+    { position: 'ALA', x: 30, y: 45 }, { position: 'ALA', x: 70, y: 45 },
+    { position: 'PIV', x: 50, y: 22 },
+  ],
   '1-2-2': [
     { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 30, y: 60 }, { position: 'FIX', x: 70, y: 60 },
-    { position: 'ALA', x: 30, y: 30 }, { position: 'PIV', x: 70, y: 30 },
-  ],
-  '2-2': [
-    { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 30, y: 60 }, { position: 'FIX', x: 70, y: 60 },
-    { position: 'ALA', x: 30, y: 30 }, { position: 'PIV', x: 70, y: 30 },
-  ],
-  '1-2-1': [
-    { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 50, y: 65 },
-    { position: 'ALA', x: 25, y: 45 }, { position: 'ALA', x: 75, y: 45 },
-    { position: 'PIV', x: 50, y: 22 },
-  ],
-  '1-1-2': [
-    { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 50, y: 65 },
-    { position: 'ALA', x: 50, y: 45 },
+    { position: 'FIX', x: 50, y: 68 },
+    { position: 'ALA', x: 25, y: 48 }, { position: 'ALA', x: 75, y: 48 },
     { position: 'PIV', x: 30, y: 25 }, { position: 'PIV', x: 70, y: 25 },
   ],
-  '1-3': [
+  '2-1-2': [
     { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 50, y: 65 },
-    { position: 'ALA', x: 20, y: 35 }, { position: 'ALA', x: 50, y: 30 }, { position: 'PIV', x: 80, y: 35 },
+    { position: 'FIX', x: 30, y: 68 }, { position: 'FIX', x: 70, y: 68 },
+    { position: 'ALA', x: 50, y: 45 },
+    { position: 'PIV', x: 30, y: 22 }, { position: 'PIV', x: 70, y: 22 },
   ],
-  '3-1': [
+  '1-3-1': [
     { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 20, y: 60 }, { position: 'FIX', x: 50, y: 65 }, { position: 'FIX', x: 80, y: 60 },
-    { position: 'PIV', x: 50, y: 25 },
+    { position: 'FIX', x: 50, y: 68 },
+    { position: 'ALA', x: 20, y: 45 }, { position: 'ALA', x: 50, y: 42 }, { position: 'ALA', x: 80, y: 45 },
+    { position: 'PIV', x: 50, y: 22 },
   ],
-  '2-1-1': [
+  '3-1-1': [
     { position: 'GK', x: 50, y: 88 },
-    { position: 'FIX', x: 30, y: 65 }, { position: 'FIX', x: 70, y: 65 },
+    { position: 'FIX', x: 20, y: 68 }, { position: 'FIX', x: 50, y: 70 }, { position: 'FIX', x: 80, y: 68 },
     { position: 'ALA', x: 50, y: 42 },
     { position: 'PIV', x: 50, y: 22 },
+  ],
+  '2-3': [
+    { position: 'GK', x: 50, y: 88 },
+    { position: 'FIX', x: 30, y: 65 }, { position: 'FIX', x: 70, y: 65 },
+    { position: 'ALA', x: 20, y: 35 }, { position: 'PIV', x: 50, y: 30 }, { position: 'ALA', x: 80, y: 35 },
   ],
 };
 
