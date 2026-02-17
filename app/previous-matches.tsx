@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
@@ -37,8 +38,10 @@ export default function PreviousMatchesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activePeriod, setActivePeriod] = useState<FilterPeriod>('week');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
+  const [customFromDate, setCustomFromDate] = useState<Date>(subDays(new Date(), 7));
+  const [customToDate, setCustomToDate] = useState<Date>(new Date());
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
 
   const getDateRange = useCallback(() => {
     const today = new Date();
@@ -50,11 +53,11 @@ export default function PreviousMatchesScreen() {
       case 'month':
         return { from: format(subMonths(today, 1), 'yyyy-MM-dd'), to };
       case 'custom':
-        return { from: customFrom || format(subDays(today, 7), 'yyyy-MM-dd'), to: customTo || to };
+        return { from: format(customFromDate, 'yyyy-MM-dd'), to: format(customToDate, 'yyyy-MM-dd') };
       default:
         return { from: format(subDays(today, 7), 'yyyy-MM-dd'), to };
     }
-  }, [activePeriod, customFrom, customTo]);
+  }, [activePeriod, customFromDate, customToDate]);
 
   const loadMatches = useCallback(async () => {
     try {
@@ -78,7 +81,7 @@ export default function PreviousMatchesScreen() {
   useEffect(() => {
     setLoading(true);
     loadMatches();
-  }, [activePeriod, customFrom, customTo]);
+  }, [activePeriod, customFromDate, customToDate]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -171,38 +174,58 @@ export default function PreviousMatchesScreen() {
           })}
         </ScrollView>
 
-        {/* Custom Date Inputs */}
+        {/* Custom Date Pickers */}
         {activePeriod === 'custom' && (
           <View style={[styles.customDateRow, { flexDirection }]}>
-            <View style={styles.dateInputWrap}>
-              <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>من</Text>
-              <TextInput
-                style={[styles.dateInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
-                value={customFrom}
-                onChangeText={setCustomFrom}
-                placeholder="2025-01-01"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-            <View style={styles.dateInputWrap}>
-              <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>إلى</Text>
-              <TextInput
-                style={[styles.dateInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
-                value={customTo}
-                onChangeText={setCustomTo}
-                placeholder="2025-12-31"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
             <TouchableOpacity
-              style={[styles.applyBtn, { backgroundColor: colors.accent }]}
-              onPress={() => { setLoading(true); loadMatches(); }}
+              style={[styles.datePickerBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => setShowFromPicker(true)}
+              activeOpacity={0.7}
             >
-              <Ionicons name="checkmark" size={18} color="#fff" />
+              <Ionicons name="calendar-outline" size={16} color={colors.accent} />
+              <View>
+                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>من</Text>
+                <Text style={[styles.dateValue, { color: colors.text }]}>{format(customFromDate, 'yyyy/MM/dd')}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.datePickerBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+              onPress={() => setShowToPicker(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="calendar-outline" size={16} color={colors.accent} />
+              <View>
+                <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>إلى</Text>
+                <Text style={[styles.dateValue, { color: colors.text }]}>{format(customToDate, 'yyyy/MM/dd')}</Text>
+              </View>
             </TouchableOpacity>
           </View>
+        )}
+
+        {showFromPicker && (
+          <DateTimePicker
+            value={customFromDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            maximumDate={customToDate}
+            onChange={(_, date) => {
+              setShowFromPicker(false);
+              if (date) setCustomFromDate(date);
+            }}
+          />
+        )}
+        {showToPicker && (
+          <DateTimePicker
+            value={customToDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            minimumDate={customFromDate}
+            maximumDate={new Date()}
+            onChange={(_, date) => {
+              setShowToPicker(false);
+              if (date) setCustomToDate(date);
+            }}
+          />
         )}
       </View>
 
@@ -314,26 +337,28 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
   },
   customDateRow: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: SPACING.sm,
     paddingBottom: SPACING.xs,
   },
-  dateInputWrap: {
+  datePickerBtn: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   dateLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: FONTS.medium,
-    marginBottom: 4,
   },
-  dateInput: {
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    fontSize: 13,
-    fontFamily: FONTS.regular,
-    textAlign: 'center',
+  dateValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   applyBtn: {
     width: 38,

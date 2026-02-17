@@ -54,10 +54,12 @@ export default function MatchesManagementScreen() {
   const { t, isRTL, flexDirection } = useRTL();
 
   const [matches, setMatches] = useState<Match[]>([]);
+  const [finishedMatches, setFinishedMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [activeMainTab, setActiveMainTab] = useState<'upcoming' | 'finished'>('upcoming');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -110,9 +112,20 @@ export default function MatchesManagementScreen() {
   const loadMatches = async () => {
     try {
       setLoading(true);
+      // Load upcoming/live matches
       const response = await matchApi.getAll();
       const data = response.data?.data || response.data || [];
-      setMatches(Array.isArray(data) ? data : []);
+      const allMatches = Array.isArray(data) ? data : [];
+      setMatches(allMatches.filter((m: Match) => m.status !== 'finished'));
+
+      // Load finished matches (last 30 days)
+      const now = new Date();
+      const from = new Date(now);
+      from.setDate(from.getDate() - 30);
+      const finishedRes = await matchApi.getAll({ status: 'finished', from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] });
+      const finData = finishedRes.data?.data || finishedRes.data || [];
+      const sorted = (Array.isArray(finData) ? finData : []).sort((a: Match, b: Match) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+      setFinishedMatches(sorted);
     } catch (error) {
       console.error('Error loading matches:', error);
       showError(t('admin.error'), t('admin.loadFailed'));
@@ -198,14 +211,15 @@ export default function MatchesManagementScreen() {
     }
   };
 
-  const filteredMatches = matches.filter((match) => {
+  const sourceMatches = activeMainTab === 'finished' ? finishedMatches : matches;
+  const filteredMatches = sourceMatches.filter((match) => {
     const matchesSearch = 
       match.homeTeam.name.includes(searchQuery) ||
       match.awayTeam.name.includes(searchQuery) ||
       match.competition.name.includes(searchQuery);
     
+    if (activeMainTab === 'finished') return matchesSearch;
     const matchesFilter = filterStatus === 'all' || match.status === filterStatus;
-    
     return matchesSearch && matchesFilter;
   });
 
@@ -316,6 +330,28 @@ export default function MatchesManagementScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Main Tabs: Upcoming vs Finished */}
+      <View style={[styles.mainTabsRow, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.mainTab, activeMainTab === 'upcoming' && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
+          onPress={() => setActiveMainTab('upcoming')}
+        >
+          <Ionicons name="football-outline" size={16} color={activeMainTab === 'upcoming' ? colors.accent : colors.textSecondary} />
+          <Text style={[styles.mainTabText, { color: activeMainTab === 'upcoming' ? colors.accent : colors.textSecondary }]}>
+            القادمة والجارية ({matches.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.mainTab, activeMainTab === 'finished' && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
+          onPress={() => setActiveMainTab('finished')}
+        >
+          <Ionicons name="checkmark-done-outline" size={16} color={activeMainTab === 'finished' ? colors.accent : colors.textSecondary} />
+          <Text style={[styles.mainTabText, { color: activeMainTab === 'finished' ? colors.accent : colors.textSecondary }]}>
+            المنتهية ({finishedMatches.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Search & Filter */}
       <View style={styles.searchContainer}>
         <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -331,13 +367,12 @@ export default function MatchesManagementScreen() {
         </View>
       </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
+      {/* Filter Tabs - only for upcoming tab */}
+      {activeMainTab === 'upcoming' && <View style={styles.filterContainer}>
         {[
           { key: 'all', label: 'الكل' },
           { key: 'scheduled', label: 'قادمة' },
           { key: 'live', label: 'مباشر' },
-          { key: 'finished', label: 'انتهت' },
         ].map((filter) => (
           <TouchableOpacity
             key={filter.key}
@@ -356,7 +391,7 @@ export default function MatchesManagementScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </View>}
 
       {/* Matches List */}
       <FlatList
@@ -565,6 +600,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  mainTabsRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+  },
+  mainTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: SPACING.md,
+  },
+  mainTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   searchContainer: {
     padding: SPACING.md,
