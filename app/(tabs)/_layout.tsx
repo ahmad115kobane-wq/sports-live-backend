@@ -165,8 +165,8 @@ export default function TabLayout() {
             <TabIcon 
               name="star" 
               focused={focused} 
-              color={focused ? colors.tertiary : color}
-              accentColor={colors.tertiary}
+              color={color}
+              accentColor={colors.accent}
               isDark={isDark}
             />
           ),

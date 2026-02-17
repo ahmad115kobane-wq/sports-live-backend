@@ -54,10 +54,6 @@ export default function MatchSetupScreen() {
   const [awayCaptainId, setAwayCaptainId] = useState<string | null>(null);
   const [homeCoach, setHomeCoach] = useState('');
   const [awayCoach, setAwayCoach] = useState('');
-  const [referee, setReferee] = useState('');
-  const [assistantReferee1, setAssistantReferee1] = useState('');
-  const [assistantReferee2, setAssistantReferee2] = useState('');
-  const [fourthReferee, setFourthReferee] = useState('');
 
   useEffect(() => {
     loadMatch();
@@ -69,13 +65,8 @@ export default function MatchSetupScreen() {
       const response = await operatorApi.getMatch(matchId!);
       const m = response.data.data;
       setMatch(m);
-      setReferee(m.referee || '');
-      setAssistantReferee1(m.assistantReferee1 || '');
-      setAssistantReferee2(m.assistantReferee2 || '');
-      setFourthReferee(m.fourthReferee || '');
-
       // Set default formation based on category
-      const cat = m.homeTeam?.category || 'FOOTBALL';
+      const cat = m.competition?.category || 'FOOTBALL';
       const rules = getCategoryRules(cat);
       const defaultFormation = rules.formations[0] || '4-4-2';
       setHomeFormation(defaultFormation);
@@ -142,7 +133,7 @@ export default function MatchSetupScreen() {
   const setCurrentCoach = selectedTeam === 'home' ? setHomeCoach : setAwayCoach;
   const currentTeam = selectedTeam === 'home' ? match?.homeTeam : match?.awayTeam;
   const teamColor = selectedTeam === 'home' ? '#3B82F6' : '#EF4444';
-  const category = match?.homeTeam?.category || 'FOOTBALL';
+  const category = match?.competition?.category || 'FOOTBALL';
   const categoryRules = getCategoryRules(category);
   const FORMATIONS = categoryRules.formations;
   const maxStarters = categoryRules.maxStarters;
@@ -290,23 +281,6 @@ export default function MatchSetupScreen() {
         players: awayPlayers,
       });
 
-      // Update referees if changed
-      const refereesChanged = referee !== (match.referee || '') ||
-        assistantReferee1 !== (match.assistantReferee1 || '') ||
-        assistantReferee2 !== (match.assistantReferee2 || '') ||
-        fourthReferee !== (match.fourthReferee || '');
-      if (refereesChanged) {
-        try {
-          await operatorApi.updateReferees(match.id, {
-            referee: referee || undefined,
-            assistantReferee1: assistantReferee1 || undefined,
-            assistantReferee2: assistantReferee2 || undefined,
-            fourthReferee: fourthReferee || undefined,
-          });
-        } catch (e) {
-          // Referee update is optional
-        }
-      }
 
       Vibration.vibrate(50);
       alert(t('common.success'), t('operator.lineupSaved'), [
@@ -375,56 +349,6 @@ export default function MatchSetupScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Referees Input */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
-            {'  '}الحكام
-          </Text>
-          <View style={{ gap: SPACING.sm }}>
-            <View>
-              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>حكم الساحة</Text>
-              <TextInput
-                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-                value={referee}
-                onChangeText={setReferee}
-                placeholder="اسم حكم الساحة"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-            <View>
-              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>الحكم المساعد الأول</Text>
-              <TextInput
-                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-                value={assistantReferee1}
-                onChangeText={setAssistantReferee1}
-                placeholder="اسم الحكم المساعد الأول"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-            <View>
-              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>الحكم المساعد الثاني</Text>
-              <TextInput
-                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-                value={assistantReferee2}
-                onChangeText={setAssistantReferee2}
-                placeholder="اسم الحكم المساعد الثاني"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-            <View>
-              <Text style={[styles.refereeLabel, { color: colors.textSecondary }]}>الحكم الاحتياطي</Text>
-              <TextInput
-                style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-                value={fourthReferee}
-                onChangeText={setFourthReferee}
-                placeholder="اسم الحكم الاحتياطي"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </View>
-          </View>
-        </View>
-
         {/* Team Selector */}
         <View style={styles.section}>
           <View style={[styles.teamSelector, { backgroundColor: colors.surface, flexDirection }]}>
