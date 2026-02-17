@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -57,9 +57,17 @@ export default function MatchesManagementScreen() {
   const [finishedMatches, setFinishedMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [activeMainTab, setActiveMainTab] = useState<'upcoming' | 'finished'>('upcoming');
+
+  // Pagination state per tab
+  const [upcomingPage, setUpcomingPage] = useState(0);
+  const [upcomingHasMore, setUpcomingHasMore] = useState(true);
+  const [finishedPage, setFinishedPage] = useState(0);
+  const [finishedHasMore, setFinishedHasMore] = useState(true);
+  const PAGE_SIZE = 10;
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -94,7 +102,7 @@ export default function MatchesManagementScreen() {
   };
 
   useEffect(() => {
-    loadMatches();
+    loadInitial();
     loadReferees();
   }, []);
 
@@ -109,35 +117,80 @@ export default function MatchesManagementScreen() {
 
   const getRefereeById = (id: string) => safeReferees.find(r => r.id === id);
 
-  const loadMatches = async () => {
+  const loadInitial = async () => {
     try {
       setLoading(true);
-      // Load upcoming/live matches
-      const response = await matchApi.getAll();
-      const data = response.data?.data || response.data || [];
-      const allMatches = Array.isArray(data) ? data : [];
-      setMatches(allMatches.filter((m: Match) => m.status !== 'finished'));
-
-      // Load finished matches (last 30 days)
-      const now = new Date();
-      const from = new Date(now);
-      from.setDate(from.getDate() - 30);
-      const finishedRes = await matchApi.getAll({ status: 'finished', from: from.toISOString().split('T')[0], to: now.toISOString().split('T')[0] });
-      const finData = finishedRes.data?.data || finishedRes.data || [];
-      const sorted = (Array.isArray(finData) ? finData : []).sort((a: Match, b: Match) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-      setFinishedMatches(sorted);
+      await Promise.all([loadUpcomingPage(0, true), loadFinishedPage(0, true)]);
     } catch (error) {
       console.error('Error loading matches:', error);
       showError(t('admin.error'), t('admin.loadFailed'));
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const handleRefresh = () => {
+  const loadUpcomingPage = async (page: number, reset = false) => {
+    try {
+      const response = await matchApi.getAll({ page, limit: PAGE_SIZE });
+      const data = response.data?.data || [];
+      const allMatches = (Array.isArray(data) ? data : []).filter((m: Match) => m.status !== 'finished');
+      const pagination = response.data?.pagination;
+      setMatches(prev => reset ? allMatches : [...prev, ...allMatches]);
+      setUpcomingPage(page);
+      setUpcomingHasMore(pagination ? pagination.hasMore : allMatches.length >= PAGE_SIZE);
+    } catch (error) {
+      console.error('Error loading upcoming matches:', error);
+    }
+  };
+
+  const loadFinishedPage = async (page: number, reset = false) => {
+    try {
+      const now = new Date();
+      const from = new Date(now);
+      from.setDate(from.getDate() - 30);
+      const response = await matchApi.getAll({
+        status: 'finished',
+        from: from.toISOString().split('T')[0],
+        to: now.toISOString().split('T')[0],
+        page,
+        limit: PAGE_SIZE,
+      });
+      const data = response.data?.data || [];
+      const arr = Array.isArray(data) ? data : [];
+      const pagination = response.data?.pagination;
+      setFinishedMatches(prev => reset ? arr : [...prev, ...arr]);
+      setFinishedPage(page);
+      setFinishedHasMore(pagination ? pagination.hasMore : arr.length >= PAGE_SIZE);
+    } catch (error) {
+      console.error('Error loading finished matches:', error);
+    }
+  };
+
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      if (activeMainTab === 'upcoming' && upcomingHasMore) {
+        await loadUpcomingPage(upcomingPage + 1);
+      } else if (activeMainTab === 'finished' && finishedHasMore) {
+        await loadFinishedPage(finishedPage + 1);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleRefresh = async () => {
     setRefreshing(true);
-    loadMatches();
+    try {
+      if (activeMainTab === 'upcoming') {
+        await loadUpcomingPage(0, true);
+      } else {
+        await loadFinishedPage(0, true);
+      }
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const openEditModal = (match: Match) => {
@@ -165,7 +218,7 @@ export default function MatchesManagementScreen() {
         fourthRefereeId: editFourthId || undefined,
       });
       setShowEditModal(false);
-      loadMatches();
+      loadInitial();
     } catch (error) {
       showError(t('admin.error'), t('admin.updateMatchFailed'));
     } finally {
@@ -181,7 +234,7 @@ export default function MatchesManagementScreen() {
         setDialogVisible(false);
         try {
           await matchApi.delete(match.id);
-          loadMatches();
+          loadInitial();
         } catch (error) {
           showError(t('admin.error'), t('admin.deleteMatchFailed'));
         }
@@ -213,15 +266,17 @@ export default function MatchesManagementScreen() {
 
   const sourceMatches = activeMainTab === 'finished' ? finishedMatches : matches;
   const filteredMatches = sourceMatches.filter((match) => {
-    const matchesSearch = 
-      match.homeTeam.name.includes(searchQuery) ||
-      match.awayTeam.name.includes(searchQuery) ||
-      match.competition.name.includes(searchQuery);
+    const matchesSearch = !searchQuery.trim() ||
+      (match.homeTeam?.name || '').includes(searchQuery) ||
+      (match.awayTeam?.name || '').includes(searchQuery) ||
+      (match.competition?.name || '').includes(searchQuery);
     
     if (activeMainTab === 'finished') return matchesSearch;
     const matchesFilter = filterStatus === 'all' || match.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  const currentHasMore = activeMainTab === 'upcoming' ? upcomingHasMore : finishedHasMore;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -405,13 +460,27 @@ export default function MatchesManagementScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.accent]} />
         }
+        onEndReached={() => { if (currentHasMore && !loadingMore && !searchQuery.trim()) loadMore(); }}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={[styles.footerLoaderText, { color: colors.textTertiary }]}>جاري تحميل المزيد...</Text>
+            </View>
+          ) : !currentHasMore && filteredMatches.length > 0 ? (
+            <Text style={[styles.footerLoaderText, { color: colors.textTertiary, textAlign: 'center', paddingVertical: SPACING.md }]}>لا يوجد المزيد</Text>
+          ) : null
+        }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="football-outline" size={64} color={colors.textTertiary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              لا توجد مباريات
-            </Text>
-          </View>
+          !loading ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="football-outline" size={64} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                لا توجد مباريات
+              </Text>
+            </View>
+          ) : null
         }
       />
 
@@ -421,7 +490,7 @@ export default function MatchesManagementScreen() {
         onClose={() => setShowEditModal(false)}
         title="تعديل المباراة"
         icon="pencil"
-        subtitle={selectedMatch ? `${selectedMatch.homeTeam.name} vs ${selectedMatch.awayTeam.name}` : undefined}
+        subtitle={selectedMatch ? `${selectedMatch.homeTeam?.name || '—'} vs ${selectedMatch.awayTeam?.name || '—'}` : undefined}
       >
         {selectedMatch && (
           <View style={styles.modalBody}>
@@ -759,6 +828,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     fontFamily: FONTS.semiBold,
+  },
+  footerLoader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
+  },
+  footerLoaderText: {
+    fontSize: 13,
+    fontFamily: FONTS.regular,
   },
   emptyContainer: {
     flex: 1,

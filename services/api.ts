@@ -48,7 +48,7 @@ export default api;
 
 // API Functions
 export const matchApi = {
-  getAll: (params?: { date?: string; status?: string; from?: string; to?: string; search?: string }) =>
+  getAll: (params?: { date?: string; status?: string; from?: string; to?: string; search?: string; page?: number; limit?: number }) =>
     api.get('/matches', { params }),
   getLive: () => api.get('/matches/live'),
   getFeatured: () => api.get('/matches/featured'),
