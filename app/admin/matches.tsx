@@ -239,7 +239,7 @@ export default function MatchesManagementScreen() {
       {/* Header */}
       <View style={[styles.matchHeader, { borderBottomColor: colors.border }]}>
         <Text style={[styles.competitionName, { color: colors.textSecondary }]}>
-          {match.competition.name}
+          {match.competition?.name || 'بدون بطولة'}
         </Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(match.status) + '20' }]}>
           <View style={[styles.statusDot, { backgroundColor: getStatusColor(match.status) }]} />
@@ -252,9 +252,9 @@ export default function MatchesManagementScreen() {
       {/* Teams */}
       <View style={styles.teamsContainer}>
         <View style={styles.teamInfo}>
-          <TeamLogo team={match.homeTeam} size="medium" />
+          <TeamLogo team={match.homeTeam || { name: '—', shortName: '—' }} size="medium" />
           <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
-            {match.homeTeam.shortName}
+            {match.homeTeam?.shortName || '—'}
           </Text>
         </View>
 
@@ -268,9 +268,9 @@ export default function MatchesManagementScreen() {
         </View>
 
         <View style={styles.teamInfo}>
-          <TeamLogo team={match.awayTeam} size="medium" />
+          <TeamLogo team={match.awayTeam || { name: '—', shortName: '—' }} size="medium" />
           <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">
-            {match.awayTeam.shortName}
+            {match.awayTeam?.shortName || '—'}
           </Text>
         </View>
       </View>
