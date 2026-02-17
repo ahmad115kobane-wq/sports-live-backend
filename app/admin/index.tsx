@@ -108,13 +108,6 @@ export default function AdminScreen() {
   const [showRefereePicker, setShowRefereePicker] = useState<'main' | 'assistant1' | 'assistant2' | 'fourth' | null>(null);
   const [showSupervisorPicker, setShowSupervisorPicker] = useState(false);
 
-  // Supervisor form state
-  const [supervisorForm, setSupervisorForm] = useState({ name: '', nationality: '', isActive: true });
-  const [supervisorImage, setSupervisorImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
-  const [editingSupervisor, setEditingSupervisor] = useState<any>(null);
-  const [showSupervisorForm, setShowSupervisorForm] = useState(false);
-  const [supervisorSaving, setSupervisorSaving] = useState(false);
-
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogConfig, setDialogConfig] = useState<{ type: 'error' | 'warning' | 'confirm'; title: string; message: string; onConfirm?: () => void }>({
@@ -368,89 +361,6 @@ export default function AdminScreen() {
   const getRefereeById = (id: string) => safeReferees.find(r => r.id === id);
   const getSupervisorById = (id: string) => safeSupervisors.find(s => s.id === id);
 
-  // Supervisor functions
-  const pickSupervisorImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
-    if (!result.canceled && result.assets[0]) {
-      setSupervisorImage(result.assets[0]);
-    }
-  };
-
-  const handleSaveSupervisor = async () => {
-    if (!supervisorForm.name.trim()) {
-      showError('خطأ', 'يرجى إدخال اسم المشرف');
-      return;
-    }
-    setSupervisorSaving(true);
-    try {
-      const formData = new FormData();
-      formData.append('name', supervisorForm.name);
-      formData.append('nationality', supervisorForm.nationality);
-      formData.append('isActive', String(supervisorForm.isActive));
-      if (supervisorImage) {
-        formData.append('image', {
-          uri: supervisorImage.uri,
-          name: supervisorImage.uri.split('/').pop() || 'supervisor.jpg',
-          type: supervisorImage.mimeType || 'image/jpeg',
-        } as any);
-      }
-
-      if (editingSupervisor) {
-        await supervisorApi.update(editingSupervisor.id, formData);
-        showError('نجاح', 'تم تحديث المشرف');
-      } else {
-        await supervisorApi.create(formData);
-        showError('نجاح', 'تم إضافة المشرف');
-      }
-      
-      // Reset form
-      setSupervisorForm({ name: '', nationality: '', isActive: true });
-      setSupervisorImage(null);
-      setEditingSupervisor(null);
-      setShowSupervisorForm(false);
-      loadData();
-    } catch (error) {
-      console.error('Error saving supervisor:', error);
-      showError('خطأ', 'فشل حفظ المشرف');
-    } finally {
-      setSupervisorSaving(false);
-    }
-  };
-
-  const handleEditSupervisor = (supervisor: any) => {
-    setEditingSupervisor(supervisor);
-    setSupervisorForm({
-      name: supervisor.name || '',
-      nationality: supervisor.nationality || '',
-      isActive: supervisor.isActive !== false,
-    });
-    setSupervisorImage(null);
-    setShowSupervisorForm(true);
-  };
-
-  const handleDeleteSupervisor = (supervisor: any) => {
-    setDialogConfig({
-      type: 'confirm',
-      title: 'حذف المشرف',
-      message: `هل تريد حذف المشرف "${supervisor.name}"؟`,
-      onConfirm: async () => {
-        try {
-          await supervisorApi.delete(supervisor.id);
-          loadData();
-          showError('نجاح', 'تم حذف المشرف');
-        } catch {
-          showError('خطأ', 'فشل حذف المشرف');
-        }
-      },
-    });
-    setDialogVisible(true);
-  };
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('ar-IQ', {
       year: 'numeric',
@@ -493,14 +403,6 @@ export default function AdminScreen() {
         >
           <Ionicons name="videocam-outline" size={18} color={activeTab === 'videoAds' ? colors.accent : colors.textTertiary} />
           <Text style={[styles.tabText, { color: activeTab === 'videoAds' ? colors.accent : colors.textTertiary }]}>إعلانات الفيديو</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabItem, activeTab === 'supervisors' && { borderBottomColor: colors.accent, borderBottomWidth: 2 }]}
-          onPress={() => setActiveTab('supervisors')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="eye-outline" size={18} color={activeTab === 'supervisors' ? colors.accent : colors.textTertiary} />
-          <Text style={[styles.tabText, { color: activeTab === 'supervisors' ? colors.accent : colors.textTertiary }]}>المشرفون</Text>
         </TouchableOpacity>
       </View>
 
@@ -973,155 +875,6 @@ export default function AdminScreen() {
           </TouchableOpacity>
           </View>
           )}
-        </View>
-        </>
-        )}
-
-        {activeTab === 'supervisors' && (
-        <>
-        {/* ── Supervisors Management ── */}
-        <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={[styles.formCardHeader, { borderBottomColor: colors.divider }]}>
-            <Ionicons name="eye" size={22} color={colors.accent} />
-            <Text style={[styles.formCardTitle, { color: colors.text, flex: 1 }]}>المشرفون</Text>
-            <TouchableOpacity
-              style={{ backgroundColor: colors.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.md }}
-              onPress={() => {
-                setEditingSupervisor(null);
-                setSupervisorForm({ name: '', nationality: '', isActive: true });
-                setSupervisorImage(null);
-                setShowSupervisorForm(!showSupervisorForm);
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                {showSupervisorForm ? 'إلغاء' : '+ إضافة'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Create/Edit Form */}
-          {showSupervisorForm && (
-            <View style={{ padding: SPACING.md, borderTopWidth: 1, borderTopColor: colors.divider }}>
-              {/* Image Upload */}
-              <View style={{ alignItems: 'center', marginBottom: SPACING.md }}>
-                <TouchableOpacity onPress={pickSupervisorImage}>
-                  {supervisorImage ? (
-                    <Image source={{ uri: supervisorImage.uri }} style={{ width: 80, height: 80, borderRadius: 40 }} />
-                  ) : (
-                    <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.background, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.border, justifyContent: 'center', alignItems: 'center' }}>
-                      <Ionicons name="camera" size={24} color={colors.textTertiary} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: SPACING.xs }}>اضغط لإضافة صورة</Text>
-              </View>
-
-              {/* Name */}
-              <View style={styles.field}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الاسم *</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  value={supervisorForm.name}
-                  onChangeText={(text) => setSupervisorForm({ ...supervisorForm, name: text })}
-                  placeholder="اسم المشرف"
-                  placeholderTextColor={colors.textTertiary}
-                  textAlign="right"
-                />
-              </View>
-
-              {/* Nationality */}
-              <View style={styles.field}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الجنسية</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-                  value={supervisorForm.nationality}
-                  onChangeText={(text) => setSupervisorForm({ ...supervisorForm, nationality: text })}
-                  placeholder="مثلاً: عراقي"
-                  placeholderTextColor={colors.textTertiary}
-                  textAlign="right"
-                />
-              </View>
-
-              {/* Active Status */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md }}>
-                <TouchableOpacity
-                  style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: supervisorForm.isActive ? colors.accent : colors.border, justifyContent: supervisorForm.isActive ? 'flex-end' : 'flex-start', padding: 2 }}
-                  onPress={() => setSupervisorForm({ ...supervisorForm, isActive: !supervisorForm.isActive })}
-                >
-                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' }} />
-                </TouchableOpacity>
-                <Text style={{ fontSize: 13, color: colors.text }}>نشط</Text>
-              </View>
-
-              {/* Save Button */}
-              <TouchableOpacity
-                style={{ backgroundColor: colors.accent, paddingVertical: 12, borderRadius: RADIUS.md, alignItems: 'center' }}
-                onPress={handleSaveSupervisor}
-                disabled={supervisorSaving}
-              >
-                {supervisorSaving ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
-                    {editingSupervisor ? 'تحديث' : 'إضافة'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Supervisors List */}
-          <View style={{ paddingHorizontal: SPACING.md, paddingTop: SPACING.sm }}>
-            {safeSupervisors.length > 0 ? (
-              safeSupervisors.map((supervisor: any) => (
-                <View
-                  key={supervisor.id}
-                  style={[
-                    styles.adItem,
-                    { backgroundColor: colors.background, borderColor: colors.border },
-                  ]}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flex: 1 }}>
-                    {supervisor.imageUrl ? (
-                      <Image source={{ uri: supervisor.imageUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-                    ) : (
-                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent + '20', justifyContent: 'center', alignItems: 'center' }}>
-                        <Ionicons name="person" size={20} color={colors.accent} />
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.adTitle, { color: colors.text }]}>{supervisor.name}</Text>
-                      {supervisor.nationality && (
-                        <Text style={{ fontSize: 11, color: colors.textTertiary }}>{supervisor.nationality}</Text>
-                      )}
-                    </View>
-                    <View style={{
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 12,
-                      backgroundColor: supervisor.isActive ? '#22C55E20' : colors.border + '40'
-                    }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: supervisor.isActive ? '#22C55E' : colors.textTertiary }}>
-                        {supervisor.isActive ? 'نشط' : 'متوقف'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <TouchableOpacity onPress={() => handleEditSupervisor(supervisor)} style={styles.adActionBtn}>
-                      <Ionicons name="create-outline" size={16} color={colors.accent} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDeleteSupervisor(supervisor)} style={styles.adActionBtn}>
-                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <View style={{ padding: SPACING.lg, alignItems: 'center' }}>
-                <Text style={{ color: colors.textTertiary, fontSize: 13 }}>لا يوجد مشرفين</Text>
-              </View>
-            )}
-          </View>
         </View>
         </>
         )}
