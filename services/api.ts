@@ -338,6 +338,12 @@ export const videoAdApi = {
   adminDelete: (id: string) => api.delete(`/video-ads/admin/${id}`),
 };
 
+export const settingsApi = {
+  getAll: () => api.get('/settings'),
+  adminGetAll: () => api.get('/settings/admin/all'),
+  adminUpdate: (settings: Record<string, string>) => api.put('/settings/admin', { settings }),
+};
+
 export const legalApi = {
   getAll: () => api.get('/legal'),
   getBySlug: (slug: string) => api.get(`/legal/${slug}`),

@@ -122,7 +122,7 @@ export default function LegalPageScreen() {
         >
           {page.updatedAt && (
             <Text style={[styles.updatedAt, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>
-              {t('common.lastUpdated') || 'آخر تحديث'}: {formatDate(page.updatedAt)}
+              آخر تحديث: {formatDate(page.updatedAt)}
             </Text>
           )}
 

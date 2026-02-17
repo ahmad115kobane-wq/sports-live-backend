@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,40 @@ import {
   Platform,
   StatusBar,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import AppIcon from '@/components/AppIcon';
+import { settingsApi } from '@/services/api';
 
 const APP_VERSION = '1.0.0';
-const BUILD_NUMBER = '1';
 
 export default function AboutScreen() {
   const { colorScheme, isDark } = useTheme();
   const colors = Colors[colorScheme];
   const { t, isRTL, flexDirection } = useRTL();
+
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    settingsApi.getAll()
+      .then(res => setSettings(res.data.data || {}))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const contactEmail = settings.contact_email || '';
+  const contactPhone = settings.contact_phone || '';
+  const contactInstagram = settings.contact_instagram || '';
+  const contactFacebook = settings.contact_facebook || '';
+  const contactTelegram = settings.contact_telegram || '';
+  const contactWebsite = settings.contact_website || '';
 
   const InfoRow = ({ icon, label, value, onPress }: { icon: string; label: string; value: string; onPress?: () => void }) => (
     <TouchableOpacity
@@ -37,7 +54,6 @@ export default function AboutScreen() {
         <Ionicons name={icon as any} size={18} color={colors.accent} />
       </View>
       <View style={styles.infoContent}>
-        <Text style={[styles.infoLabel, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>{label}</Text>
         <Text style={[styles.infoValue, { color: onPress ? colors.accent : colors.text, textAlign: isRTL ? 'right' : 'left' }]}>{value}</Text>
       </View>
       {onPress && (
@@ -55,7 +71,7 @@ export default function AboutScreen() {
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surface }]} onPress={() => router.back()}>
           <Ionicons name={isRTL ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('settings.about')}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>حول التطبيق</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -65,64 +81,95 @@ export default function AboutScreen() {
           <AppIcon size={100} />
           <Text style={[styles.appName, { color: colors.text, marginTop: SPACING.md }]}>{t('app.name')}</Text>
           <Text style={[styles.appVersion, { color: colors.textTertiary }]}>
-            {t('settings.version')} {APP_VERSION} ({BUILD_NUMBER})
+            الإصدار {APP_VERSION}
           </Text>
-          <Text style={[styles.appTagline, { color: colors.textSecondary }]}>
-            {t('welcome.tagline')}
-          </Text>
-        </View>
-
-        {/* App Info Card */}
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.cardTitle, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('about.appInfo')}
-          </Text>
-          <InfoRow icon="code-slash-outline" label={t('about.version')} value={`${APP_VERSION} (${BUILD_NUMBER})`} />
-          <InfoRow icon="phone-portrait-outline" label={t('about.platform')} value={Platform.OS === 'ios' ? 'iOS' : 'Android'} />
-          <InfoRow icon="globe-outline" label={t('about.developer')} value="Mini Football Team" />
         </View>
 
         {/* Legal Links Card */}
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <Text style={[styles.cardTitle, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('settings.legalPages')}
+            الصفحات القانونية
           </Text>
           <InfoRow
             icon="shield-checkmark-outline"
-            label={t('about.readOur')}
-            value={t('settings.privacy')}
+            label="سياسة الخصوصية"
+            value={t('settings.privacy') || 'سياسة الخصوصية'}
             onPress={() => router.push('/legal/privacy-policy' as any)}
           />
           <InfoRow
             icon="document-text-outline"
-            label={t('about.readOur')}
-            value={t('settings.terms')}
+            label="شروط الاستخدام"
+            value={t('settings.terms') || 'شروط الاستخدام'}
             onPress={() => router.push('/legal/terms-of-service' as any)}
           />
         </View>
 
         {/* Contact Card */}
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.cardTitle, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('about.contact')}
-          </Text>
-          <InfoRow
-            icon="mail-outline"
-            label={t('about.email')}
-            value="support@minifootball.app"
-            onPress={() => Linking.openURL('mailto:support@minifootball.app')}
-          />
-          <InfoRow
-            icon="logo-instagram"
-            label={t('about.socialMedia')}
-            value="@minifootball"
-          />
-        </View>
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: SPACING.md }} />
+        ) : (
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.cardTitle, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>
+              تواصل معنا
+            </Text>
+            {!!contactEmail && (
+              <InfoRow
+                icon="mail-outline"
+                label="البريد الإلكتروني"
+                value={contactEmail}
+                onPress={() => Linking.openURL(`mailto:${contactEmail}`)}
+              />
+            )}
+            {!!contactPhone && (
+              <InfoRow
+                icon="call-outline"
+                label="الهاتف"
+                value={contactPhone}
+                onPress={() => Linking.openURL(`tel:${contactPhone}`)}
+              />
+            )}
+            {!!contactInstagram && (
+              <InfoRow
+                icon="logo-instagram"
+                label="انستغرام"
+                value={contactInstagram}
+                onPress={() => Linking.openURL(`https://instagram.com/${contactInstagram.replace('@', '')}`)}
+              />
+            )}
+            {!!contactFacebook && (
+              <InfoRow
+                icon="logo-facebook"
+                label="فيسبوك"
+                value={contactFacebook}
+                onPress={() => Linking.openURL(contactFacebook.startsWith('http') ? contactFacebook : `https://facebook.com/${contactFacebook}`)}
+              />
+            )}
+            {!!contactTelegram && (
+              <InfoRow
+                icon="paper-plane-outline"
+                label="تيليغرام"
+                value={contactTelegram}
+                onPress={() => Linking.openURL(`https://t.me/${contactTelegram.replace('@', '')}`)}
+              />
+            )}
+            {!!contactWebsite && (
+              <InfoRow
+                icon="globe-outline"
+                label="الموقع"
+                value={contactWebsite}
+                onPress={() => Linking.openURL(contactWebsite.startsWith('http') ? contactWebsite : `https://${contactWebsite}`)}
+              />
+            )}
+            {!contactEmail && !contactPhone && !contactInstagram && !contactFacebook && !contactTelegram && !contactWebsite && (
+              <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لم يتم إضافة معلومات الاتصال بعد</Text>
+            )}
+          </View>
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: colors.textQuaternary }]}>
-            © 2026 Mini Football. {t('about.allRightsReserved')}
+            © {new Date().getFullYear()} {t('app.name')}. جميع الحقوق محفوظة
           </Text>
         </View>
 
@@ -165,15 +212,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.xl,
   },
-  logoBg: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    marginBottom: SPACING.md,
-  },
   appName: {
     fontSize: 24,
     fontWeight: '800',
@@ -186,13 +224,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontFamily: FONTS.medium,
   },
-  appTagline: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: SPACING.xl,
-    fontFamily: FONTS.medium,
-  },
   card: {
     borderRadius: RADIUS.lg,
     padding: SPACING.md,
@@ -201,7 +232,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 13,
     fontWeight: '700',
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: SPACING.sm,
     paddingHorizontal: 4,
@@ -223,16 +253,16 @@ const styles = StyleSheet.create({
   infoContent: {
     flex: 1,
   },
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginBottom: 2,
-    fontFamily: FONTS.medium,
-  },
   infoValue: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: FONTS.semiBold,
+  },
+  emptyText: {
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: SPACING.md,
+    fontFamily: FONTS.regular,
   },
   footer: {
     alignItems: 'center',
