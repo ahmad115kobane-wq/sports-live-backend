@@ -48,7 +48,7 @@ const FORMATIONS = [
 // Get all matches
 router.get('/', async (req, res) => {
   try {
-    const { status, date, featured, days } = req.query;
+    const { status, date, featured, days, from: fromDate, to: toDate, search } = req.query;
 
     const where: any = {};
     
@@ -56,7 +56,19 @@ router.get('/', async (req, res) => {
       where.status = status as string;
     }
     
-    if (date) {
+    if (fromDate || toDate) {
+      where.startTime = {};
+      if (fromDate) {
+        const f = new Date(fromDate as string);
+        f.setHours(0, 0, 0, 0);
+        where.startTime.gte = f;
+      }
+      if (toDate) {
+        const t = new Date(toDate as string);
+        t.setHours(23, 59, 59, 999);
+        where.startTime.lte = t;
+      }
+    } else if (date) {
       const startDate = new Date(date as string);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(date as string);
@@ -78,6 +90,16 @@ router.get('/', async (req, res) => {
 
     if (featured === 'true') {
       where.isFeatured = true;
+    }
+
+    if (search) {
+      const s = (search as string).trim();
+      where.OR = [
+        { homeTeam: { name: { contains: s, mode: 'insensitive' } } },
+        { awayTeam: { name: { contains: s, mode: 'insensitive' } } },
+        { homeTeam: { shortName: { contains: s, mode: 'insensitive' } } },
+        { awayTeam: { shortName: { contains: s, mode: 'insensitive' } } },
+      ];
     }
 
     const matches = await prisma.match.findMany({
