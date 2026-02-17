@@ -368,30 +368,32 @@ export default function MatchesManagementScreen() {
       </View>
 
       {/* Filter Tabs - only for upcoming tab */}
-      {activeMainTab === 'upcoming' && <View style={styles.filterContainer}>
-        {[
-          { key: 'all', label: 'الكل' },
-          { key: 'scheduled', label: 'قادمة' },
-          { key: 'live', label: 'مباشر' },
-        ].map((filter) => (
-          <TouchableOpacity
-            key={filter.key}
-            style={[
-              styles.filterTab,
-              filterStatus === filter.key && { backgroundColor: colors.accent },
-              { borderColor: colors.border },
-            ]}
-            onPress={() => setFilterStatus(filter.key)}
-          >
-            <Text style={[
-              styles.filterTabText,
-              { color: filterStatus === filter.key ? '#fff' : colors.textSecondary },
-            ]}>
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>}
+      {activeMainTab === 'upcoming' && (
+        <View style={styles.filterContainer}>
+          {[
+            { key: 'all', label: 'الكل' },
+            { key: 'scheduled', label: 'قادمة' },
+            { key: 'live', label: 'مباشر' },
+          ].map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.filterTab,
+                filterStatus === filter.key && { backgroundColor: colors.accent },
+                { borderColor: colors.border },
+              ]}
+              onPress={() => setFilterStatus(filter.key)}
+            >
+              <Text style={[
+                styles.filterTabText,
+                { color: filterStatus === filter.key ? '#fff' : colors.textSecondary },
+              ]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Matches List */}
       <FlatList

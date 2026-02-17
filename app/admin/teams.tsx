@@ -64,6 +64,8 @@ export default function TeamsManagementScreen() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal states
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -621,18 +623,62 @@ export default function TeamsManagementScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Search & Add Button */}
       <View style={styles.topBar}>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="بحث عن نادي..."
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            textAlign={isRTL ? 'right' : 'left'}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          )}
+        </View>
         <TouchableOpacity 
           style={[styles.addTeamButton, { backgroundColor: colors.accent }]}
           onPress={openAddTeamModal}
         >
           <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.addTeamButtonText}>إضافة نادي</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Category Filters */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.filterChip, { backgroundColor: filterCategory === 'all' ? colors.accent : colors.surface, borderColor: filterCategory === 'all' ? colors.accent : colors.border }]}
+          onPress={() => setFilterCategory('all')}
+        >
+          <Ionicons name="grid-outline" size={14} color={filterCategory === 'all' ? '#fff' : colors.textSecondary} />
+          <Text style={[styles.filterChipText, { color: filterCategory === 'all' ? '#fff' : colors.textSecondary }]}>الكل ({teams.length})</Text>
+        </TouchableOpacity>
+        {TEAM_CATEGORIES.map((cat) => {
+          const count = teams.filter(t => t.category === cat.value).length;
+          const active = filterCategory === cat.value;
+          return (
+            <TouchableOpacity
+              key={cat.value}
+              style={[styles.filterChip, { backgroundColor: active ? colors.accent : colors.surface, borderColor: active ? colors.accent : colors.border }]}
+              onPress={() => setFilterCategory(cat.value)}
+            >
+              <Ionicons name={cat.icon as any} size={14} color={active ? '#fff' : colors.textSecondary} />
+              <Text style={[styles.filterChipText, { color: active ? '#fff' : colors.textSecondary }]}>{cat.label} ({count})</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       {/* Teams List */}
       <FlatList
-        data={teams}
+        data={teams.filter(team => {
+          const matchesCategory = filterCategory === 'all' || team.category === filterCategory;
+          const matchesSearch = !searchQuery.trim() || team.name.includes(searchQuery) || team.shortName.includes(searchQuery) || (team.coach || '').includes(searchQuery);
+          return matchesCategory && matchesSearch;
+        })}
         renderItem={renderTeamCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -1155,17 +1201,53 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   topBar: {
-    padding: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.xs,
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
-  addTeamButton: {
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    height: 42,
+    gap: SPACING.xs,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: FONTS.regular,
+  },
+  filterRow: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.md,
-    gap: SPACING.xs,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    gap: 6,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
+  },
+  addTeamButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: RADIUS.lg,
   },
   addTeamButtonText: {
     color: '#fff',
