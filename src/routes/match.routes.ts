@@ -48,7 +48,10 @@ const FORMATIONS = [
 // Get all matches
 router.get('/', async (req, res) => {
   try {
-    const { status, date, featured, days, from: fromDate, to: toDate, search } = req.query;
+    const { status, date, featured, days, from: fromDate, to: toDate, search, page, limit } = req.query;
+
+    const pageNum = parseInt(page as string) || 0;
+    const pageSize = parseInt(limit as string) || 0;
 
     const where: any = {};
     
@@ -102,7 +105,7 @@ router.get('/', async (req, res) => {
       ];
     }
 
-    const matches = await prisma.match.findMany({
+    const queryOptions: any = {
       where,
       include: {
         homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, category: true } },
@@ -110,7 +113,17 @@ router.get('/', async (req, res) => {
         competition: { select: { id: true, name: true, shortName: true, logoUrl: true, icon: true } },
       },
       orderBy: { startTime: 'asc' },
-    });
+    };
+
+    if (pageSize > 0) {
+      queryOptions.take = pageSize;
+      queryOptions.skip = pageNum * pageSize;
+    }
+
+    const [matches, totalCount] = await Promise.all([
+      prisma.match.findMany(queryOptions),
+      pageSize > 0 ? prisma.match.count({ where }) : Promise.resolve(0),
+    ]);
 
     // Compute live minutes for active matches
     const enrichedMatches = matches.map((m: any) => {
@@ -121,6 +134,14 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: enrichedMatches.map(resolveMatchImages),
+      ...(pageSize > 0 && {
+        pagination: {
+          page: pageNum,
+          limit: pageSize,
+          total: totalCount,
+          hasMore: (pageNum + 1) * pageSize < totalCount,
+        },
+      }),
     });
   } catch (error) {
     console.error('Get matches error:', error);
