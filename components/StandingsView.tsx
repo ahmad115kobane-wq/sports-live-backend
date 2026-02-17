@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
@@ -27,22 +28,27 @@ export default function StandingsView({ competitionId, competitionName }: Standi
   const { t, isRTL, flexDirection } = useRTL();
 
   const [standings, setStandings] = useState<any[]>([]);
+  const [topScorers, setTopScorers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (competitionId) {
-      loadStandings();
+      loadData();
     }
   }, [competitionId]);
 
-  const loadStandings = async () => {
+  const loadData = async () => {
     if (!competitionId) return;
     setLoading(true);
     setError(false);
     try {
-      const response = await competitionApi.getStandings(competitionId);
-      setStandings(response.data?.data || []);
+      const [standingsRes, scorersRes] = await Promise.all([
+        competitionApi.getStandings(competitionId),
+        competitionApi.getTopScorers(competitionId, 5),
+      ]);
+      setStandings(standingsRes.data?.data || []);
+      setTopScorers(scorersRes.data?.data || []);
     } catch (err) {
       console.error('Error loading standings:', err);
       setError(true);
@@ -50,6 +56,9 @@ export default function StandingsView({ competitionId, competitionName }: Standi
       setLoading(false);
     }
   };
+
+  const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+  const rankEmojis = ['🥇', '🥈', '🥉'];
 
   if (loading) {
     return (
@@ -116,7 +125,6 @@ export default function StandingsView({ competitionId, competitionName }: Standi
         {/* Table Body */}
         {standings.map((item: any, index: number) => {
           const isTop3 = index < 3;
-          const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
           return (
             <View
               key={item.teamId || index}
@@ -167,6 +175,94 @@ export default function StandingsView({ competitionId, competitionName }: Standi
           );
         })}
       </View>
+
+      {/* ── TOP SCORERS ── */}
+      {topScorers.length > 0 && (
+        <View style={styles.scorersSection}>
+          {/* Section Header */}
+          <View style={[styles.scorersHeader, { backgroundColor: colors.surface }]}>
+            <View style={[styles.compBadge, { backgroundColor: '#F59E0B20' }]}>
+              <Ionicons name="football" size={16} color="#F59E0B" />
+            </View>
+            <Text style={[styles.compName, { color: colors.text }]}>هدافو البطولة</Text>
+          </View>
+
+          <View style={[styles.scorersCard, { backgroundColor: colors.surface }]}>
+            {topScorers.map((scorer: any, idx: number) => {
+              const isTop3 = idx < 3;
+              const player = scorer.player;
+              const team = player?.team;
+
+              return (
+                <View
+                  key={player?.id || idx}
+                  style={[
+                    styles.scorerRow,
+                    {
+                      borderBottomColor: colors.border,
+                      borderBottomWidth: idx < topScorers.length - 1 ? StyleSheet.hairlineWidth : 0,
+                    },
+                    isTop3 && { backgroundColor: medalColors[idx] + '06' },
+                  ]}
+                >
+                  {/* Rank */}
+                  <View style={styles.scorerRank}>
+                    {isTop3 ? (
+                      <View style={[styles.scorerRankBadge, { backgroundColor: medalColors[idx] + '20' }]}>
+                        <Text style={[styles.scorerRankText, { color: medalColors[idx] }]}>{scorer.rank}</Text>
+                      </View>
+                    ) : (
+                      <Text style={[styles.scorerRankText, { color: colors.textTertiary }]}>{scorer.rank}</Text>
+                    )}
+                  </View>
+
+                  {/* Player Image */}
+                  <View style={styles.scorerImageWrap}>
+                    {player?.imageUrl ? (
+                      <Image source={{ uri: player.imageUrl }} style={styles.scorerImage} />
+                    ) : (
+                      <View style={[styles.scorerImageFallback, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                        <Ionicons name="person" size={18} color={colors.textTertiary} />
+                      </View>
+                    )}
+                    {/* Team logo mini overlay */}
+                    {team?.logoUrl && (
+                      <View style={[styles.scorerTeamBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <Image source={{ uri: team.logoUrl }} style={{ width: 14, height: 14, borderRadius: 7 }} resizeMode="contain" />
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Player Info */}
+                  <View style={styles.scorerInfo}>
+                    <Text style={[styles.scorerName, { color: colors.text }]} numberOfLines={1}>
+                      {player?.name || '—'}
+                    </Text>
+                    <View style={[styles.scorerMeta, { flexDirection }]}>
+                      {team && (
+                        <Text style={[styles.scorerTeamName, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {team.shortName || team.name}
+                        </Text>
+                      )}
+                      {player?.shirtNumber && (
+                        <Text style={[styles.scorerShirt, { color: colors.textTertiary }]}>#{player.shirtNumber}</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Goals */}
+                  <View style={[styles.scorerGoals, { backgroundColor: isTop3 ? medalColors[idx] + '15' : colors.accent + '12' }]}>
+                    <Ionicons name="football" size={12} color={isTop3 ? medalColors[idx] : colors.accent} />
+                    <Text style={[styles.scorerGoalsText, { color: isTop3 ? medalColors[idx] : colors.accent }]}>
+                      {scorer.goals}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -296,5 +392,120 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontFamily: FONTS.extraBold,
     textAlign: 'center',
+  },
+
+  // ── Top Scorers ──
+  scorersSection: {
+    marginTop: SPACING.lg,
+  },
+  scorersHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
+  },
+  scorersCard: {
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  scorerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm + 2,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.sm,
+  },
+  scorerRank: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scorerRankBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scorerRankText: {
+    fontSize: 13,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+  },
+  scorerImageWrap: {
+    width: 42,
+    height: 42,
+    position: 'relative',
+  },
+  scorerImage: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+  },
+  scorerImageFallback: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scorerTeamBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  scorerInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  scorerName: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+  },
+  scorerMeta: {
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  scorerTeamName: {
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+  },
+  scorerShirt: {
+    fontSize: 10,
+    fontFamily: FONTS.medium,
+  },
+  scorerGoals: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  scorerGoalsText: {
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
   },
 });

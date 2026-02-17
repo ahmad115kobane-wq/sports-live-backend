@@ -302,6 +302,7 @@ export const competitionApi = {
   getMatches: (id: string, params?: { status?: string; date?: string }) =>
     api.get(`/competitions/${id}/matches`, { params }),
   getStandings: (id: string) => api.get(`/competitions/${id}/standings`),
+  getTopScorers: (id: string, limit = 5) => api.get(`/competitions/${id}/top-scorers`, { params: { limit } }),
   create: (data: {
     name: string;
     shortName: string;
