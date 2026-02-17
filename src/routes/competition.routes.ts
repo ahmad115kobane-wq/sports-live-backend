@@ -288,6 +288,81 @@ router.get('/:id/standings', async (req, res) => {
   }
 });
 
+// Get top scorers for a competition
+router.get('/:id/top-scorers', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit as string) || 5;
+
+    // Get all goal events for matches in this competition
+    const goalEvents = await prisma.event.findMany({
+      where: {
+        type: 'goal',
+        playerId: { not: null },
+        match: { competitionId: id },
+      },
+      select: {
+        playerId: true,
+      },
+    });
+
+    // Count goals per player
+    const goalCounts: Record<string, number> = {};
+    for (const e of goalEvents) {
+      if (e.playerId) {
+        goalCounts[e.playerId] = (goalCounts[e.playerId] || 0) + 1;
+      }
+    }
+
+    // Sort by goals desc and take top N
+    const topPlayerIds = Object.entries(goalCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit);
+
+    if (topPlayerIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Fetch player details with team
+    const players = await prisma.player.findMany({
+      where: { id: { in: topPlayerIds.map(([pid]) => pid) } },
+      select: {
+        id: true,
+        name: true,
+        shirtNumber: true,
+        position: true,
+        imageUrl: true,
+        team: {
+          select: { id: true, name: true, shortName: true, logoUrl: true },
+        },
+      },
+    });
+
+    const playerMap: Record<string, any> = {};
+    for (const p of players) {
+      playerMap[p.id] = p;
+    }
+
+    // Build result with rank
+    const scorers = topPlayerIds.map(([pid, goals], idx) => {
+      const player = playerMap[pid];
+      return {
+        rank: idx + 1,
+        goals,
+        player: player ? {
+          ...player,
+          team: player.team ? resolveTeamImages(player.team) : null,
+        } : null,
+      };
+    }).filter(s => s.player !== null);
+
+    res.json({ success: true, data: scorers });
+  } catch (error) {
+    console.error('Get top scorers error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get top scorers' });
+  }
+});
+
 // Admin: Create competition
 router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
