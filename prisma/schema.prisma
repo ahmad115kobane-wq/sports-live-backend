@@ -551,6 +551,17 @@ model VideoAd {
   @@map("video_ads")
 }
 
+// App Settings - key/value store for app configuration (contact info, etc.)
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
 // News Articles - published by publishers
 model NewsArticle {
   id          String   @id @default(uuid())

@@ -406,7 +406,10 @@ router.post('/', authenticate, isAdmin, logoUpload.single('logo'), async (req: A
 });
 
 // Update team
-router.put('/:id', authenticate, isAdmin, logoUpload.single('logo'), async (req: AuthRequest, res) => {
+router.put('/:id', authenticate, isAdmin, logoUpload.fields([
+  { name: 'logo', maxCount: 1 },
+  { name: 'coachImage', maxCount: 1 },
+]), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const {
@@ -422,13 +425,24 @@ router.put('/:id', authenticate, isAdmin, logoUpload.single('logo'), async (req:
       founded,
     } = req.body;
 
-    // Upload logo to R2 if a new file was provided
+    // Upload logo if a new file was provided
     let finalLogoUrl = logoUrl;
-    const file = (req as any).file;
-    if (file) {
-      const uploaded = await uploadToImgBB(file.buffer, `team-${Date.now()}`, file.mimetype);
+    const files = (req as any).files || {};
+    const logoFile = files.logo?.[0];
+    if (logoFile) {
+      const uploaded = await uploadToImgBB(logoFile.buffer, `team-${Date.now()}`, logoFile.mimetype);
       if (uploaded) {
         finalLogoUrl = uploaded;
+      }
+    }
+
+    // Upload coach image if provided
+    let finalCoachImageUrl: string | undefined = undefined;
+    const coachFile = files.coachImage?.[0];
+    if (coachFile) {
+      const uploaded = await uploadToImgBB(coachFile.buffer, `coach-${Date.now()}`, coachFile.mimetype);
+      if (uploaded) {
+        finalCoachImageUrl = uploaded;
       }
     }
 
@@ -439,6 +453,7 @@ router.put('/:id', authenticate, isAdmin, logoUpload.single('logo'), async (req:
         shortName,
         category,
         ...(finalLogoUrl !== undefined && { logoUrl: finalLogoUrl }),
+        ...(finalCoachImageUrl && { coachImageUrl: finalCoachImageUrl }),
         primaryColor,
         country,
         city,

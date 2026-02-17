@@ -29,6 +29,7 @@ import seedRoutes from './routes/seed.routes';
 import videoAdRoutes from './routes/videoad.routes';
 import refereeRoutes from './routes/referee.routes';
 import supervisorRoutes from './routes/supervisor.routes';
+import settingsRoutes from './routes/settings.routes';
 
 // Import Socket handler
 import { setupSocketHandlers } from './socket/socketHandler';
@@ -123,6 +124,7 @@ app.use('/api/video-ads', videoAdRoutes);
 app.use('/api/referees', refereeRoutes);
 app.use('/api/supervisors', supervisorRoutes);
 app.use('/api/legal', legalRoutes);
+app.use('/api/settings', settingsRoutes);
 // Seed routes — protected by admin auth in production
 if (process.env.NODE_ENV === 'production') {
   const { authenticate, isAdmin } = require('./middleware/auth.middleware');
