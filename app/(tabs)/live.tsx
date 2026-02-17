@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  ScrollView,
   RefreshControl,
   TouchableOpacity,
   StatusBar,
@@ -13,7 +12,6 @@ import {
   LayoutChangeEvent,
   ActivityIndicator,
   InteractionManager,
-  I18nManager,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,12 +34,19 @@ function NewsMediaCarousel({ uris, colors, isRTL }: { uris: string[]; colors: an
   const validUris = uris.slice(0, MAX_NEWS_IMAGES);
   const [activeIndex, setActiveIndex] = useState(0);
   const [carouselWidth, setCarouselWidth] = useState(SCREEN_WIDTH - SPACING.md * 2 - 2);
-  const scrollRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setActiveIndex(viewableItems[0].index ?? 0);
+    }
+  }).current;
 
   useEffect(() => {
     setActiveIndex(0);
     requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ x: 0, y: 0, animated: false });
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     });
   }, [validUris.join('|')]);
 
@@ -54,62 +59,61 @@ function NewsMediaCarousel({ uris, colors, isRTL }: { uris: string[]; colors: an
     }
   };
 
-  const onScrollEnd = (event: any) => {
-    if (!carouselWidth) return;
-    const rawIndex = Math.round(event.nativeEvent.contentOffset.x / carouselWidth);
-    const nextIndex = isRTL ? validUris.length - 1 - rawIndex : rawIndex;
-    if (nextIndex >= 0 && nextIndex < validUris.length) {
-      setActiveIndex(nextIndex);
-    }
-  };
-
-  const rtlScrollStyle = isRTL ? { transform: [{ scaleX: -1 as number }] } : undefined;
-  const rtlItemStyle = isRTL ? { transform: [{ scaleX: -1 as number }] } : undefined;
+  const renderItem = ({ item: uri, index }: { item: string; index: number }) => (
+    <View style={[styles.mediaSlide, { width: carouselWidth }]}>
+      <Image
+        source={{ uri }}
+        style={styles.mediaImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+      />
+    </View>
+  );
 
   return (
     <View style={[styles.mediaWrap, { backgroundColor: colors.backgroundSecondary }]} onLayout={onLayout}>
-      <ScrollView
-        ref={scrollRef}
+      <FlatList
+        ref={flatListRef}
+        data={validUris}
+        renderItem={renderItem}
+        keyExtractor={(uri, index) => `${uri}-${index}`}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScrollEnd}
         bounces={false}
         decelerationRate="fast"
-        style={rtlScrollStyle}
-      >
-        {validUris.map((uri, index) => (
-          <View key={`${uri}-${index}`} style={[styles.mediaSlide, { width: carouselWidth }, rtlItemStyle]}>
-            <Image
-              source={{ uri }}
-              style={styles.mediaImage}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          </View>
-        ))}
-      </ScrollView>
+        getItemLayout={(_, index) => ({
+          length: carouselWidth,
+          offset: carouselWidth * index,
+          index,
+        })}
+        viewabilityConfig={viewabilityConfig}
+        onViewableItemsChanged={onViewableItemsChanged}
+      />
 
       {validUris.length > 1 && (
         <>
-          <View style={styles.mediaCounterBadge}>
+          <View style={[styles.mediaCounterBadge, isRTL ? { left: SPACING.sm, right: undefined } : { right: SPACING.sm }]}>
             <Text style={styles.mediaCounterText}>
               {activeIndex + 1}/{validUris.length}
             </Text>
           </View>
 
           <View style={styles.mediaDotsRow}>
-            {validUris.map((_, dotIndex) => (
-              <View
-                key={dotIndex}
-                style={[
-                  styles.mediaDot,
-                  dotIndex === activeIndex
-                    ? { backgroundColor: colors.accent, width: 16 }
-                    : { backgroundColor: 'rgba(255,255,255,0.55)' },
-                ]}
-              />
-            ))}
+            {validUris.map((_, dotIndex) => {
+              const isActive = dotIndex === activeIndex;
+              return (
+                <View
+                  key={dotIndex}
+                  style={[
+                    styles.mediaDot,
+                    isActive
+                      ? { backgroundColor: colors.accent, width: 18, opacity: 1 }
+                      : { backgroundColor: '#fff', opacity: 0.5 },
+                  ]}
+                />
+              );
+            })}
           </View>
         </>
       )}
