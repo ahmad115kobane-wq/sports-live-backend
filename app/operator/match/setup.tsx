@@ -66,7 +66,7 @@ export default function MatchSetupScreen() {
       const m = response.data.data;
       setMatch(m);
       // Set default formation based on category
-      const cat = m.competition?.category || 'FOOTBALL';
+      const cat = m.competition?.type || m.competition?.category || 'FOOTBALL';
       const rules = getCategoryRules(cat);
       const defaultFormation = rules.formations[0] || '4-4-2';
       setHomeFormation(defaultFormation);
@@ -133,7 +133,7 @@ export default function MatchSetupScreen() {
   const setCurrentCoach = selectedTeam === 'home' ? setHomeCoach : setAwayCoach;
   const currentTeam = selectedTeam === 'home' ? match?.homeTeam : match?.awayTeam;
   const teamColor = selectedTeam === 'home' ? '#3B82F6' : '#EF4444';
-  const category = match?.competition?.category || 'FOOTBALL';
+  const category = match?.competition?.type || match?.competition?.category || 'FOOTBALL';
   const categoryRules = getCategoryRules(category);
   const FORMATIONS = categoryRules.formations;
   const maxStarters = categoryRules.maxStarters;
