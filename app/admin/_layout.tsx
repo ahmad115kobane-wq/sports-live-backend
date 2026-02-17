@@ -22,6 +22,7 @@ const TAB_ITEMS = [
   { key: 'teams', label: 'الأندية', icon: 'shield' as const, route: '/admin/teams' },
   { key: 'matches', label: 'المباريات', icon: 'football' as const, route: '/admin/matches' },
   { key: 'referees', label: 'الحكام', icon: 'flag' as const, route: '/admin/referees' },
+  { key: 'supervisors', label: 'المشرفون', icon: 'eye' as const, route: '/admin/supervisors' },
   { key: 'users', label: 'المستخدمون', icon: 'people' as const, route: '/admin/users' },
   { key: 'store', label: 'المتجر', icon: 'bag-handle' as const, route: '/admin/store' },
   { key: 'sliders', label: 'الإعلانات', icon: 'images' as const, route: '/admin/sliders' },
@@ -42,6 +43,7 @@ export default function AdminLayout() {
     if (pathname.includes('/admin/matches')) return 'matches';
     if (pathname.includes('/admin/teams')) return 'teams';
     if (pathname.includes('/admin/referees')) return 'referees';
+    if (pathname.includes('/admin/supervisors')) return 'supervisors';
     if (pathname.includes('/admin/users')) return 'users';
     if (pathname.includes('/admin/store')) return 'store';
     if (pathname.includes('/admin/sliders')) return 'sliders';
@@ -111,6 +113,7 @@ export default function AdminLayout() {
         <Stack.Screen name="teams" />
         <Stack.Screen name="matches" />
         <Stack.Screen name="referees" />
+        <Stack.Screen name="supervisors" />
         <Stack.Screen name="users" />
         <Stack.Screen name="store" />
         <Stack.Screen name="sliders" />

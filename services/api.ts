@@ -275,6 +275,19 @@ export const refereeApi = {
   delete: (id: string) => api.delete(`/referees/${id}`),
 };
 
+export const supervisorApi = {
+  getAll: (params?: { search?: string; active?: string }) =>
+    api.get('/supervisors', { params }),
+  getById: (id: string) => api.get(`/supervisors/${id}`),
+  create: (formData: FormData) => api.post('/supervisors', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update: (id: string, formData: FormData) => api.put(`/supervisors/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  delete: (id: string) => api.delete(`/supervisors/${id}`),
+};
+
 export const competitionApi = {
   getAll: (params?: { type?: string; active?: boolean }) =>
     api.get('/competitions', { params }),
