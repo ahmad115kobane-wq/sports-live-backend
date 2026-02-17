@@ -177,7 +177,7 @@ export const operatorApi = {
   makeSubstitution: (matchId: string, data: { playerOutId: string; playerInId: string; minute: number; teamId: string }) =>
     api.post(`/matches/${matchId}/substitution`, data),
   getFormations: () => api.get('/matches/formations/list'),
-  saveLineup: (matchId: string, teamId: string, data: { formation: string; coach?: string; players: any[] }) =>
+  saveLineup: (matchId: string, teamId: string, data: { formation: string; coach?: string; coachImageUrl?: string; players: any[] }) =>
     api.post(`/matches/${matchId}/lineup/${teamId}`, data),
   updateReferees: (matchId: string, data: { referee?: string; assistantReferee1?: string; assistantReferee2?: string; fourthReferee?: string }) =>
     api.patch(`/operator/matches/${matchId}/referee`, data),

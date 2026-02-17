@@ -19,9 +19,11 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { operatorApi } from '@/services/api';
 import { Player } from '@/types';
 import { useRTL } from '@/contexts/RTLContext';
+import { SOCKET_URL } from '@/constants/config';
 import { useAlert } from '@/contexts/AlertContext';
 import TeamLogo from '@/components/ui/TeamLogo';
 import { getCategoryRules, getFormationPositions } from '@/constants/categoryRules';
+import { Image } from 'expo-image';
 
 interface SelectedPlayer {
   playerId: string;
@@ -54,6 +56,8 @@ export default function MatchSetupScreen() {
   const [awayCaptainId, setAwayCaptainId] = useState<string | null>(null);
   const [homeCoach, setHomeCoach] = useState('');
   const [awayCoach, setAwayCoach] = useState('');
+  const [homeCoachImage, setHomeCoachImage] = useState('');
+  const [awayCoachImage, setAwayCoachImage] = useState('');
 
   useEffect(() => {
     loadMatch();
@@ -72,7 +76,17 @@ export default function MatchSetupScreen() {
       setHomeFormation(defaultFormation);
       setAwayFormation(defaultFormation);
 
-      // Load existing lineups if any
+      // Auto-fill coach from team data
+      const resolveImg = (url?: string) => {
+        if (!url) return '';
+        return url.startsWith('http') ? url : `${SOCKET_URL}${url}`;
+      };
+      setHomeCoach(m.homeTeam?.coach || '');
+      setHomeCoachImage(resolveImg(m.homeTeam?.coachImageUrl));
+      setAwayCoach(m.awayTeam?.coach || '');
+      setAwayCoachImage(resolveImg(m.awayTeam?.coachImageUrl));
+
+      // Load existing lineups if any (overrides team defaults)
       if (m.lineups) {
         for (const lineup of m.lineups) {
           const isHome = lineup.teamId === m.homeTeamId;
@@ -83,6 +97,10 @@ export default function MatchSetupScreen() {
           if (lineup.coach) {
             if (isHome) setHomeCoach(lineup.coach);
             else setAwayCoach(lineup.coach);
+          }
+          if (lineup.coachImageUrl) {
+            if (isHome) setHomeCoachImage(resolveImg(lineup.coachImageUrl));
+            else setAwayCoachImage(resolveImg(lineup.coachImageUrl));
           }
           if (lineup.players) {
             const starters: SelectedPlayer[] = [];
@@ -131,6 +149,7 @@ export default function MatchSetupScreen() {
   const setCurrentCaptainId = selectedTeam === 'home' ? setHomeCaptainId : setAwayCaptainId;
   const currentCoach = selectedTeam === 'home' ? homeCoach : awayCoach;
   const setCurrentCoach = selectedTeam === 'home' ? setHomeCoach : setAwayCoach;
+  const currentCoachImage = selectedTeam === 'home' ? homeCoachImage : awayCoachImage;
   const currentTeam = selectedTeam === 'home' ? match?.homeTeam : match?.awayTeam;
   const teamColor = selectedTeam === 'home' ? '#3B82F6' : '#EF4444';
   const category = match?.competition?.type || match?.competition?.category || 'FOOTBALL';
@@ -251,6 +270,7 @@ export default function MatchSetupScreen() {
       await operatorApi.saveLineup(match.id, match.homeTeamId, {
         formation: homeFormation,
         coach: homeCoach || undefined,
+        coachImageUrl: homeCoachImage || undefined,
         players: homePlayers,
       });
 
@@ -278,6 +298,7 @@ export default function MatchSetupScreen() {
       await operatorApi.saveLineup(match.id, match.awayTeamId, {
         formation: awayFormation,
         coach: awayCoach || undefined,
+        coachImageUrl: awayCoachImage || undefined,
         players: awayPlayers,
       });
 
@@ -384,20 +405,31 @@ export default function MatchSetupScreen() {
           </View>
         </View>
 
-        {/* Coach Input */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            <Ionicons name="person" size={16} color={colors.textSecondary} />
-            {'  '}{t('match.coach')}
-          </Text>
-          <TextInput
-            style={[styles.refereeInput, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]}
-            value={currentCoach}
-            onChangeText={setCurrentCoach}
-            placeholder={t('operator.coachPlaceholder')}
-            placeholderTextColor={colors.textTertiary}
-          />
-        </View>
+        {/* Coach Card */}
+        {currentCoach ? (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Ionicons name="person" size={16} color={colors.textSecondary} />
+              {'  '}{t('match.coach')}
+            </Text>
+            <View style={[styles.coachCard, { backgroundColor: colors.surface, borderColor: teamColor + '40' }]}>
+              {currentCoachImage ? (
+                <Image source={{ uri: currentCoachImage }} style={[styles.coachImage, { borderColor: teamColor }]} />
+              ) : (
+                <View style={[styles.coachImage, styles.coachImagePlaceholder, { borderColor: teamColor, backgroundColor: teamColor + '15' }]}>
+                  <Ionicons name="person" size={22} color={teamColor} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.coachName, { color: colors.text }]}>{currentCoach}</Text>
+                <Text style={[styles.coachLabel, { color: colors.textSecondary }]}>{t('match.coach')}</Text>
+              </View>
+              <View style={[styles.coachBadge, { backgroundColor: teamColor + '15' }]}>
+                <Ionicons name="shield-checkmark" size={14} color={teamColor} />
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         {/* Formation Selector */}
         <View style={styles.section}>
@@ -808,5 +840,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     fontFamily: FONTS.bold,
+  },
+  coachCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    gap: SPACING.md,
+  },
+  coachImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+  },
+  coachImagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coachName: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+  },
+  coachLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    fontFamily: FONTS.medium,
+    marginTop: 2,
+  },
+  coachBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
