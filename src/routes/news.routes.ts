@@ -30,9 +30,21 @@ function normalizeArticleImageUrls(raw: unknown): string[] {
 
 function collectUploadedImages(req: Request): any[] {
   const files = (req as any).files;
-  if (!files) return [];
-  if (Array.isArray(files)) return files;
-  return [...(files.image || []), ...(files.images || [])];
+  console.log('📸 Raw req.files:', files);
+  console.log('📸 req.files keys:', files ? Object.keys(files) : 'null');
+  
+  if (!files) {
+    console.log('📸 No files found in request');
+    return [];
+  }
+  if (Array.isArray(files)) {
+    console.log('📸 Files is array, length:', files.length);
+    return files;
+  }
+  
+  const imageFiles = [...(files.image || []), ...(files.images || [])];
+  console.log('📸 Collected image files:', imageFiles.length, imageFiles.map(f => ({ originalname: f.originalname, mimetype: f.mimetype, size: f.size })));
+  return imageFiles;
 }
 
 // Resolve author avatar + article imageUrl for mobile consumption
