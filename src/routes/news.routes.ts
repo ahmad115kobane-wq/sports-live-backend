@@ -173,13 +173,18 @@ router.post('/', authenticate, isPublisher, uploadArticleImages, async (req: Aut
     }
 
     const uploadedFiles = collectUploadedImages(req).slice(0, MAX_ARTICLE_IMAGES);
+    console.log('📸 News uploaded files:', uploadedFiles.length, uploadedFiles.map(f => ({ originalname: f.originalname, mimetype: f.mimetype, size: f.size })));
+    
     const uploadedImageUrls: string[] = [];
 
     for (const file of uploadedFiles) {
+      console.log('📤 Uploading file:', file.originalname);
       const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`);
+      console.log('📤 Upload result:', uploaded ? 'SUCCESS' : 'FAILED');
       if (uploaded) uploadedImageUrls.push(uploaded);
     }
 
+    console.log('📸 Final uploaded URLs:', uploadedImageUrls);
     const coverImageUrl = uploadedImageUrls[0];
 
     const article = await (prisma as any).newsArticle.create({
