@@ -82,6 +82,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req: any, file: any, cb: any) => {
+    console.log('📸 Multer processing file:', { fieldname: file.fieldname, originalname: file.originalname, mimetype: file.mimetype, size: file.size });
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
@@ -89,6 +90,14 @@ const upload = multer({
     }
   },
 });
+
+// Add debugging middleware before multer
+const debugRequest = (req: any, res: any, next: any) => {
+  console.log('📸 Request Content-Type:', req.get('Content-Type'));
+  console.log('📸 Request headers:', Object.keys(req.headers));
+  console.log('📸 Request body keys:', Object.keys(req.body));
+  next();
+};
 
 const uploadArticleImages = upload.fields([
   { name: 'image', maxCount: 1 },
@@ -176,7 +185,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create article (publisher/admin only)
-router.post('/', authenticate, isPublisher, uploadArticleImages, async (req: AuthRequest, res) => {
+router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, async (req: AuthRequest, res) => {
   try {
     const { title, content } = req.body;
 
