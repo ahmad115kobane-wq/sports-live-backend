@@ -32,7 +32,7 @@ export default function WelcomeScreen() {
   const { guestLogin, isLoading } = useAuthStore();
   const [guestLoading, setGuestLoading] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
   const { alert } = useAlert();
 
   // Animations
@@ -229,17 +229,8 @@ export default function WelcomeScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Terms Agreement Checkbox */}
+        {/* Terms Agreement - Text only (no checkbox) */}
         <View style={[styles.termsRow, { flexDirection }]}>
-          <TouchableOpacity
-            onPress={() => setAgreedToTerms(!agreedToTerms)}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <View style={[styles.checkbox, { borderColor: agreedToTerms ? colors.accent : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'), backgroundColor: agreedToTerms ? colors.accent : 'transparent' }]}>
-              {agreedToTerms && <Ionicons name="checkmark" size={14} color="#fff" />}
-            </View>
-          </TouchableOpacity>
           <View style={[styles.termsTextWrap, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Text style={[styles.termsText, { color: colors.textSecondary }]}>
               {t('welcome.agreeToTerms')}{' '}
