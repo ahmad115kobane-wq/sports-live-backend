@@ -28,7 +28,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#080808"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.sportslive.app",
       "permissions": [

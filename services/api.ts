@@ -193,9 +193,11 @@ export const newsApi = {
   getById: (id: string) => api.get(`/news/${id}`),
   create: (formData: FormData) => api.post('/news', formData, {
     timeout: 180000,
+    headers: { 'Content-Type': 'multipart/form-data' },
   }),
   update: (id: string, formData: FormData) => api.put(`/news/${id}`, formData, {
     timeout: 180000,
+    headers: { 'Content-Type': 'multipart/form-data' },
   }),
   delete: (id: string) => api.delete(`/news/${id}`),
   getMyArticles: () => api.get('/news/my/articles'),

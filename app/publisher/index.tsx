@@ -172,16 +172,24 @@ export default function PublisherScreen() {
       formData.append('title', title.trim());
       formData.append('content', content.trim());
 
+      console.log('📱 Selected images count:', selectedImages.length);
+      console.log('📱 Image URIs:', selectedImages);
+
       for (const imageUri of selectedImages.slice(0, MAX_NEWS_IMAGES)) {
         const filename = imageUri.split('/').pop() || 'image.jpg';
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
+        console.log('📱 Adding image to FormData:', { uri: imageUri, filename, type });
         formData.append('images', {
           uri: imageUri,
           name: filename,
           type,
         } as any);
       }
+
+      console.log('📱 FormData entries before sending:');
+      // Note: React Native FormData doesn't expose _parts, but we can log the structure
+      console.log('📱 FormData structure:', formData);
 
       await newsApi.create(formData);
       Vibration.vibrate(20);

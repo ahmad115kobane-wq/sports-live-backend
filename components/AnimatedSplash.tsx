@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const logoBlack = require('@/assets/logo-black.png');
-const logoWhite = require('@/assets/logo-white.png');
+const appIcon = require('@/assets/icon.png');
 
 export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   const { isDark } = useTheme();
@@ -16,7 +15,7 @@ export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#080808' : '#FFFFFF' }]}>
       <Image
-        source={isDark ? logoWhite : logoBlack}
+        source={appIcon}
         style={styles.logo}
         resizeMode="contain"
       />

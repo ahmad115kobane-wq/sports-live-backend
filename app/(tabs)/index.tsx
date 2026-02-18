@@ -621,19 +621,6 @@ export default function HomeScreen() {
                   {t('home.liveNow')}
                 </Text>
               </View>
-              <TouchableOpacity 
-                style={[styles.seeAllBtn, { backgroundColor: colors.surface }]}
-                onPress={() => router.push('/live')}
-              >
-                <Text style={[styles.seeAllText, { color: colors.pitch }]}>
-                  {t('common.seeAll')}
-                </Text>
-                <Ionicons 
-                  name={isRTL ? "chevron-forward" : "chevron-back"} 
-                  size={14} 
-                  color={colors.pitch} 
-                />
-              </TouchableOpacity>
             </View>
             <View style={styles.matchList}>
               {filteredLiveMatches.slice(0, 3).map((match) => (
