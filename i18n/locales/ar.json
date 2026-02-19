@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "ميني فوتبول"
+    "name": "Mini Football Iraq"
   },
   "welcome": {
     "tagline": "تابع مبارياتك المفضلة لحظة بلحظة",
@@ -384,7 +384,7 @@
     "user": "مستخدم",
     "fillAllFields": "يرجى ملء جميع الحقول",
     "createAccount": "إنشاء حساب",
-    "joinToday": "انضم إلى ميني فوتبول اليوم",
+    "joinToday": "انضم إلى Mini Football Iraq اليوم",
     "fullName": "الاسم الكامل",
     "enterName": "أدخل اسمك الكامل",
     "createPassword": "أنشئ كلمة مرور",

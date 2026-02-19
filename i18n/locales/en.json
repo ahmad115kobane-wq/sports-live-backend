@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Mini Football"
+    "name": "Mini Football Iraq"
   },
   "welcome": {
     "tagline": "Follow your favorite matches in real-time",
@@ -383,7 +383,7 @@
     "user": "User",
     "fillAllFields": "Please fill in all fields",
     "createAccount": "Create Account",
-    "joinToday": "Join Mini Football today",
+    "joinToday": "Join Mini Football Iraq today",
     "fullName": "Full Name",
     "enterName": "Enter your full name",
     "createPassword": "Create a password",

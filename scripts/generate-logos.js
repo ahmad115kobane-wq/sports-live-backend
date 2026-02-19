@@ -4,7 +4,7 @@ const path = require('path');
 
 const assetsDir = path.join(__dirname, '..', 'assets');
 
-// Create a horizontal logo SVG with the ball icon + "MINI FOOTBALL" text
+// Create a horizontal logo SVG with the ball icon + "MINI FOOTBALL IRAQ" text
 function createLogoSvg(textColor, bgColor) {
     return Buffer.from(`<svg width="520" height="128" viewBox="0 0 520 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Ball Icon -->
@@ -17,9 +17,10 @@ function createLogoSvg(textColor, bgColor) {
   <line x1="42" y1="79" x2="22" y2="90" stroke="${textColor}" stroke-width="5" stroke-linecap="round"/>
   <line x1="42" y1="49" x2="22" y2="38" stroke="${textColor}" stroke-width="5" stroke-linecap="round"/>
   
-  <!-- Text "MINI FOOTBALL" -->
-  <text x="140" y="55" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="bold" fill="${textColor}" letter-spacing="4">MINI</text>
-  <text x="140" y="95" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="bold" fill="${textColor}" letter-spacing="4">FOOTBALL</text>
+  <!-- Text "MINI FOOTBALL IRAQ" -->
+  <text x="140" y="45" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="${textColor}" letter-spacing="3">MINI</text>
+  <text x="140" y="75" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="${textColor}" letter-spacing="3">FOOTBALL</text>
+  <text x="140" y="105" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="${textColor}" letter-spacing="3">IRAQ</text>
 </svg>`);
 }
 

@@ -39,7 +39,7 @@ export const getImageUrl = (imageUrl: string | null | undefined): string | null 
 
 // App Configuration
 export const APP_CONFIG = {
-  name: 'Mini Football',
+  name: 'Mini Football Iraq',
   version: '1.0.0',
   refreshInterval: 30000, // 30 seconds
 };

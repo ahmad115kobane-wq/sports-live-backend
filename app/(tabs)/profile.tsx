@@ -475,7 +475,7 @@ export default function ProfileScreen() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: colors.textQuaternary }]}>Mini Football v1.0.0</Text>
+            <Text style={[styles.footerText, { color: colors.textQuaternary }]}>Mini Football Iraq v1.0.0</Text>
           </View>
         </View>
       </ScrollView>
