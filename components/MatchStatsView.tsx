@@ -185,7 +185,7 @@ export default function MatchStatsView({ match }: MatchStatsViewProps) {
 
   // Passes section
   const passStats = [
-    { label: 'رميات التماس', home: s.homeFouls || 0, away: s.awayFouls || 0, hl: false },
+    { label: 'رميات التماس', home: s.homeThrowIns || 0, away: s.awayThrowIns || 0, hl: false },
   ];
 
   return (

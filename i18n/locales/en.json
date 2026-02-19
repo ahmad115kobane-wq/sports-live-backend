@@ -38,7 +38,9 @@
     "close": "Close",
     "refresh": "Refresh",
     "skip": "Skip",
-    "success": "Success"
+    "success": "Success",
+    "showMore": "Show More",
+    "showLess": "Show Less"
   },
   "tabs": {
     "home": "Home",
@@ -553,6 +555,9 @@
     "offside": "Offside",
     "var_review": "VAR",
     "injury": "Injury",
+    "throw_in": "Throw-in",
+    "shot_on_target": "On Target",
+    "shot_off_target": "Off Target",
     "stop": "Stopped",
     "start_half": "Half Started",
     "end_half": "Half Time",

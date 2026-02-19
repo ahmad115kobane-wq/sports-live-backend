@@ -109,6 +109,36 @@ export default function EventIcon({ type, size = 20, color }: EventIconProps) {
         </Svg>
       );
 
+    case 'throw_in':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Circle cx="12" cy="16" r="4" stroke={iconColor} strokeWidth="1.5" />
+          <Path d="M12 12V3" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round" />
+          <Path d="M8 6L12 3L16 6" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M6 16H4M20 16H18" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round" />
+        </Svg>
+      );
+
+    case 'shot_on_target':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Rect x="2" y="6" width="20" height="14" rx="2" stroke={iconColor} strokeWidth="1.5" />
+          <Line x1="12" y1="6" x2="12" y2="20" stroke={iconColor} strokeWidth="1" strokeDasharray="2 2" />
+          <Line x1="2" y1="13" x2="22" y2="13" stroke={iconColor} strokeWidth="1" strokeDasharray="2 2" />
+          <Circle cx="12" cy="13" r="3" fill={iconColor} opacity={0.4} />
+          <Circle cx="12" cy="13" r="1.5" fill={iconColor} />
+        </Svg>
+      );
+
+    case 'shot_off_target':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Rect x="2" y="6" width="20" height="14" rx="2" stroke={iconColor} strokeWidth="1.5" />
+          <Path d="M7 9L17 19M17 9L7 19" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round" opacity={0.5} />
+          <Circle cx="18" cy="4" r="3" fill={iconColor} opacity={0.6} />
+        </Svg>
+      );
+
     case 'stop':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -166,6 +196,9 @@ function getDefaultColor(type: string): string {
     case 'offside': return '#64748B';
     case 'foul': return '#F59E0B';
     case 'injury': return '#F97316';
+    case 'throw_in': return '#8D6E63';
+    case 'shot_on_target': return '#4CAF50';
+    case 'shot_off_target': return '#FF7043';
     case 'stop': return '#78716C';
     case 'start_half': return '#22C55E';
     case 'end_half': return '#F59E0B';

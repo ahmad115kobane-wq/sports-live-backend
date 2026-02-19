@@ -38,7 +38,9 @@
     "close": "إغلاق",
     "refresh": "تحديث",
     "skip": "تخطي",
-    "success": "نجاح"
+    "success": "نجاح",
+    "showMore": "عرض المزيد",
+    "showLess": "عرض أقل"
   },
   "tabs": {
     "home": "الرئيسية",
@@ -554,6 +556,9 @@
     "offside": "تسلل",
     "var_review": "VAR",
     "injury": "إصابة",
+    "throw_in": "رمية تماس",
+    "shot_on_target": "تسديدة على المرمى",
+    "shot_off_target": "تسديدة خارج المرمى",
     "stop": "توقف",
     "start_half": "بداية الشوط",
     "end_half": "نهاية الشوط",

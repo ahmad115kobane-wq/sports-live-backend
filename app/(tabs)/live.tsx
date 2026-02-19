@@ -298,14 +298,14 @@ export default function NewsScreen() {
           >
             {item.content}
           </Text>
-          {item.content.split('\n').length > 5 && (
+          {(item.content.length > 200 || item.content.split('\n').length > 5) && (
             <TouchableOpacity
               onPress={() => toggleExpanded(item.id)}
               style={styles.expandButton}
               activeOpacity={0.7}
             >
               <Text style={[styles.expandText, { color: colors.accent }]}> 
-                {expandedArticles.has(item.id) ? 'عرض أقل' : 'عرض المزيد'}
+                {expandedArticles.has(item.id) ? t('common.showLess') : t('common.showMore')}
               </Text>
             </TouchableOpacity>
           )}

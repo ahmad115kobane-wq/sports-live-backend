@@ -37,7 +37,10 @@ const QUICK_EVENTS: { type: EventType; labelKey: string; color: string }[] = [
 
 // Secondary events (less frequent)
 const MORE_EVENTS: { type: EventType; labelKey: string; color: string }[] = [
+  { type: 'shot_on_target', labelKey: 'events.shot_on_target', color: '#4CAF50' },
+  { type: 'shot_off_target', labelKey: 'events.shot_off_target', color: '#FF7043' },
   { type: 'corner', labelKey: 'events.corner', color: '#00BCD4' },
+  { type: 'throw_in', labelKey: 'events.throw_in', color: '#8D6E63' },
   { type: 'foul', labelKey: 'events.foul', color: '#F59E0B' },
   { type: 'offside', labelKey: 'events.offside', color: '#64748B' },
   { type: 'var_review', labelKey: 'events.var_review', color: '#A855F7' },
@@ -1028,7 +1031,7 @@ export default function OperatorMatchScreen() {
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
               {t('operator.recentEvents')}
             </Text>
-            {match.events.slice(0, 5).map((event, idx) => {
+            {match.events.map((event, idx) => {
               const evtConfig = EVENT_TYPES[event.type];
               return (
                 <View key={event.id || idx} style={[styles.recentEventRow, { backgroundColor: colors.surface, flexDirection }]}>
@@ -1279,18 +1282,20 @@ const styles = StyleSheet.create({
   },
   quickEventBtn: {
     width: '18.5%',
-    aspectRatio: 0.85,
-    borderRadius: RADIUS.lg,
+    aspectRatio: 0.9,
+    borderRadius: RADIUS.xl,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: 'transparent',
+    ...SHADOWS.xs,
   },
   quickEventLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    marginTop: 4,
+    marginTop: 5,
     textAlign: 'center',
+    fontFamily: FONTS.bold,
   },
   moreEventsToggle: {
     flexDirection: 'row',
