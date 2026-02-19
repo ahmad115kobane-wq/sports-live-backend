@@ -24,7 +24,6 @@ import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { competitionApi, teamApi, matchApi } from '@/services/api';
 import { Competition, Team, Match } from '@/types';
-import AppIcon from '@/components/AppIcon';
 
 // Cities list with localized names
 const getCities = (language: string) => {
@@ -800,7 +799,7 @@ export default function RegisterScreen() {
           <View style={styles.headerSection}>
             {/* Logo */}
             <View style={styles.logoWrapper}>
-              <AppIcon size={60} showBackground={false} />
+              <Image source={require('@/assets/icon.png')} style={{ width: 70, height: 70, borderRadius: 18 }} resizeMode="contain" />
             </View>
 
             <Text style={[styles.welcomeText, { color: colors.text }]}>{t('auth.createAccount')}</Text>

@@ -10,6 +10,7 @@ import {
   ScrollView,
   StatusBar,
   Dimensions,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -20,7 +21,6 @@ import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useAuthStore } from '@/store/authStore';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
-import AppIcon from '@/components/AppIcon';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -94,7 +94,7 @@ export default function LoginScreen() {
           <View style={styles.headerSection}>
             {/* Logo */}
             <View style={styles.logoWrapper}>
-              <AppIcon size={60} showBackground={false} />
+              <Image source={require('@/assets/icon.png')} style={{ width: 70, height: 70, borderRadius: 18 }} resizeMode="contain" />
             </View>
 
             <Text style={[styles.welcomeText, { color: colors.text }]}>{t('auth.welcomeBack')}</Text>

@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -20,7 +21,6 @@ import Button from '@/components/ui/Button';
 import { useAlert } from '@/contexts/AlertContext';
 import { useRTL } from '@/contexts/RTLContext';
 import LanguageSelector from '@/components/LanguageSelector';
-import AppIcon from '@/components/AppIcon';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -142,7 +142,7 @@ export default function WelcomeScreen() {
         ]}
       >
         <View style={styles.logoContainer}>
-          <AppIcon size={120} />
+          <Image source={require('@/assets/icon.png')} style={{ width: 120, height: 120, borderRadius: 28 }} resizeMode="contain" />
         </View>
         <Text style={[styles.appName, { color: colors.text }]}>{t('app.name')}</Text>
         <Text style={[styles.tagline, { color: colors.textSecondary }]}>{t('welcome.tagline')}</Text>

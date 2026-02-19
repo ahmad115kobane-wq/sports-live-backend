@@ -9,6 +9,7 @@ import {
   StatusBar,
   Linking,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,6 @@ import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import AppIcon from '@/components/AppIcon';
 import { settingsApi } from '@/services/api';
 
 const APP_VERSION = '1.0.0';
@@ -78,7 +78,7 @@ export default function AboutScreen() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* App Logo & Name */}
         <View style={styles.logoSection}>
-          <AppIcon size={100} />
+          <Image source={require('@/assets/icon.png')} style={{ width: 100, height: 100, borderRadius: 24 }} resizeMode="contain" />
           <Text style={[styles.appName, { color: colors.text, marginTop: SPACING.md }]}>{t('app.name')}</Text>
           <Text style={[styles.appVersion, { color: colors.textTertiary }]}>
             الإصدار {APP_VERSION}
