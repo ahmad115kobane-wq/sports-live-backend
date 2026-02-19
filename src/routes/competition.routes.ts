@@ -188,103 +188,243 @@ router.get('/:id/matches', async (req, res) => {
   }
 });
 
+// Helper to compute standings from matches and teams
+function computeStandings(matches: any[], teamsList: any[]) {
+  const standingsMap: Record<string, any> = {};
+  for (const t of teamsList) {
+    standingsMap[t.id || t.teamId] = {
+      teamId: t.id || t.teamId,
+      team: t.team || t,
+      played: 0, won: 0, drawn: 0, lost: 0,
+      goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+    };
+  }
+  for (const m of matches) {
+    const home = standingsMap[m.homeTeamId];
+    const away = standingsMap[m.awayTeamId];
+    if (home) {
+      home.played++;
+      home.goalsFor += m.homeScore;
+      home.goalsAgainst += m.awayScore;
+      if (m.homeScore > m.awayScore) { home.won++; home.points += 3; }
+      else if (m.homeScore === m.awayScore) { home.drawn++; home.points += 1; }
+      else { home.lost++; }
+      home.goalDifference = home.goalsFor - home.goalsAgainst;
+    }
+    if (away) {
+      away.played++;
+      away.goalsFor += m.awayScore;
+      away.goalsAgainst += m.homeScore;
+      if (m.awayScore > m.homeScore) { away.won++; away.points += 3; }
+      else if (m.awayScore === m.homeScore) { away.drawn++; away.points += 1; }
+      else { away.lost++; }
+      away.goalDifference = away.goalsFor - away.goalsAgainst;
+    }
+  }
+  return Object.values(standingsMap).sort((a: any, b: any) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  }).map((s: any, i: number) => ({ ...s, rank: i + 1, team: resolveTeamImages(s.team) }));
+}
+
 // Get competition standings (computed from finished matches)
 router.get('/:id/standings', async (req, res) => {
   try {
     const { id } = req.params;
+    const { groupId } = req.query;
 
-    // Get all finished matches for this competition
+    // Check competition format
+    const competition = await prisma.competition.findUnique({ where: { id }, select: { format: true } });
+    if (!competition) return res.status(404).json({ success: false, message: 'Competition not found' });
+
+    if (competition.format === 'GROUPS') {
+      // If groupId specified, return standings for that group only
+      if (groupId) {
+        const groupMatches = await prisma.match.findMany({
+          where: { competitionId: id, groupId: groupId as string, status: 'finished' },
+          select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
+        });
+        const groupTeams = await prisma.competitionGroupTeam.findMany({
+          where: { groupId: groupId as string },
+          include: { team: { select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true } } },
+        });
+        const standings = computeStandings(groupMatches, groupTeams);
+        return res.json({ success: true, data: standings });
+      }
+
+      // Return standings grouped by group
+      const groups = await prisma.competitionGroup.findMany({
+        where: { competitionId: id },
+        include: {
+          teams: { include: { team: { select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true } } } },
+        },
+        orderBy: { sortOrder: 'asc' },
+      });
+
+      const allGroupMatches = await prisma.match.findMany({
+        where: { competitionId: id, stage: 'GROUP', status: 'finished' },
+        select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true, groupId: true },
+      });
+
+      const groupStandings = groups.map((g: any) => {
+        const gMatches = allGroupMatches.filter((m: any) => m.groupId === g.id);
+        const standings = computeStandings(gMatches, g.teams);
+        return { groupId: g.id, groupName: g.name, standings };
+      });
+
+      return res.json({ success: true, data: groupStandings, format: 'GROUPS' });
+    }
+
+    // LEAGUE format - original logic
     const matches = await prisma.match.findMany({
-      where: {
-        competitionId: id,
-        status: 'finished',
-      },
-      select: {
-        homeTeamId: true,
-        awayTeamId: true,
-        homeScore: true,
-        awayScore: true,
-      },
+      where: { competitionId: id, status: 'finished' },
+      select: { homeTeamId: true, awayTeamId: true, homeScore: true, awayScore: true },
     });
-
-    // Get teams in this competition
     const teamComps = await prisma.teamCompetition.findMany({
       where: { competitionId: id },
+      include: { team: { select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true } } },
+    });
+    const standings = computeStandings(matches, teamComps);
+    res.json({ success: true, data: standings, format: 'LEAGUE' });
+  } catch (error) {
+    console.error('Get standings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get standings' });
+  }
+});
+
+// ── Competition Groups Management ──
+
+// Get groups for a competition
+router.get('/:id/groups', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const groups = await prisma.competitionGroup.findMany({
+      where: { competitionId: id },
       include: {
-        team: {
-          select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true },
+        teams: {
+          include: { team: { select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true } } },
         },
+        _count: { select: { matches: true } },
       },
+      orderBy: { sortOrder: 'asc' },
     });
 
-    // Build standings map
-    const standingsMap: Record<string, {
-      teamId: string;
-      team: any;
-      played: number;
-      won: number;
-      drawn: number;
-      lost: number;
-      goalsFor: number;
-      goalsAgainst: number;
-      goalDifference: number;
-      points: number;
-    }> = {};
-
-    // Initialize all teams
-    for (const tc of teamComps) {
-      standingsMap[tc.teamId] = {
-        teamId: tc.teamId,
-        team: tc.team,
-        played: 0, won: 0, drawn: 0, lost: 0,
-        goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
-      };
-    }
-
-    // Process matches
-    for (const m of matches) {
-      const home = standingsMap[m.homeTeamId];
-      const away = standingsMap[m.awayTeamId];
-
-      if (home) {
-        home.played++;
-        home.goalsFor += m.homeScore;
-        home.goalsAgainst += m.awayScore;
-        if (m.homeScore > m.awayScore) { home.won++; home.points += 3; }
-        else if (m.homeScore === m.awayScore) { home.drawn++; home.points += 1; }
-        else { home.lost++; }
-        home.goalDifference = home.goalsFor - home.goalsAgainst;
-      }
-
-      if (away) {
-        away.played++;
-        away.goalsFor += m.awayScore;
-        away.goalsAgainst += m.homeScore;
-        if (m.awayScore > m.homeScore) { away.won++; away.points += 3; }
-        else if (m.awayScore === m.homeScore) { away.drawn++; away.points += 1; }
-        else { away.lost++; }
-        away.goalDifference = away.goalsFor - away.goalsAgainst;
-      }
-    }
-
-    // Sort: points desc, goal difference desc, goals for desc
-    const standings = Object.values(standingsMap).sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
-      return b.goalsFor - a.goalsFor;
-    });
-
-    // Resolve team images
-    const resolved = standings.map((s, i) => ({
-      ...s,
-      rank: i + 1,
-      team: resolveTeamImages(s.team),
+    const resolved = groups.map((g: any) => ({
+      ...g,
+      teams: g.teams.map((gt: any) => ({ ...gt, team: resolveTeamImages(gt.team) })),
     }));
 
     res.json({ success: true, data: resolved });
   } catch (error) {
-    console.error('Get standings error:', error);
-    res.status(500).json({ success: false, message: 'Failed to get standings' });
+    console.error('Get groups error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get groups' });
+  }
+});
+
+// Create group
+router.post('/:id/groups', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { name, sortOrder } = req.body;
+    const group = await prisma.competitionGroup.create({
+      data: { competitionId: id, name, sortOrder: sortOrder || 0 },
+    });
+    res.status(201).json({ success: true, data: group });
+  } catch (error) {
+    console.error('Create group error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create group' });
+  }
+});
+
+// Update group
+router.put('/:id/groups/:groupId', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { groupId } = req.params;
+    const { name, sortOrder } = req.body;
+    const group = await prisma.competitionGroup.update({
+      where: { id: groupId },
+      data: { name, sortOrder },
+    });
+    res.json({ success: true, data: group });
+  } catch (error) {
+    console.error('Update group error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update group' });
+  }
+});
+
+// Delete group
+router.delete('/:id/groups/:groupId', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { groupId } = req.params;
+    await prisma.competitionGroup.delete({ where: { id: groupId } });
+    res.json({ success: true, message: 'Group deleted' });
+  } catch (error) {
+    console.error('Delete group error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete group' });
+  }
+});
+
+// Add team to group
+router.post('/:id/groups/:groupId/teams', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { groupId } = req.params;
+    const { teamId } = req.body;
+    const entry = await prisma.competitionGroupTeam.create({
+      data: { groupId, teamId },
+      include: { team: { select: { id: true, name: true, shortName: true, logoUrl: true, primaryColor: true } } },
+    });
+    res.status(201).json({ success: true, data: { ...entry, team: resolveTeamImages(entry.team) } });
+  } catch (error) {
+    console.error('Add team to group error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add team to group' });
+  }
+});
+
+// Remove team from group
+router.delete('/:id/groups/:groupId/teams/:teamId', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { groupId, teamId } = req.params;
+    await prisma.competitionGroupTeam.deleteMany({ where: { groupId, teamId } });
+    res.json({ success: true, message: 'Team removed from group' });
+  } catch (error) {
+    console.error('Remove team from group error:', error);
+    res.status(500).json({ success: false, message: 'Failed to remove team from group' });
+  }
+});
+
+// Get knockout matches for competition (quarter/semi/final)
+router.get('/:id/knockout', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const matches = await prisma.match.findMany({
+      where: {
+        competitionId: id,
+        stage: { in: ['QUARTER_FINAL', 'SEMI_FINAL', 'FINAL'] },
+      },
+      include: {
+        homeTeam: true,
+        awayTeam: true,
+      },
+      orderBy: [{ stage: 'asc' }, { startTime: 'asc' }],
+    });
+
+    const resolved = matches.map((m: any) => {
+      const rm = resolveMatchImages(m);
+      return rm;
+    });
+
+    // Group by stage
+    const knockout: any = {
+      QUARTER_FINAL: resolved.filter((m: any) => m.stage === 'QUARTER_FINAL'),
+      SEMI_FINAL: resolved.filter((m: any) => m.stage === 'SEMI_FINAL'),
+      FINAL: resolved.filter((m: any) => m.stage === 'FINAL'),
+    };
+
+    res.json({ success: true, data: knockout });
+  } catch (error) {
+    console.error('Get knockout error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get knockout matches' });
   }
 });
 
@@ -366,7 +506,7 @@ router.get('/:id/top-scorers', async (req, res) => {
 // Admin: Create competition
 router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
-    const { name, shortName, logoUrl, country, season, type, icon, sortOrder } = req.body;
+    const { name, shortName, logoUrl, country, season, type, icon, sortOrder, format } = req.body;
 
     const competition = await prisma.competition.create({
       data: {
@@ -375,7 +515,8 @@ router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
         logoUrl,
         country,
         season,
-        type: type || 'football',
+        type: type || 'futsal',
+        format: format || 'LEAGUE',
         icon,
         sortOrder: sortOrder || 0,
       },
@@ -398,7 +539,7 @@ router.post('/', authenticate, isAdmin, async (req: AuthRequest, res) => {
 router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { name, shortName, logoUrl, country, season, type, icon, isActive, sortOrder } = req.body;
+    const { name, shortName, logoUrl, country, season, type, icon, isActive, sortOrder, format } = req.body;
 
     const competition = await prisma.competition.update({
       where: { id },
@@ -409,6 +550,7 @@ router.put('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
         country,
         season,
         type,
+        format,
         icon,
         isActive,
         sortOrder,

@@ -77,6 +77,7 @@ model Team {
   events       Event[]
   lineups      MatchLineup[]
   competitions TeamCompetition[]
+  groupTeams   CompetitionGroupTeam[]
 
   @@map("teams")
 }
@@ -130,6 +131,7 @@ model Competition {
   country     String?
   season      String?
   type        String   @default("futsal") // futsal
+  format      String   @default("LEAGUE") // LEAGUE, GROUPS
   icon        String?  // icon name for display
   isActive    Boolean  @default(true) @map("is_active")
   sortOrder   Int      @default(0) @map("sort_order")
@@ -138,8 +140,39 @@ model Competition {
   // Relations
   matches Match[]
   teams   TeamCompetition[]
+  groups  CompetitionGroup[]
 
   @@map("competitions")
+}
+
+// Competition Groups (for group-stage tournaments)
+model CompetitionGroup {
+  id            String   @id @default(uuid())
+  competitionId String   @map("competition_id")
+  name          String   // مجموعة A, مجموعة B
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  competition Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  teams       CompetitionGroupTeam[]
+  matches     Match[]              @relation("GroupMatches")
+
+  @@map("competition_groups")
+}
+
+// Teams in a competition group
+model CompetitionGroupTeam {
+  id      String @id @default(uuid())
+  groupId String @map("group_id")
+  teamId  String @map("team_id")
+
+  // Relations
+  group CompetitionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  team  Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, teamId])
+  @@map("competition_group_teams")
 }
 
 // Referees table
@@ -202,6 +235,8 @@ model Match {
   assistantReferee2Id   String? @map("assistant_referee_2_id")
   fourthRefereeId       String? @map("fourth_referee_id")
   supervisorId          String? @map("supervisor_id")
+  stage         String?  // GROUP, QUARTER_FINAL, SEMI_FINAL, FINAL
+  groupId       String?  @map("group_id")
   attendance    Int?
   weather       String?
   matchday      Int?     // round/matchday number
@@ -218,6 +253,7 @@ model Match {
   assistantReferee2Ref Referee? @relation("Assistant2Referee", fields: [assistantReferee2Id], references: [id])
   fourthRefereeRef    Referee? @relation("FourthReferee", fields: [fourthRefereeId], references: [id])
   supervisorRef       Supervisor? @relation("MatchSupervisor", fields: [supervisorId], references: [id])
+  group               CompetitionGroup? @relation("GroupMatches", fields: [groupId], references: [id])
   operators   MatchOperator[]
   events      Event[]
   favorites   Favorite[]

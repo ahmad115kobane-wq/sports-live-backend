@@ -348,6 +348,8 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
       matchday,
       season,
       operatorId,
+      stage,
+      groupId,
     } = req.body;
 
     const match = await prisma.match.create({
@@ -367,6 +369,8 @@ router.post('/', authenticate, isAdmin, async (req, res) => {
         assistantReferee2Id: assistantReferee2Id || undefined,
         fourthRefereeId: fourthRefereeId || undefined,
         supervisorId: supervisorId || undefined,
+        stage: stage || undefined,
+        groupId: groupId || undefined,
         matchday,
         season,
       },
