@@ -197,6 +197,34 @@ export default function TeamDetailsScreen() {
           </View>
         )}
 
+        {/* Coaching Staff Section */}
+        {team && (team.coach || team.assistantCoach1 || team.assistantCoach2 || team.goalkeeperCoach || team.physio) && (
+          <View style={[styles.staffSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.staffSectionTitle, { color: colors.text }]}>الطاقم الفني</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.md, paddingHorizontal: SPACING.sm }}>
+              {[
+                { name: team.coach, image: team.coachImageUrl, role: 'المدرب' },
+                { name: team.assistantCoach1, image: team.assistantCoach1Image, role: 'مدرب مساعد' },
+                { name: team.assistantCoach2, image: team.assistantCoach2Image, role: 'مدرب مساعد' },
+                { name: team.goalkeeperCoach, image: team.goalkeeperCoachImage, role: 'مدرب حراس' },
+                { name: team.physio, image: team.physioImage, role: 'طبيب معالج' },
+              ].filter(s => s.name).map((staff, idx) => (
+                <View key={idx} style={styles.staffCard}>
+                  {staff.image ? (
+                    <Image source={{ uri: staff.image }} style={styles.staffImage} />
+                  ) : (
+                    <View style={[styles.staffImagePlaceholder, { backgroundColor: (team.primaryColor || colors.accent) + '20' }]}>
+                      <Ionicons name="person" size={28} color={team.primaryColor || colors.accent} />
+                    </View>
+                  )}
+                  <Text style={[styles.staffName, { color: colors.text }]} numberOfLines={2}>{staff.name}</Text>
+                  <Text style={[styles.staffRole, { color: colors.textSecondary }]}>{staff.role}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Tabs */}
         <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
           <TouchableOpacity
@@ -475,5 +503,51 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.titleSmall,
     textAlign: 'center',
     marginTop: 100,
+  },
+  staffSection: {
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    ...SHADOWS.sm,
+  },
+  staffSectionTitle: {
+    ...TYPOGRAPHY.titleSmall,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+    fontFamily: FONTS.bold,
+  },
+  staffCard: {
+    alignItems: 'center',
+    width: 90,
+  },
+  staffImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: SPACING.xs,
+  },
+  staffImagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  staffName: {
+    ...TYPOGRAPHY.labelSmall,
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: FONTS.semiBold,
+  },
+  staffRole: {
+    fontSize: 10,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 2,
+    fontFamily: FONTS.medium,
   },
 });

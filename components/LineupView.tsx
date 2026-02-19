@@ -50,27 +50,29 @@ interface Lineup {
   players?: LineupPlayer[];
 }
 
+interface TeamWithStaff {
+  id: string;
+  name: string;
+  shortName: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  category?: string;
+  players?: any[];
+  assistantCoach1?: string;
+  assistantCoach1Image?: string;
+  assistantCoach2?: string;
+  assistantCoach2Image?: string;
+  goalkeeperCoach?: string;
+  goalkeeperCoachImage?: string;
+  physio?: string;
+  physioImage?: string;
+}
+
 interface LineupViewProps {
   homeLineup?: Lineup | null;
   awayLineup?: Lineup | null;
-  homeTeam: {
-    id: string;
-    name: string;
-    shortName: string;
-    logoUrl?: string;
-    primaryColor?: string;
-    category?: string;
-    players?: any[];
-  };
-  awayTeam: {
-    id: string;
-    name: string;
-    shortName: string;
-    logoUrl?: string;
-    primaryColor?: string;
-    category?: string;
-    players?: any[];
-  };
+  homeTeam: TeamWithStaff;
+  awayTeam: TeamWithStaff;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -386,6 +388,44 @@ export default function LineupView({ homeLineup, awayLineup, homeTeam, awayTeam 
               </View>
             </View>
           )}
+
+          {/* Staff Row */}
+          {(() => {
+            const currentTeamData = selectedTeam === 'home' ? homeTeam : awayTeam;
+            const staffList = [
+              { name: currentTeamData.assistantCoach1, image: currentTeamData.assistantCoach1Image, role: 'مساعد' },
+              { name: currentTeamData.assistantCoach2, image: currentTeamData.assistantCoach2Image, role: 'مساعد' },
+              { name: currentTeamData.goalkeeperCoach, image: currentTeamData.goalkeeperCoachImage, role: 'حراس' },
+              { name: currentTeamData.physio, image: currentTeamData.physioImage, role: 'طبيب' },
+            ].filter(s => s.name);
+            if (staffList.length === 0) return null;
+            const resolveImg = (url?: string) => {
+              if (!url) return null;
+              return url.startsWith('http') ? url : `${SOCKET_URL}${url}`;
+            };
+            return (
+              <View style={styles.staffRow}>
+                {staffList.map((s, i) => {
+                  const imgUrl = resolveImg(s.image);
+                  return (
+                    <View key={i} style={[styles.staffItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      {imgUrl ? (
+                        <Image source={{ uri: imgUrl }} style={styles.staffAvatar} />
+                      ) : (
+                        <View style={[styles.staffAvatarFallback, { backgroundColor: teamColor + '15' }]}>
+                          <Ionicons name="person" size={12} color={teamColor} />
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.staffItemName, { color: colors.text }]} numberOfLines={1}>{s.name}</Text>
+                        <Text style={[styles.staffItemRole, { color: colors.textSecondary }]}>{s.role}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })()}
 
           {/* Playing Field */}
           <View style={[styles.fieldContainer, { backgroundColor: colors.surface }]}>
@@ -869,6 +909,46 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelSmall,
     fontWeight: '500',
     marginTop: 2,
+  },
+
+  // ── Staff Row ──
+  staffRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    marginBottom: SPACING.md,
+  },
+  staffItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    gap: SPACING.xs,
+    width: '48%' as any,
+  },
+  staffAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  staffAvatarFallback: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  staffItemName: {
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
+  },
+  staffItemRole: {
+    fontSize: 9,
+    fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
 
   // ── Player Photos ──

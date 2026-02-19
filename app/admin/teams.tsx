@@ -95,6 +95,21 @@ export default function TeamsManagementScreen() {
   const [coachImageUrl, setCoachImageUrl] = useState<string | null>(null);
   const [coachImageFile, setCoachImageFile] = useState<any>(null);
 
+  // Staff state
+  const [editStaffMode, setEditStaffMode] = useState(false);
+  const [ac1Name, setAc1Name] = useState('');
+  const [ac1ImageUrl, setAc1ImageUrl] = useState<string | null>(null);
+  const [ac1ImageFile, setAc1ImageFile] = useState<any>(null);
+  const [ac2Name, setAc2Name] = useState('');
+  const [ac2ImageUrl, setAc2ImageUrl] = useState<string | null>(null);
+  const [ac2ImageFile, setAc2ImageFile] = useState<any>(null);
+  const [gkCoachName, setGkCoachName] = useState('');
+  const [gkCoachImageUrl, setGkCoachImageUrl] = useState<string | null>(null);
+  const [gkCoachImageFile, setGkCoachImageFile] = useState<any>(null);
+  const [physioName, setPhysioName] = useState('');
+  const [physioImageUrl, setPhysioImageUrl] = useState<string | null>(null);
+  const [physioImageFile, setPhysioImageFile] = useState<any>(null);
+
   // Player form
   const [playerName, setPlayerName] = useState('');
   const [playerNumber, setPlayerNumber] = useState('');
@@ -220,9 +235,22 @@ export default function TeamsManagementScreen() {
     setEditingPlayer(null);
     setShowPlayerForm(false);
     setEditCoachMode(false);
+    setEditStaffMode(false);
     setCoachName(team.coach || '');
-    setCoachImageUrl((team as any).coachImageUrl || null);
+    setCoachImageUrl(team.coachImageUrl || null);
     setCoachImageFile(null);
+    setAc1Name(team.assistantCoach1 || '');
+    setAc1ImageUrl(team.assistantCoach1Image || null);
+    setAc1ImageFile(null);
+    setAc2Name(team.assistantCoach2 || '');
+    setAc2ImageUrl(team.assistantCoach2Image || null);
+    setAc2ImageFile(null);
+    setGkCoachName(team.goalkeeperCoach || '');
+    setGkCoachImageUrl(team.goalkeeperCoachImage || null);
+    setGkCoachImageFile(null);
+    setPhysioName(team.physio || '');
+    setPhysioImageUrl(team.physioImage || null);
+    setPhysioImageFile(null);
     setShowPlayersModal(true);
   };
 
@@ -236,6 +264,57 @@ export default function TeamsManagementScreen() {
     if (!result.canceled && result.assets[0]) {
       setCoachImageUrl(result.assets[0].uri);
       setCoachImageFile(result.assets[0]);
+    }
+  };
+
+  const pickStaffImage = async (setter: (uri: string | null) => void, fileSetter: (f: any) => void) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setter(result.assets[0].uri);
+      fileSetter(result.assets[0]);
+    }
+  };
+
+  const handleSaveStaff = async () => {
+    if (!selectedTeamForPlayers) return;
+    try {
+      setSaving(true);
+      const formData = new FormData();
+      formData.append('assistantCoach1', ac1Name.trim());
+      formData.append('assistantCoach2', ac2Name.trim());
+      formData.append('goalkeeperCoach', gkCoachName.trim());
+      formData.append('physio', physioName.trim());
+      const appendImage = (file: any, fieldName: string) => {
+        if (!file) return;
+        const uri = file.uri;
+        const ext = uri.split('.').pop() || 'jpg';
+        formData.append(fieldName, {
+          uri,
+          type: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+          name: `${fieldName}-${Date.now()}.${ext}`,
+        } as any);
+      };
+      appendImage(ac1ImageFile, 'assistantCoach1Image');
+      appendImage(ac2ImageFile, 'assistantCoach2Image');
+      appendImage(gkCoachImageFile, 'goalkeeperCoachImage');
+      appendImage(physioImageFile, 'physioImage');
+      await teamApi.update(selectedTeamForPlayers.id, formData);
+      setEditStaffMode(false);
+      setAc1ImageFile(null); setAc2ImageFile(null); setGkCoachImageFile(null); setPhysioImageFile(null);
+      const response = await teamApi.getAllWithPlayers();
+      const teamsData = response.data?.data || response.data || [];
+      setTeams(Array.isArray(teamsData) ? teamsData : []);
+      const updated = teamsData.find((t: Team) => t.id === selectedTeamForPlayers.id);
+      if (updated) setSelectedTeamForPlayers(updated);
+    } catch (error) {
+      showError(t('admin.error'), t('admin.createTeamFailed'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1015,6 +1094,82 @@ export default function TeamsManagementScreen() {
                         </TouchableOpacity>
                       )}
                     </View>
+                  </View>
+
+                  {/* Staff Section */}
+                  <View style={[styles.pmCoachSection, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: SPACING.sm }]}>
+                    <View style={[styles.pmCoachRow, { flexDirection, justifyContent: 'space-between' }]}>
+                      <Text style={[styles.pmCoachLabel, { color: colors.text, fontWeight: '700', fontSize: 14 }]}>الطاقم التدريبي</Text>
+                      {editStaffMode ? (
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity onPress={() => { setEditStaffMode(false); setAc1ImageFile(null); setAc2ImageFile(null); setGkCoachImageFile(null); setPhysioImageFile(null); }}>
+                            <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={handleSaveStaff}>
+                            {saving ? <ActivityIndicator size="small" color={colors.accent} /> : (
+                              <Ionicons name="checkmark-circle" size={28} color={colors.accent} />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity onPress={() => setEditStaffMode(true)}>
+                          <Ionicons name="pencil" size={18} color={colors.accent} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    {editStaffMode ? (
+                      <View style={{ gap: SPACING.sm, marginTop: SPACING.sm }}>
+                        {[
+                          { label: 'مدرب مساعد 1', name: ac1Name, setName: setAc1Name, imgUrl: ac1ImageUrl, pickImg: () => pickStaffImage(setAc1ImageUrl, setAc1ImageFile) },
+                          { label: 'مدرب مساعد 2', name: ac2Name, setName: setAc2Name, imgUrl: ac2ImageUrl, pickImg: () => pickStaffImage(setAc2ImageUrl, setAc2ImageFile) },
+                          { label: 'مدرب حراس', name: gkCoachName, setName: setGkCoachName, imgUrl: gkCoachImageUrl, pickImg: () => pickStaffImage(setGkCoachImageUrl, setGkCoachImageFile) },
+                          { label: 'طبيب معالج', name: physioName, setName: setPhysioName, imgUrl: physioImageUrl, pickImg: () => pickStaffImage(setPhysioImageUrl, setPhysioImageFile) },
+                        ].map((staff, idx) => (
+                          <View key={idx} style={[{ flexDirection, alignItems: 'center', gap: SPACING.xs }]}>
+                            <TouchableOpacity onPress={staff.pickImg}>
+                              {staff.imgUrl ? (
+                                <Image source={{ uri: staff.imgUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                              ) : (
+                                <View style={[styles.pmCoachIcon, { backgroundColor: colors.accent + '20', width: 40, height: 40, borderRadius: 20 }]}>
+                                  <Ionicons name="camera" size={16} color={colors.accent} />
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                            <TextInput
+                              style={[styles.pmCoachInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, flex: 1 }]}
+                              value={staff.name}
+                              onChangeText={staff.setName}
+                              placeholder={staff.label}
+                              placeholderTextColor={colors.textSecondary}
+                              textAlign={isRTL ? 'right' : 'left'}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <View style={{ gap: SPACING.xs, marginTop: SPACING.xs }}>
+                        {[
+                          { label: 'مدرب مساعد 1', name: selectedTeamForPlayers?.assistantCoach1, img: selectedTeamForPlayers?.assistantCoach1Image },
+                          { label: 'مدرب مساعد 2', name: selectedTeamForPlayers?.assistantCoach2, img: selectedTeamForPlayers?.assistantCoach2Image },
+                          { label: 'مدرب حراس', name: selectedTeamForPlayers?.goalkeeperCoach, img: selectedTeamForPlayers?.goalkeeperCoachImage },
+                          { label: 'طبيب معالج', name: selectedTeamForPlayers?.physio, img: selectedTeamForPlayers?.physioImage },
+                        ].map((staff, idx) => (
+                          <View key={idx} style={[{ flexDirection, alignItems: 'center', gap: SPACING.xs, paddingVertical: 4 }]}>
+                            {staff.img ? (
+                              <Image source={{ uri: staff.img }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+                            ) : (
+                              <View style={[styles.pmCoachIcon, { backgroundColor: colors.accent + '10', width: 32, height: 32, borderRadius: 16 }]}>
+                                <Ionicons name="person" size={14} color={colors.accent} />
+                              </View>
+                            )}
+                            <View>
+                              <Text style={[styles.pmCoachLabel, { color: colors.textSecondary, fontSize: 10 }]}>{staff.label}</Text>
+                              <Text style={[styles.pmCoachName, { color: colors.text, fontSize: 13 }]}>{staff.name || 'غير محدد'}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
 
                   {/* Players List */}

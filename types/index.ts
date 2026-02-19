@@ -20,6 +20,15 @@ export interface Team {
   city?: string;
   stadium?: string;
   coach?: string;
+  coachImageUrl?: string;
+  assistantCoach1?: string;
+  assistantCoach1Image?: string;
+  assistantCoach2?: string;
+  assistantCoach2Image?: string;
+  goalkeeperCoach?: string;
+  goalkeeperCoachImage?: string;
+  physio?: string;
+  physioImage?: string;
   founded?: number;
   wins?: number;
   draws?: number;
