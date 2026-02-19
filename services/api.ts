@@ -303,30 +303,26 @@ export const competitionApi = {
   getById: (id: string) => api.get(`/competitions/${id}`),
   getMatches: (id: string, params?: { status?: string; date?: string }) =>
     api.get(`/competitions/${id}/matches`, { params }),
-  getStandings: (id: string) => api.get(`/competitions/${id}/standings`),
+  getStandings: (id: string, groupId?: string) =>
+    api.get(`/competitions/${id}/standings`, { params: groupId ? { groupId } : {} }),
   getTopScorers: (id: string, limit = 5) => api.get(`/competitions/${id}/top-scorers`, { params: { limit } }),
-  create: (data: {
-    name: string;
-    shortName: string;
-    country: string;
-    season: string;
-    type: string;
-    icon: string;
-    sortOrder?: number;
-    logoUrl?: string;
-  }) => api.post('/competitions', data),
-  update: (id: string, data: {
-    name?: string;
-    shortName?: string;
-    country?: string;
-    season?: string;
-    type?: string;
-    icon?: string;
-    isActive?: boolean;
-    sortOrder?: number;
-    logoUrl?: string;
-  }) => api.put(`/competitions/${id}`, data),
+  create: (data: any) => api.post('/competitions', data),
+  update: (id: string, data: any) => api.put(`/competitions/${id}`, data),
   delete: (id: string) => api.delete(`/competitions/${id}`),
+  // Groups
+  getGroups: (id: string) => api.get(`/competitions/${id}/groups`),
+  createGroup: (id: string, data: { name: string; sortOrder?: number }) =>
+    api.post(`/competitions/${id}/groups`, data),
+  updateGroup: (id: string, groupId: string, data: { name?: string; sortOrder?: number }) =>
+    api.put(`/competitions/${id}/groups/${groupId}`, data),
+  deleteGroup: (id: string, groupId: string) =>
+    api.delete(`/competitions/${id}/groups/${groupId}`),
+  addTeamToGroup: (id: string, groupId: string, teamId: string) =>
+    api.post(`/competitions/${id}/groups/${groupId}/teams`, { teamId }),
+  removeTeamFromGroup: (id: string, groupId: string, teamId: string) =>
+    api.delete(`/competitions/${id}/groups/${groupId}/teams/${teamId}`),
+  // Knockout
+  getKnockout: (id: string) => api.get(`/competitions/${id}/knockout`),
 };
 
 export const videoAdApi = {

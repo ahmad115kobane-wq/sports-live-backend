@@ -27,10 +27,12 @@ interface Competition {
   country: string;
   season: string;
   type: string;
+  format: string;
   icon: string;
   isActive: boolean;
   sortOrder: number;
   teams?: any[];
+  groups?: any[];
 }
 
 interface Team {
@@ -56,11 +58,33 @@ export default function CompetitionsManagementScreen() {
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
   const [showTeamsModal, setShowTeamsModal] = useState(false);
   const [showStandingsModal, setShowStandingsModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showGroupTeamsModal, setShowGroupTeamsModal] = useState(false);
+  const [showCreateMatchModal, setShowCreateMatchModal] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
   const [standings, setStandings] = useState<any[]>([]);
   const [standingsLoading, setStandingsLoading] = useState(false);
+
+  // Groups state
+  const [groups, setGroups] = useState<any[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [newGroupName, setNewGroupName] = useState('');
+
+  // Knockout state
+  const [knockout, setKnockout] = useState<any>({});
+  const [knockoutLoading, setKnockoutLoading] = useState(false);
+
+  // Detail tab
+  const [detailTab, setDetailTab] = useState<'groups' | 'knockout' | 'matches' | 'standings'>('groups');
+
+  // Create match inside competition
+  const [matchHomeTeamId, setMatchHomeTeamId] = useState('');
+  const [matchAwayTeamId, setMatchAwayTeamId] = useState('');
+  const [matchStage, setMatchStage] = useState('GROUP');
+  const [matchGroupId, setMatchGroupId] = useState('');
 
   // Dialog state
   const [dialogVisible, setDialogVisible] = useState(false);
@@ -77,12 +101,9 @@ export default function CompetitionsManagementScreen() {
   const [compShortName, setCompShortName] = useState('');
   const [compSeason, setCompSeason] = useState('2025-2026');
   const [compType, setCompType] = useState('futsal');
+  const [compFormat, setCompFormat] = useState('LEAGUE');
   const [compIcon, setCompIcon] = useState('trophy');
   const [compIsActive, setCompIsActive] = useState(true);
-
-  const competitionTypes = [
-    { value: 'futsal', label: 'كرة مصغرة', icon: 'football-outline' },
-  ];
 
   const iconOptions = [
     'trophy', 'football', 'basketball', 'star', 'medal', 
@@ -130,7 +151,8 @@ export default function CompetitionsManagementScreen() {
     setCompName('');
     setCompShortName('');
     setCompSeason('2025-2026');
-    setCompType('football');
+    setCompType('futsal');
+    setCompFormat('LEAGUE');
     setCompIcon('trophy');
     setCompIsActive(true);
     setShowCompetitionModal(true);
@@ -142,6 +164,7 @@ export default function CompetitionsManagementScreen() {
     setCompShortName(competition.shortName);
     setCompSeason(competition.season);
     setCompType(competition.type);
+    setCompFormat(competition.format || 'LEAGUE');
     setCompIcon(competition.icon);
     setCompIsActive(competition.isActive);
     setShowCompetitionModal(true);
@@ -177,6 +200,7 @@ export default function CompetitionsManagementScreen() {
         country: 'العراق',
         season: compSeason,
         type: compType,
+        format: compFormat,
         icon: compIcon,
         isActive: compIsActive,
         sortOrder: editingCompetition?.sortOrder || competitions.length + 1,
@@ -258,8 +282,135 @@ export default function CompetitionsManagementScreen() {
     );
   };
 
+  // ── Group Management ──
+  const loadGroups = async (compId: string) => {
+    try {
+      setGroupsLoading(true);
+      const res = await competitionApi.getGroups(compId);
+      setGroups(res.data?.data || []);
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    } finally {
+      setGroupsLoading(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!selectedCompetition || !newGroupName.trim()) return;
+    try {
+      setSaving(true);
+      await competitionApi.createGroup(selectedCompetition.id, { name: newGroupName.trim(), sortOrder: groups.length });
+      setNewGroupName('');
+      loadGroups(selectedCompetition.id);
+    } catch (error) {
+      showError('خطأ', 'فشل إنشاء المجموعة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!selectedCompetition) return;
+    try {
+      setSaving(true);
+      await competitionApi.deleteGroup(selectedCompetition.id, groupId);
+      loadGroups(selectedCompetition.id);
+    } catch (error) {
+      showError('خطأ', 'فشل حذف المجموعة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddTeamToGroup = async (teamId: string) => {
+    if (!selectedCompetition || !selectedGroup) return;
+    try {
+      await competitionApi.addTeamToGroup(selectedCompetition.id, selectedGroup.id, teamId);
+      loadGroups(selectedCompetition.id);
+    } catch (error) {
+      showError('خطأ', 'فشل إضافة الفريق');
+    }
+  };
+
+  const handleRemoveTeamFromGroup = async (teamId: string) => {
+    if (!selectedCompetition || !selectedGroup) return;
+    try {
+      await competitionApi.removeTeamFromGroup(selectedCompetition.id, selectedGroup.id, teamId);
+      loadGroups(selectedCompetition.id);
+    } catch (error) {
+      showError('خطأ', 'فشل إزالة الفريق');
+    }
+  };
+
+  // ── Knockout Management ──
+  const loadKnockout = async (compId: string) => {
+    try {
+      setKnockoutLoading(true);
+      const res = await competitionApi.getKnockout(compId);
+      setKnockout(res.data?.data || {});
+    } catch (error) {
+      console.error('Error loading knockout:', error);
+    } finally {
+      setKnockoutLoading(false);
+    }
+  };
+
+  // ── Open Competition Detail ──
+  const openDetailModal = async (competition: Competition) => {
+    setSelectedCompetition(competition);
+    setDetailTab(competition.format === 'GROUPS' ? 'groups' : 'standings');
+    setShowDetailModal(true);
+    if (competition.format === 'GROUPS') {
+      loadGroups(competition.id);
+      loadKnockout(competition.id);
+    }
+  };
+
+  // ── Create Match inside competition ──
+  const handleCreateCompMatch = async () => {
+    if (!selectedCompetition || !matchHomeTeamId || !matchAwayTeamId) {
+      showError('خطأ', 'اختر الفريقين');
+      return;
+    }
+    if (matchHomeTeamId === matchAwayTeamId) {
+      showError('خطأ', 'لا يمكن اختيار نفس الفريق');
+      return;
+    }
+    try {
+      setSaving(true);
+      const { matchApi: mApi } = require('@/services/api');
+      await mApi.create({
+        competitionId: selectedCompetition.id,
+        homeTeamId: matchHomeTeamId,
+        awayTeamId: matchAwayTeamId,
+        startTime: new Date().toISOString(),
+        stage: matchStage || undefined,
+        groupId: matchStage === 'GROUP' ? matchGroupId || undefined : undefined,
+      });
+      setShowCreateMatchModal(false);
+      setMatchHomeTeamId('');
+      setMatchAwayTeamId('');
+      showError('نجاح', 'تم إنشاء المباراة بنجاح');
+    } catch (error) {
+      showError('خطأ', 'فشل إنشاء المباراة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const STAGE_LABELS: Record<string, string> = {
+    GROUP: 'دور المجموعات',
+    QUARTER_FINAL: 'ربع النهائي',
+    SEMI_FINAL: 'نصف النهائي',
+    FINAL: 'النهائي',
+  };
+
   const renderCompetitionCard = ({ item: competition }: { item: Competition }) => (
-    <View style={[styles.competitionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => openDetailModal(competition)}
+      style={[styles.competitionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+    >
       <View style={[styles.competitionHeader, { flexDirection }]}>
         <View style={[styles.competitionInfo, { flexDirection }]}>
           <View style={[styles.competitionIcon, { backgroundColor: colors.accent }]}>
@@ -272,17 +423,24 @@ export default function CompetitionsManagementScreen() {
             <Text style={[styles.competitionMeta, { color: colors.textSecondary }]}>
               {competition.shortName} • {competition.season}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: competition.isActive ? '#10B98120' : '#DC262620' }]}>
-              <Text style={[styles.statusText, { color: competition.isActive ? '#10B981' : '#DC2626' }]}>
-                {competition.isActive ? 'نشط' : 'غير نشط'}
-              </Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
+              <View style={[styles.statusBadge, { backgroundColor: competition.isActive ? '#10B98120' : '#DC262620' }]}>
+                <Text style={[styles.statusText, { color: competition.isActive ? '#10B981' : '#DC2626' }]}>
+                  {competition.isActive ? 'نشط' : 'غير نشط'}
+                </Text>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: colors.accent + '15' }]}>
+                <Text style={[styles.statusText, { color: colors.accent }]}>
+                  {competition.format === 'GROUPS' ? 'مجموعات' : 'دوري'}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
         <View style={styles.competitionActions}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.accent + '20' }]}
-            onPress={() => openEditCompetitionModal(competition)}
+            onPress={(e) => { e.stopPropagation(); openEditCompetitionModal(competition); }}
           >
             <Ionicons name="pencil" size={18} color={colors.accent} />
           </TouchableOpacity>
@@ -293,7 +451,7 @@ export default function CompetitionsManagementScreen() {
       <View style={[styles.cardActions, { borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[styles.cardActionBtn, { backgroundColor: colors.background }]}
-          onPress={() => openManageTeamsModal(competition)}
+          onPress={(e) => { e.stopPropagation(); openManageTeamsModal(competition); }}
         >
           <Ionicons name="shield" size={16} color={colors.accent} />
           <Text style={[styles.cardActionText, { color: colors.text }]}>الأندية</Text>
@@ -303,14 +461,14 @@ export default function CompetitionsManagementScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.cardActionBtn, { backgroundColor: colors.background }]}
-          onPress={() => openStandingsModal(competition)}
+          onPress={(e) => { e.stopPropagation(); openDetailModal(competition); }}
         >
-          <Ionicons name="podium" size={16} color={colors.accent} />
-          <Text style={[styles.cardActionText, { color: colors.text }]}>الترتيب</Text>
+          <Ionicons name="settings" size={16} color={colors.accent} />
+          <Text style={[styles.cardActionText, { color: colors.text }]}>إدارة</Text>
           <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -323,17 +481,6 @@ export default function CompetitionsManagementScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity 
-          style={[styles.addButton, { backgroundColor: colors.accent }]}
-          onPress={openAddCompetitionModal}
-        >
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.addButtonText}>إضافة بطولة</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Competitions List */}
       <FlatList
         data={competitions}
@@ -341,6 +488,17 @@ export default function CompetitionsManagementScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: SPACING.sm }}>
+            <TouchableOpacity 
+              style={[styles.addButton, { backgroundColor: colors.accent }]}
+              onPress={openAddCompetitionModal}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addButtonText}>إضافة بطولة</Text>
+            </TouchableOpacity>
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="trophy-outline" size={64} color={colors.textSecondary} />
@@ -399,32 +557,35 @@ export default function CompetitionsManagementScreen() {
                 />
               </View>
 
-              {/* Type */}
+              {/* Format */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>النوع</Text>
+                <Text style={[styles.inputLabel, { color: colors.text }]}>نظام البطولة *</Text>
                 <View style={styles.typePicker}>
-                  {competitionTypes.map((type) => (
+                  {[
+                    { value: 'LEAGUE', label: 'دوري ترتيب', icon: 'podium' as const },
+                    { value: 'GROUPS', label: 'مجموعات + إقصائي', icon: 'grid' as const },
+                  ].map((fmt) => (
                     <TouchableOpacity
-                      key={type.value}
+                      key={fmt.value}
                       style={[
                         styles.typeOption,
                         { backgroundColor: colors.surface, borderColor: colors.border },
-                        compType === type.value && { backgroundColor: colors.accent, borderColor: colors.accent },
+                        compFormat === fmt.value && { backgroundColor: colors.accent, borderColor: colors.accent },
                       ]}
-                      onPress={() => setCompType(type.value)}
+                      onPress={() => setCompFormat(fmt.value)}
                     >
                       <Ionicons 
-                        name={type.icon as any} 
+                        name={fmt.icon} 
                         size={18} 
-                        color={compType === type.value ? '#fff' : colors.text} 
+                        color={compFormat === fmt.value ? '#fff' : colors.text} 
                       />
                       <Text
                         style={[
                           styles.typeOptionText,
-                          { color: compType === type.value ? '#fff' : colors.text },
+                          { color: compFormat === fmt.value ? '#fff' : colors.text },
                         ]}
                       >
-                        {type.label}
+                        {fmt.label}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -627,14 +788,322 @@ export default function CompetitionsManagementScreen() {
         )}
       </AppModal>
 
+      {/* ── Competition Detail Modal ── */}
+      <AppModal
+        visible={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        title={selectedCompetition?.name || 'إدارة البطولة'}
+        subtitle={selectedCompetition?.format === 'GROUPS' ? 'مجموعات + إقصائي' : 'دوري ترتيب'}
+        icon="trophy"
+        maxHeight="90%"
+      >
+        {/* Detail Tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.md, gap: 2 }}>
+            {selectedCompetition?.format === 'GROUPS' && (
+              <TouchableOpacity
+                style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: detailTab === 'groups' ? 2 : 0, borderBottomColor: colors.accent }}
+                onPress={() => setDetailTab('groups')}
+              >
+                <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: detailTab === 'groups' ? colors.accent : colors.textTertiary }}>المجموعات</Text>
+              </TouchableOpacity>
+            )}
+            {selectedCompetition?.format === 'GROUPS' && (
+              <TouchableOpacity
+                style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: detailTab === 'knockout' ? 2 : 0, borderBottomColor: colors.accent }}
+                onPress={() => setDetailTab('knockout')}
+              >
+                <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: detailTab === 'knockout' ? colors.accent : colors.textTertiary }}>الأدوار الإقصائية</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: detailTab === 'matches' ? 2 : 0, borderBottomColor: colors.accent }}
+              onPress={() => setDetailTab('matches')}
+            >
+              <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: detailTab === 'matches' ? colors.accent : colors.textTertiary }}>إنشاء مباراة</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: detailTab === 'standings' ? 2 : 0, borderBottomColor: colors.accent }}
+              onPress={() => {
+                setDetailTab('standings');
+                if (selectedCompetition) openStandingsModal(selectedCompetition);
+              }}
+            >
+              <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: detailTab === 'standings' ? colors.accent : colors.textTertiary }}>الترتيب</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        <ScrollView style={{ padding: SPACING.md }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {/* ── Groups Tab ── */}
+          {detailTab === 'groups' && selectedCompetition?.format === 'GROUPS' && (
+            <View>
+              {/* Create Group */}
+              <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md }}>
+                <TextInput
+                  style={[styles.input, { flex: 1, height: 44, backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                  placeholder="اسم المجموعة (مثال: مجموعة أ)"
+                  placeholderTextColor={colors.textTertiary}
+                  value={newGroupName}
+                  onChangeText={setNewGroupName}
+                  textAlign={isRTL ? 'right' : 'left'}
+                />
+                <TouchableOpacity
+                  style={{ backgroundColor: colors.accent, height: 44, paddingHorizontal: 16, borderRadius: RADIUS.lg, justifyContent: 'center' }}
+                  onPress={handleCreateGroup}
+                >
+                  <Ionicons name="add" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              {groupsLoading ? (
+                <ActivityIndicator color={colors.accent} style={{ paddingVertical: 20 }} />
+              ) : groups.length === 0 ? (
+                <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                  <Ionicons name="grid-outline" size={40} color={colors.textTertiary} />
+                  <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 8, fontFamily: FONTS.regular }}>لا توجد مجموعات - أنشئ مجموعة جديدة</Text>
+                </View>
+              ) : (
+                groups.map((group: any) => (
+                  <View key={group.id} style={{ marginBottom: SPACING.md, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+                    {/* Group Header */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.accent + '10', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm }}>
+                      <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: colors.text }}>{group.name}</Text>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.accent + '20', width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}
+                          onPress={() => {
+                            setSelectedGroup(group);
+                            setShowGroupTeamsModal(true);
+                          }}
+                        >
+                          <Ionicons name="person-add" size={14} color={colors.accent} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ backgroundColor: '#EF444420', width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}
+                          onPress={() => handleDeleteGroup(group.id)}
+                        >
+                          <Ionicons name="trash" size={14} color="#EF4444" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    {/* Group Teams */}
+                    {group.teams?.length > 0 ? (
+                      group.teams.map((gt: any) => (
+                        <View key={gt.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.md, paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: colors.border }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                            <TeamLogo team={gt.team} size="small" />
+                            <Text style={{ fontSize: 13, fontFamily: FONTS.medium, color: colors.text }}>{gt.team?.name || gt.team?.shortName}</Text>
+                          </View>
+                          <TouchableOpacity onPress={() => { setSelectedGroup(group); handleRemoveTeamFromGroup(gt.teamId || gt.team?.id); }}>
+                            <Ionicons name="close-circle" size={20} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={{ padding: SPACING.md, color: colors.textTertiary, fontSize: 12, textAlign: 'center', fontFamily: FONTS.regular }}>لا توجد فرق - اضغط + لإضافة فرق</Text>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+
+          {/* ── Knockout Tab ── */}
+          {detailTab === 'knockout' && selectedCompetition?.format === 'GROUPS' && (
+            <View>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, fontFamily: FONTS.regular, marginBottom: SPACING.md, textAlign: 'center' }}>
+                أنشئ مباريات الأدوار الإقصائية من تبويب "إنشاء مباراة"
+              </Text>
+              {knockoutLoading ? (
+                <ActivityIndicator color={colors.accent} style={{ paddingVertical: 20 }} />
+              ) : (
+                ['QUARTER_FINAL', 'SEMI_FINAL', 'FINAL'].map((stage) => {
+                  const stageMatches = knockout[stage] || [];
+                  return (
+                    <View key={stage} style={{ marginBottom: SPACING.lg }}>
+                      <Text style={{ fontSize: 14, fontFamily: FONTS.bold, color: colors.accent, marginBottom: SPACING.sm }}>
+                        {STAGE_LABELS[stage]}
+                      </Text>
+                      {stageMatches.length > 0 ? (
+                        stageMatches.map((m: any) => (
+                          <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: RADIUS.md, padding: SPACING.sm, marginBottom: 6, borderWidth: 1, borderColor: colors.border }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                              <TeamLogo team={m.homeTeam} size="small" />
+                              <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }} numberOfLines={1}>{m.homeTeam?.shortName}</Text>
+                            </View>
+                            <Text style={{ fontSize: 13, fontFamily: FONTS.bold, color: colors.accent, paddingHorizontal: 8 }}>
+                              {m.status === 'finished' ? `${m.homeScore} - ${m.awayScore}` : 'vs'}
+                            </Text>
+                            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, flex: 1 }}>
+                              <TeamLogo team={m.awayTeam} size="small" />
+                              <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }} numberOfLines={1}>{m.awayTeam?.shortName}</Text>
+                            </View>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center', fontFamily: FONTS.regular }}>لا توجد مباريات</Text>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          )}
+
+          {/* ── Create Match Tab ── */}
+          {detailTab === 'matches' && (
+            <View>
+              {/* Stage selector */}
+              {selectedCompetition?.format === 'GROUPS' && (
+                <View style={{ marginBottom: SPACING.md }}>
+                  <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: colors.textSecondary, marginBottom: 6 }}>المرحلة</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {['GROUP', 'QUARTER_FINAL', 'SEMI_FINAL', 'FINAL'].map((s) => (
+                        <TouchableOpacity
+                          key={s}
+                          style={[styles.typeOption, { backgroundColor: matchStage === s ? colors.accent : colors.surface, borderColor: matchStage === s ? colors.accent : colors.border }]}
+                          onPress={() => setMatchStage(s)}
+                        >
+                          <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: matchStage === s ? '#fff' : colors.text }}>{STAGE_LABELS[s]}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Group selector (if GROUP stage) */}
+              {matchStage === 'GROUP' && selectedCompetition?.format === 'GROUPS' && groups.length > 0 && (
+                <View style={{ marginBottom: SPACING.md }}>
+                  <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: colors.textSecondary, marginBottom: 6 }}>المجموعة</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {groups.map((g: any) => (
+                        <TouchableOpacity
+                          key={g.id}
+                          style={[styles.typeOption, { backgroundColor: matchGroupId === g.id ? colors.accent : colors.surface, borderColor: matchGroupId === g.id ? colors.accent : colors.border }]}
+                          onPress={() => setMatchGroupId(g.id)}
+                        >
+                          <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: matchGroupId === g.id ? '#fff' : colors.text }}>{g.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Home Team */}
+              <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: colors.textSecondary, marginBottom: 6 }}>الفريق المضيف</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {allTeams.map((team) => (
+                    <TouchableOpacity
+                      key={team.id}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchHomeTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchHomeTeamId === team.id ? colors.accent + '15' : colors.surface }}
+                      onPress={() => setMatchHomeTeamId(team.id)}
+                    >
+                      <TeamLogo team={team} size="small" />
+                      <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* Away Team */}
+              <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: colors.textSecondary, marginBottom: 6 }}>الفريق الضيف</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.lg }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {allTeams.map((team) => (
+                    <TouchableOpacity
+                      key={team.id}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchAwayTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchAwayTeamId === team.id ? colors.accent + '15' : colors.surface }}
+                      onPress={() => setMatchAwayTeamId(team.id)}
+                    >
+                      <TeamLogo team={team} size="small" />
+                      <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
+              {/* Create Button */}
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.accent, margin: 0, opacity: saving ? 0.6 : 1 }]}
+                onPress={handleCreateCompMatch}
+                disabled={saving}
+              >
+                {saving ? <ActivityIndicator color="#fff" /> : (
+                  <Text style={styles.saveButtonText}>إنشاء المباراة</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── Standings Tab ── */}
+          {detailTab === 'standings' && (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Ionicons name="podium-outline" size={40} color={colors.textTertiary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 8, fontFamily: FONTS.regular, textAlign: 'center' }}>
+                اضغط على "الترتيب" في البطاقة لعرض جدول الترتيب الكامل
+              </Text>
+            </View>
+          )}
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </AppModal>
+
+      {/* ── Add Teams to Group Modal ── */}
+      <AppModal
+        visible={showGroupTeamsModal}
+        onClose={() => setShowGroupTeamsModal(false)}
+        title={`إضافة فرق - ${selectedGroup?.name || ''}`}
+        icon="person-add"
+        maxHeight="70%"
+      >
+        <ScrollView style={{ padding: SPACING.md }} showsVerticalScrollIndicator={false}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, fontFamily: FONTS.regular, marginBottom: SPACING.md }}>
+            اختر الفرق لإضافتها للمجموعة
+          </Text>
+          {allTeams.map((team) => {
+            const isInGroup = selectedGroup?.teams?.some((gt: any) => (gt.teamId || gt.team?.id) === team.id);
+            return (
+              <TouchableOpacity
+                key={team.id}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: SPACING.md, marginBottom: 6, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: isInGroup ? colors.accent : colors.border, backgroundColor: isInGroup ? colors.accent + '10' : colors.surface }}
+                onPress={() => {
+                  if (isInGroup) {
+                    handleRemoveTeamFromGroup(team.id);
+                  } else {
+                    handleAddTeamToGroup(team.id);
+                  }
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                  <TeamLogo team={team} size="small" />
+                  <Text style={{ fontSize: 14, fontFamily: FONTS.medium, color: colors.text }}>{team.name}</Text>
+                </View>
+                <Ionicons name={isInGroup ? 'checkmark-circle' : 'add-circle-outline'} size={22} color={isInGroup ? colors.accent : colors.textTertiary} />
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </AppModal>
+
       <AppDialog
         visible={dialogVisible}
         type={dialogConfig.type}
         title={dialogConfig.title}
         message={dialogConfig.message}
         confirmText={t('admin.ok')}
-        showCancel={false}
-        onConfirm={() => setDialogVisible(false)}
+        showCancel={dialogConfig.showCancel}
+        onConfirm={() => {
+          if (dialogConfig.onConfirm) dialogConfig.onConfirm();
+          else setDialogVisible(false);
+        }}
+        onCancel={() => setDialogVisible(false)}
       />
     </View>
   );
