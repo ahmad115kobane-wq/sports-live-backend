@@ -77,7 +77,7 @@ export const CATEGORY_RULES: Record<string, CategoryRule> = {
 };
 
 function normalizeCategoryKey(category?: string): string {
-  if (!category) return 'FOOTBALL';
+  if (!category) return 'FUTSAL';
 
   const raw = category.trim();
   const upper = raw.toUpperCase().replace(/[-\s]+/g, '_');
@@ -98,7 +98,7 @@ function normalizeCategoryKey(category?: string): string {
 
 export function getCategoryRules(category?: string): CategoryRule {
   const normalized = normalizeCategoryKey(category);
-  return CATEGORY_RULES[normalized] || CATEGORY_RULES['FOOTBALL'];
+  return CATEGORY_RULES[normalized] || CATEGORY_RULES['FUTSAL'];
 }
 
 // Formation position mappings per category (positionX, positionY in percentage 0-100)

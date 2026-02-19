@@ -434,6 +434,13 @@ export default function ProfileScreen() {
               label={t('settings.about')}
               sublabel={`${t('settings.version')} 1.0.0`}
               onPress={() => router.push('/about' as any)}
+            />
+            <RowItem
+              icon="people-circle-outline"
+              iconBg={colors.backgroundTertiary}
+              label="من نحن"
+              sublabel="أعضاء الاتحاد والتعريف"
+              onPress={() => router.push('/about-us' as any)}
               isLast
             />
           </SectionCard>

@@ -27,6 +27,7 @@ const TAB_ITEMS = [
   { key: 'store', label: 'المتجر', icon: 'bag-handle' as const, route: '/admin/store' },
   { key: 'sliders', label: 'الإعلانات', icon: 'images' as const, route: '/admin/sliders' },
   { key: 'legal', label: 'الصفحات القانونية', icon: 'document-text' as const, route: '/admin/legal' },
+  { key: 'about-us', label: 'من نحن', icon: 'people-circle' as const, route: '/admin/about-us' },
   { key: 'settings', label: 'الإعدادات', icon: 'settings' as const, route: '/admin/settings' },
 ];
 
@@ -49,6 +50,7 @@ export default function AdminLayout() {
     if (pathname.includes('/admin/store')) return 'store';
     if (pathname.includes('/admin/sliders')) return 'sliders';
     if (pathname.includes('/admin/legal')) return 'legal';
+    if (pathname.includes('/admin/about-us')) return 'about-us';
     if (pathname.includes('/admin/settings')) return 'settings';
     return 'index';
   };
@@ -121,6 +123,7 @@ export default function AdminLayout() {
         <Stack.Screen name="sliders" />
         <Stack.Screen name="legal" />
         <Stack.Screen name="video-ads" />
+        <Stack.Screen name="about-us" />
         <Stack.Screen name="settings" />
       </Stack>
     </View>

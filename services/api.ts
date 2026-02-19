@@ -347,6 +347,19 @@ export const settingsApi = {
   adminUpdate: (settings: Record<string, string>) => api.put('/settings/admin', { settings }),
 };
 
+export const aboutApi = {
+  getPublic: () => api.get('/about'),
+  getMembers: () => api.get('/about/members'),
+  createMember: (formData: FormData) => api.post('/about/members', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  updateMember: (id: string, formData: FormData) => api.put(`/about/members/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  deleteMember: (id: string) => api.delete(`/about/members/${id}`),
+  updateText: (content: string) => api.put('/about/text', { content }),
+};
+
 export const legalApi = {
   getAll: () => api.get('/legal'),
   getBySlug: (slug: string) => api.get(`/legal/${slug}`),

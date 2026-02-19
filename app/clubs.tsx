@@ -53,15 +53,11 @@ interface Team {
   };
 }
 
-type Category = 'all' | 'football' | 'handball' | 'basketball' | 'futsal' | 'national';
+type Category = 'all' | 'futsal';
 
 const CATEGORIES: { key: Category; icon: string }[] = [
   { key: 'all', icon: 'grid' },
-  { key: 'football', icon: 'football' },
-  { key: 'handball', icon: 'hand-left' },
-  { key: 'basketball', icon: 'basketball' },
   { key: 'futsal', icon: 'fitness' },
-  { key: 'national', icon: 'flag' },
 ];
 
 export default function ClubsScreen() {

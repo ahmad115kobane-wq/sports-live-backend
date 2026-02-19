@@ -27,6 +27,7 @@ interface Referee {
   name: string;
   imageUrl?: string;
   nationality?: string;
+  refereeType: string; // LOCAL, INTERNATIONAL
   isActive: boolean;
   createdAt: string;
 }
@@ -48,6 +49,7 @@ export default function RefereesManagementScreen() {
   // Form state
   const [formName, setFormName] = useState('');
   const [formNationality, setFormNationality] = useState('');
+  const [formRefereeType, setFormRefereeType] = useState<'LOCAL' | 'INTERNATIONAL'>('LOCAL');
   const [formImage, setFormImage] = useState<string | null>(null);
   const [formImageFile, setFormImageFile] = useState<any>(null);
 
@@ -97,6 +99,7 @@ export default function RefereesManagementScreen() {
     setEditing(null);
     setFormName('');
     setFormNationality('');
+    setFormRefereeType('LOCAL');
     setFormImage(null);
     setFormImageFile(null);
     setShowModal(true);
@@ -106,6 +109,7 @@ export default function RefereesManagementScreen() {
     setEditing(referee);
     setFormName(referee.name);
     setFormNationality(referee.nationality || '');
+    setFormRefereeType((referee.refereeType as 'LOCAL' | 'INTERNATIONAL') || 'LOCAL');
     setFormImage(referee.imageUrl || null);
     setFormImageFile(null);
     setShowModal(true);
@@ -139,6 +143,7 @@ export default function RefereesManagementScreen() {
       setSaving(true);
       const formData = new FormData();
       formData.append('name', formName.trim());
+      formData.append('refereeType', formRefereeType);
       if (formNationality.trim()) {
         formData.append('nationality', formNationality.trim());
       }
@@ -212,11 +217,18 @@ export default function RefereesManagementScreen() {
         {/* Details */}
         <View style={styles.details}>
           <Text style={[styles.name, { color: colors.text }]}>{referee.name}</Text>
-          {referee.nationality && (
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {referee.nationality}
-            </Text>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: referee.refereeType === 'INTERNATIONAL' ? '#3B82F620' : '#10B98120' }}>
+              <Text style={{ fontSize: 10, fontFamily: FONTS.semiBold, color: referee.refereeType === 'INTERNATIONAL' ? '#3B82F6' : '#10B981' }}>
+                {referee.refereeType === 'INTERNATIONAL' ? 'دولي' : 'محلي'}
+              </Text>
+            </View>
+            {referee.nationality && (
+              <Text style={[styles.subtitle, { color: colors.textSecondary, marginTop: 0 }]}>
+                {referee.nationality}
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* Actions */}
@@ -318,6 +330,23 @@ export default function RefereesManagementScreen() {
             value={formName}
             onChangeText={setFormName}
           />
+
+          {/* Referee Type */}
+          <Text style={[styles.label, { color: colors.textSecondary }]}>نوع الحكم *</Text>
+          <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.sm }}>
+            <TouchableOpacity
+              style={[styles.input, { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: formRefereeType === 'LOCAL' ? colors.accent + '20' : colors.surface, borderColor: formRefereeType === 'LOCAL' ? colors.accent : colors.border }]}
+              onPress={() => setFormRefereeType('LOCAL')}
+            >
+              <Text style={{ color: formRefereeType === 'LOCAL' ? colors.accent : colors.text, fontFamily: FONTS.semiBold, fontSize: 14 }}>محلي</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.input, { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: formRefereeType === 'INTERNATIONAL' ? '#3B82F620' : colors.surface, borderColor: formRefereeType === 'INTERNATIONAL' ? '#3B82F6' : colors.border }]}
+              onPress={() => setFormRefereeType('INTERNATIONAL')}
+            >
+              <Text style={{ color: formRefereeType === 'INTERNATIONAL' ? '#3B82F6' : colors.text, fontFamily: FONTS.semiBold, fontSize: 14 }}>دولي</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Nationality */}
           <Text style={[styles.label, { color: colors.textSecondary }]}>الجنسية</Text>

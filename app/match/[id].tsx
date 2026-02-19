@@ -474,6 +474,14 @@ export default function MatchDetailScreen() {
                   </Text>
                 </View>
 
+                {selectedReferee.ref?.refereeType && (
+                  <View style={[styles.refsDetailRoleTag, { backgroundColor: selectedReferee.ref.refereeType === 'INTERNATIONAL' ? '#3B82F615' : '#10B98115', marginTop: 6 }]}> 
+                    <Text style={[styles.refsDetailRoleText, { color: selectedReferee.ref.refereeType === 'INTERNATIONAL' ? '#3B82F6' : '#10B981' }]}>
+                      {selectedReferee.ref.refereeType === 'INTERNATIONAL' ? 'حكم دولي' : 'حكم محلي'}
+                    </Text>
+                  </View>
+                )}
+
                 <View style={[styles.refsDetailInfoRow, { borderColor: colors.border }]}> 
                   <Ionicons name="flag-outline" size={16} color={colors.textSecondary} />
                   <Text style={[styles.refsDetailInfoLabel, { color: colors.textSecondary }]}>

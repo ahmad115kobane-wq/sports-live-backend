@@ -76,16 +76,12 @@ export default function CompetitionsManagementScreen() {
   const [compName, setCompName] = useState('');
   const [compShortName, setCompShortName] = useState('');
   const [compSeason, setCompSeason] = useState('2025-2026');
-  const [compType, setCompType] = useState('football');
+  const [compType, setCompType] = useState('futsal');
   const [compIcon, setCompIcon] = useState('trophy');
   const [compIsActive, setCompIsActive] = useState(true);
 
   const competitionTypes = [
-    { value: 'football', label: 'كرة القدم', icon: 'football' },
-    { value: 'basketball', label: 'كرة السلة', icon: 'basketball' },
     { value: 'futsal', label: 'كرة مصغرة', icon: 'football-outline' },
-    { value: 'women', label: 'نسوية', icon: 'people' },
-    { value: 'national', label: 'منتخبات', icon: 'flag' },
   ];
 
   const iconOptions = [

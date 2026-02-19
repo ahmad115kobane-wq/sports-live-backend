@@ -48,11 +48,7 @@ interface Team {
 }
 
 const TEAM_CATEGORIES = [
-  { value: 'FOOTBALL', label: 'كرة قدم', icon: 'football' },
-  { value: 'HANDBALL', label: 'كرة يد', icon: 'hand-left' },
-  { value: 'BASKETBALL', label: 'كرة سلة', icon: 'basketball' },
   { value: 'FUTSAL', label: 'كرة قدم مصغرة', icon: 'fitness' },
-  { value: 'NATIONAL', label: 'منتخب', icon: 'flag' },
 ];
 
 export default function TeamsManagementScreen() {
@@ -83,7 +79,7 @@ export default function TeamsManagementScreen() {
   const [teamCoach, setTeamCoach] = useState('');
   const [teamStadium, setTeamStadium] = useState('');
   const [teamCity, setTeamCity] = useState('');
-  const [teamCategory, setTeamCategory] = useState('FOOTBALL');
+  const [teamCategory, setTeamCategory] = useState('FUTSAL');
 
   // Players management
   const [showPlayersModal, setShowPlayersModal] = useState(false);
