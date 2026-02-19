@@ -409,6 +409,10 @@ router.post('/', authenticate, isAdmin, logoUpload.single('logo'), async (req: A
 router.put('/:id', authenticate, isAdmin, logoUpload.fields([
   { name: 'logo', maxCount: 1 },
   { name: 'coachImage', maxCount: 1 },
+  { name: 'assistantCoach1Image', maxCount: 1 },
+  { name: 'assistantCoach2Image', maxCount: 1 },
+  { name: 'goalkeeperCoachImage', maxCount: 1 },
+  { name: 'physioImage', maxCount: 1 },
 ]), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -422,12 +426,25 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
       city,
       stadium,
       coach,
+      assistantCoach1,
+      assistantCoach2,
+      goalkeeperCoach,
+      physio,
       founded,
     } = req.body;
 
+    const files = (req as any).files || {};
+
+    // Helper to upload a staff image
+    const uploadStaffImage = async (fieldName: string, label: string): Promise<string | undefined> => {
+      const file = files[fieldName]?.[0];
+      if (!file) return undefined;
+      const uploaded = await uploadToImgBB(file.buffer, `${label}-${Date.now()}`, file.mimetype);
+      return uploaded || undefined;
+    };
+
     // Upload logo if a new file was provided
     let finalLogoUrl = logoUrl;
-    const files = (req as any).files || {};
     const logoFile = files.logo?.[0];
     if (logoFile) {
       const uploaded = await uploadToImgBB(logoFile.buffer, `team-${Date.now()}`, logoFile.mimetype);
@@ -436,15 +453,12 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
       }
     }
 
-    // Upload coach image if provided
-    let finalCoachImageUrl: string | undefined = undefined;
-    const coachFile = files.coachImage?.[0];
-    if (coachFile) {
-      const uploaded = await uploadToImgBB(coachFile.buffer, `coach-${Date.now()}`, coachFile.mimetype);
-      if (uploaded) {
-        finalCoachImageUrl = uploaded;
-      }
-    }
+    // Upload all staff images
+    const finalCoachImageUrl = await uploadStaffImage('coachImage', 'coach');
+    const finalAC1Image = await uploadStaffImage('assistantCoach1Image', 'ac1');
+    const finalAC2Image = await uploadStaffImage('assistantCoach2Image', 'ac2');
+    const finalGKCoachImage = await uploadStaffImage('goalkeeperCoachImage', 'gkcoach');
+    const finalPhysioImage = await uploadStaffImage('physioImage', 'physio');
 
     const team = await prisma.team.update({
       where: { id },
@@ -454,11 +468,19 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
         category,
         ...(finalLogoUrl !== undefined && { logoUrl: finalLogoUrl }),
         ...(finalCoachImageUrl && { coachImageUrl: finalCoachImageUrl }),
+        ...(finalAC1Image && { assistantCoach1Image: finalAC1Image }),
+        ...(finalAC2Image && { assistantCoach2Image: finalAC2Image }),
+        ...(finalGKCoachImage && { goalkeeperCoachImage: finalGKCoachImage }),
+        ...(finalPhysioImage && { physioImage: finalPhysioImage }),
         primaryColor,
         country,
         city,
         stadium,
         coach,
+        ...(assistantCoach1 !== undefined && { assistantCoach1 }),
+        ...(assistantCoach2 !== undefined && { assistantCoach2 }),
+        ...(goalkeeperCoach !== undefined && { goalkeeperCoach }),
+        ...(physio !== undefined && { physio }),
         founded,
       },
       include: {

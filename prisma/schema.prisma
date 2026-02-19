@@ -54,6 +54,14 @@ model Team {
   stadium      String?
   coach        String?
   coachImageUrl String?  @map("coach_image_url")
+  assistantCoach1       String?  @map("assistant_coach_1")
+  assistantCoach1Image  String?  @map("assistant_coach_1_image")
+  assistantCoach2       String?  @map("assistant_coach_2")
+  assistantCoach2Image  String?  @map("assistant_coach_2_image")
+  goalkeeperCoach       String?  @map("goalkeeper_coach")
+  goalkeeperCoachImage  String?  @map("goalkeeper_coach_image")
+  physio                String?
+  physioImage           String?  @map("physio_image")
   founded      Int?
   wins         Int      @default(0)
   draws        Int      @default(0)
