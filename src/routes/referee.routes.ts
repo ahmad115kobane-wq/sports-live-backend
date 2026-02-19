@@ -79,7 +79,7 @@ router.get('/:id', async (req, res) => {
 // Create referee (Admin only)
 router.post('/', authenticate, isAdmin, imageUpload.single('image'), async (req: AuthRequest, res) => {
   try {
-    const { name, nationality } = req.body;
+    const { name, nationality, refereeType } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Name is required' });
@@ -94,6 +94,7 @@ router.post('/', authenticate, isAdmin, imageUpload.single('image'), async (req:
       data: {
         name,
         nationality: nationality || undefined,
+        refereeType: refereeType || 'LOCAL',
         imageUrl,
       },
     });
@@ -109,11 +110,12 @@ router.post('/', authenticate, isAdmin, imageUpload.single('image'), async (req:
 router.put('/:id', authenticate, isAdmin, imageUpload.single('image'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
-    const { name, nationality, isActive } = req.body;
+    const { name, nationality, isActive, refereeType } = req.body;
 
     const data: any = {};
     if (name !== undefined) data.name = name;
     if (nationality !== undefined) data.nationality = nationality;
+    if (refereeType !== undefined) data.refereeType = refereeType;
     if (isActive !== undefined) data.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
