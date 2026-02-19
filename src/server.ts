@@ -204,7 +204,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`
-🚀 Mini Football Server is running!
+🚀 Mini Football Iraq Server is running!
 📡 HTTP Server: http://localhost:${PORT}
 🔌 WebSocket: ws://localhost:${PORT}
 📚 API Docs: http://localhost:${PORT}/api

@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = 'Mini Football <noreply@iqfx.shop>';
+const FROM_EMAIL = 'Mini Football Iraq <noreply@iqfx.shop>';
 
 function generateCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -13,16 +13,16 @@ async function sendVerificationEmail(email: string, code: string, name: string):
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'تأكيد بريدك الإلكتروني - Mini Football',
+      subject: 'تأكيد بريدك الإلكتروني - Mini Football Iraq',
       html: `
         <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; border-radius: 12px;">
           <div style="text-align: center; padding: 20px 0;">
-            <h1 style="color: #1a1a2e; margin: 0;">⚽ Mini Football</h1>
+            <h1 style="color: #1a1a2e; margin: 0;">⚽ Mini Football Iraq</h1>
           </div>
           <div style="background: #fff; border-radius: 12px; padding: 30px; margin: 20px 0;">
             <h2 style="color: #1a1a2e; margin-top: 0;">مرحباً ${name}! 👋</h2>
             <p style="color: #555; font-size: 16px; line-height: 1.6;">
-              شكراً لإنشاء حسابك في Mini Football. استخدم الرمز التالي لتأكيد بريدك الإلكتروني:
+              شكراً لإنشاء حسابك في Mini Football Iraq. استخدم الرمز التالي لتأكيد بريدك الإلكتروني:
             </p>
             <div style="text-align: center; margin: 30px 0;">
               <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-size: 32px; font-weight: bold; letter-spacing: 8px; padding: 15px 30px; border-radius: 12px;">
@@ -56,11 +56,11 @@ async function sendPasswordResetEmail(email: string, code: string, name: string)
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'إعادة تعيين كلمة المرور - Mini Football',
+      subject: 'إعادة تعيين كلمة المرور - Mini Football Iraq',
       html: `
         <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; border-radius: 12px;">
           <div style="text-align: center; padding: 20px 0;">
-            <h1 style="color: #1a1a2e; margin: 0;">⚽ Mini Football</h1>
+            <h1 style="color: #1a1a2e; margin: 0;">⚽ Mini Football Iraq</h1>
           </div>
           <div style="background: #fff; border-radius: 12px; padding: 30px; margin: 20px 0;">
             <h2 style="color: #1a1a2e; margin-top: 0;">مرحباً ${name}! 🔒</h2>

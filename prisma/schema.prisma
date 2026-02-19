@@ -1,4 +1,4 @@
-// Prisma Schema for Mini Football Application
+// Prisma Schema for Mini Football Iraq Application
 generator client {
   provider = "prisma-client-js"
 }
