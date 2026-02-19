@@ -68,7 +68,7 @@ export default function AdminLayout() {
             style={styles.backBtn}
             onPress={() => router.replace('/(tabs)/profile' as any)}
           >
-            <Ionicons name={isRTL ? 'arrow-back' : 'arrow-forward'} size={18} color={colors.text} />
+            <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={18} color={colors.text} />
           </TouchableOpacity>
         }
       >

@@ -996,37 +996,93 @@ export default function CompetitionsManagementScreen() {
 
               {/* Home Team */}
               <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: colors.textSecondary, marginBottom: 6 }}>الفريق المضيف</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {allTeams.map((team) => (
-                    <TouchableOpacity
-                      key={team.id}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchHomeTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchHomeTeamId === team.id ? colors.accent + '15' : colors.surface }}
-                      onPress={() => setMatchHomeTeamId(team.id)}
-                    >
-                      <TeamLogo team={team} size="small" />
-                      <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName}</Text>
-                    </TouchableOpacity>
+              {selectedCompetition?.format === 'GROUPS' && groups.length > 0 ? (
+                <View style={{ marginBottom: SPACING.md }}>
+                  {groups.map((g: any) => (
+                    <View key={g.id} style={{ marginBottom: 8 }}>
+                      <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: colors.accent, marginBottom: 4 }}>{g.name}</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          {(g.teams || []).map((gt: any) => {
+                            const team = gt.team;
+                            if (!team) return null;
+                            return (
+                              <TouchableOpacity
+                                key={team.id}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchHomeTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchHomeTeamId === team.id ? colors.accent + '15' : colors.surface }}
+                                onPress={() => setMatchHomeTeamId(team.id)}
+                              >
+                                <TeamLogo team={team} size="small" />
+                                <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName || team.name}</Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </View>
                   ))}
                 </View>
-              </ScrollView>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {allTeams.map((team) => (
+                      <TouchableOpacity
+                        key={team.id}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchHomeTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchHomeTeamId === team.id ? colors.accent + '15' : colors.surface }}
+                        onPress={() => setMatchHomeTeamId(team.id)}
+                      >
+                        <TeamLogo team={team} size="small" />
+                        <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
 
               {/* Away Team */}
               <Text style={{ fontSize: 13, fontFamily: FONTS.semiBold, color: colors.textSecondary, marginBottom: 6 }}>الفريق الضيف</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.lg }}>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {allTeams.map((team) => (
-                    <TouchableOpacity
-                      key={team.id}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchAwayTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchAwayTeamId === team.id ? colors.accent + '15' : colors.surface }}
-                      onPress={() => setMatchAwayTeamId(team.id)}
-                    >
-                      <TeamLogo team={team} size="small" />
-                      <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName}</Text>
-                    </TouchableOpacity>
+              {selectedCompetition?.format === 'GROUPS' && groups.length > 0 ? (
+                <View style={{ marginBottom: SPACING.lg }}>
+                  {groups.map((g: any) => (
+                    <View key={g.id} style={{ marginBottom: 8 }}>
+                      <Text style={{ fontSize: 11, fontFamily: FONTS.bold, color: colors.accent, marginBottom: 4 }}>{g.name}</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          {(g.teams || []).map((gt: any) => {
+                            const team = gt.team;
+                            if (!team) return null;
+                            return (
+                              <TouchableOpacity
+                                key={team.id}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchAwayTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchAwayTeamId === team.id ? colors.accent + '15' : colors.surface }}
+                                onPress={() => setMatchAwayTeamId(team.id)}
+                              >
+                                <TeamLogo team={team} size="small" />
+                                <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName || team.name}</Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </View>
                   ))}
                 </View>
-              </ScrollView>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.lg }}>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {allTeams.map((team) => (
+                      <TouchableOpacity
+                        key={team.id}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: RADIUS.lg, borderWidth: 1.5, borderColor: matchAwayTeamId === team.id ? colors.accent : colors.border, backgroundColor: matchAwayTeamId === team.id ? colors.accent + '15' : colors.surface }}
+                        onPress={() => setMatchAwayTeamId(team.id)}
+                      >
+                        <TeamLogo team={team} size="small" />
+                        <Text style={{ fontSize: 12, fontFamily: FONTS.medium, color: colors.text }}>{team.shortName}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
 
               {/* Create Button */}
               <TouchableOpacity

@@ -722,37 +722,11 @@ export default function TeamsManagementScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Category Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-        <TouchableOpacity
-          style={[styles.filterChip, { backgroundColor: filterCategory === 'all' ? colors.accent : colors.surface, borderColor: filterCategory === 'all' ? colors.accent : colors.border }]}
-          onPress={() => setFilterCategory('all')}
-        >
-          <Ionicons name="grid-outline" size={14} color={filterCategory === 'all' ? '#fff' : colors.textSecondary} />
-          <Text style={[styles.filterChipText, { color: filterCategory === 'all' ? '#fff' : colors.textSecondary }]}>الكل ({teams.length})</Text>
-        </TouchableOpacity>
-        {TEAM_CATEGORIES.map((cat) => {
-          const count = teams.filter(t => t.category === cat.value).length;
-          const active = filterCategory === cat.value;
-          return (
-            <TouchableOpacity
-              key={cat.value}
-              style={[styles.filterChip, { backgroundColor: active ? colors.accent : colors.surface, borderColor: active ? colors.accent : colors.border }]}
-              onPress={() => setFilterCategory(cat.value)}
-            >
-              <Ionicons name={cat.icon as any} size={14} color={active ? '#fff' : colors.textSecondary} />
-              <Text style={[styles.filterChipText, { color: active ? '#fff' : colors.textSecondary }]}>{cat.label} ({count})</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
       {/* Teams List */}
       <FlatList
         data={teams.filter(team => {
-          const matchesCategory = filterCategory === 'all' || team.category === filterCategory;
           const matchesSearch = !searchQuery.trim() || team.name.includes(searchQuery) || team.shortName.includes(searchQuery) || (team.coach || '').includes(searchQuery);
-          return matchesCategory && matchesSearch;
+          return matchesSearch;
         })}
         renderItem={renderTeamCard}
         keyExtractor={(item) => item.id}

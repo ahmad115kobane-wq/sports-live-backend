@@ -254,9 +254,8 @@ export default function AboutUsManagementScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Header + Add Button */}
-        <View style={[styles.headerRow, { flexDirection }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>أعضاء الاتحاد</Text>
+        {/* Add Button */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: SPACING.lg, paddingTop: SPACING.sm }}>
           <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.accent }]} onPress={openCreate}>
             <Ionicons name="add" size={22} color="#fff" />
           </TouchableOpacity>
