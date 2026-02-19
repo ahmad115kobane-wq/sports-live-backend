@@ -63,6 +63,9 @@ router.get('/match/:matchId', async (req, res) => {
     let homePenalties = 0, awayPenalties = 0;
     let homeSubstitutions = 0, awaySubstitutions = 0;
     let homeInjuries = 0, awayInjuries = 0;
+    let homeShotsOnTarget = 0, awayShotsOnTarget = 0;
+    let homeShotsOffTarget = 0, awayShotsOffTarget = 0;
+    let homeThrowIns = 0, awayThrowIns = 0;
 
     for (const event of events) {
       const isHome = event.teamId === match.homeTeamId;
@@ -93,6 +96,15 @@ router.get('/match/:matchId', async (req, res) => {
           break;
         case 'injury':
           if (isHome) homeInjuries++; else awayInjuries++;
+          break;
+        case 'shot_on_target':
+          if (isHome) homeShotsOnTarget++; else awayShotsOnTarget++;
+          break;
+        case 'shot_off_target':
+          if (isHome) homeShotsOffTarget++; else awayShotsOffTarget++;
+          break;
+        case 'throw_in':
+          if (isHome) homeThrowIns++; else awayThrowIns++;
           break;
       }
     }
@@ -130,11 +142,13 @@ router.get('/match/:matchId', async (req, res) => {
         awaySubstitutions,
         homeInjuries,
         awayInjuries,
-        // Manual stats (shots, passes, etc.) from DB if available
-        homeShots: manualStats?.homeShots || 0,
-        awayShots: manualStats?.awayShots || 0,
-        homeShotsOnTarget: manualStats?.homeShotsOnTarget || 0,
-        awayShotsOnTarget: manualStats?.awayShotsOnTarget || 0,
+        // Shots computed from events (shot_on_target + shot_off_target), fallback to manual
+        homeShots: (homeShotsOnTarget + homeShotsOffTarget) || manualStats?.homeShots || 0,
+        awayShots: (awayShotsOnTarget + awayShotsOffTarget) || manualStats?.awayShots || 0,
+        homeShotsOnTarget: homeShotsOnTarget || manualStats?.homeShotsOnTarget || 0,
+        awayShotsOnTarget: awayShotsOnTarget || manualStats?.awayShotsOnTarget || 0,
+        homeThrowIns,
+        awayThrowIns,
         homePasses: manualStats?.homePasses || 0,
         awayPasses: manualStats?.awayPasses || 0,
         homePassAccuracy: manualStats?.homePassAccuracy || 0,
