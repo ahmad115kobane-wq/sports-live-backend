@@ -542,18 +542,7 @@ router.post('/:teamId/players', authenticate, isAdmin, logoUpload.single('image'
       preferredFoot,
     } = req.body;
 
-    // Validate max squad size based on category
-    const team = await prisma.team.findUnique({ where: { id: teamId }, select: { category: true, _count: { select: { players: true } } } });
-    if (team) {
-      const { getCategoryRules } = require('../utils/categoryRules');
-      const rules = getCategoryRules(team.category);
-      if (team._count.players >= rules.maxSquad) {
-        return res.status(400).json({
-          success: false,
-          message: `Maximum squad size of ${rules.maxSquad} players reached for ${team.category}`,
-        });
-      }
-    }
+    // Squad size check removed – unlimited players allowed
 
     let finalImageUrl = imageUrl;
     const file = (req as any).file;
