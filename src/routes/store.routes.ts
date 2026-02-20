@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
+import { authenticate, isMerchant, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import { uploadToImgBB } from '../services/imgbb.service';
 import { resolveImageUrl } from '../utils/imageUrl';
@@ -158,7 +158,7 @@ router.get('/banners', async (req, res) => {
 // ==================== ADMIN ROUTES ====================
 
 // Get all categories (admin - includes inactive)
-router.get('/admin/categories', authenticate, isAdmin, async (req, res) => {
+router.get('/admin/categories', authenticate, isMerchant, async (req, res) => {
   try {
     const categories = await prisma.storeCategory.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -182,7 +182,7 @@ router.get('/admin/categories', authenticate, isAdmin, async (req, res) => {
 });
 
 // Create category (admin)
-router.post('/admin/categories', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.post('/admin/categories', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const { name, nameAr, nameKu, icon, sortOrder, isActive } = req.body;
 
@@ -209,7 +209,7 @@ router.post('/admin/categories', authenticate, isAdmin, async (req: AuthRequest,
 });
 
 // Update category (admin)
-router.put('/admin/categories/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.put('/admin/categories/:id', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const { name, nameAr, nameKu, icon, sortOrder, isActive } = req.body;
 
@@ -233,7 +233,7 @@ router.put('/admin/categories/:id', authenticate, isAdmin, async (req: AuthReque
 });
 
 // Delete category (admin)
-router.delete('/admin/categories/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.delete('/admin/categories/:id', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     await prisma.storeCategory.delete({ where: { id: req.params.id } });
     res.json({ success: true, message: 'Category deleted' });
@@ -244,7 +244,7 @@ router.delete('/admin/categories/:id', authenticate, isAdmin, async (req: AuthRe
 });
 
 // Get all products (admin - includes inactive)
-router.get('/admin/products', authenticate, isAdmin, async (req, res) => {
+router.get('/admin/products', authenticate, isMerchant, async (req, res) => {
   try {
     const products = await prisma.storeProduct.findMany({
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
@@ -259,7 +259,7 @@ router.get('/admin/products', authenticate, isAdmin, async (req, res) => {
 });
 
 // Create product (admin)
-router.post('/admin/products', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.post('/admin/products', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const {
       categoryId, name, nameAr, nameKu,
@@ -313,7 +313,7 @@ router.post('/admin/products', authenticate, isAdmin, async (req: AuthRequest, r
 });
 
 // Update product (admin)
-router.put('/admin/products/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.put('/admin/products/:id', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const data: any = {};
     const fields = [
@@ -358,7 +358,7 @@ router.put('/admin/products/:id', authenticate, isAdmin, async (req: AuthRequest
 });
 
 // Delete product (admin)
-router.delete('/admin/products/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.delete('/admin/products/:id', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     await prisma.storeProduct.delete({ where: { id: req.params.id } });
     res.json({ success: true, message: 'Product deleted' });
@@ -371,7 +371,7 @@ router.delete('/admin/products/:id', authenticate, isAdmin, async (req: AuthRequ
 // ==================== ADMIN BANNER ROUTES ====================
 
 // Get all banners (admin - includes inactive)
-router.get('/admin/banners', authenticate, isAdmin, async (req, res) => {
+router.get('/admin/banners', authenticate, isMerchant, async (req, res) => {
   try {
     const banners = await prisma.storeBanner.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -384,7 +384,7 @@ router.get('/admin/banners', authenticate, isAdmin, async (req, res) => {
 });
 
 // Create banner (admin)
-router.post('/admin/banners', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.post('/admin/banners', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const {
       title, titleAr, titleKu,
@@ -425,7 +425,7 @@ router.post('/admin/banners', authenticate, isAdmin, async (req: AuthRequest, re
 });
 
 // Update banner (admin)
-router.put('/admin/banners/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.put('/admin/banners/:id', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const data: any = {};
     const fields = [
@@ -462,7 +462,7 @@ router.put('/admin/banners/:id', authenticate, isAdmin, async (req: AuthRequest,
 });
 
 // Delete banner (admin)
-router.delete('/admin/banners/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.delete('/admin/banners/:id', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     await prisma.storeBanner.delete({ where: { id: req.params.id } });
     res.json({ success: true, message: 'Banner deleted' });
@@ -473,7 +473,7 @@ router.delete('/admin/banners/:id', authenticate, isAdmin, async (req: AuthReque
 });
 
 // Clean dead image URLs (admin) - removes old broken image links
-router.post('/admin/clean-images', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.post('/admin/clean-images', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || '';
     // Clear imageUrl for products where URL is broken (not R2 and not local path)
@@ -513,7 +513,7 @@ router.post('/admin/clean-images', authenticate, isAdmin, async (req: AuthReques
 // ==================== IMAGE UPLOAD ====================
 
 // Upload store image (admin) - uploads to R2 only
-router.post('/admin/upload', authenticate, isAdmin, storeImageUpload.single('image'), async (req: AuthRequest, res) => {
+router.post('/admin/upload', authenticate, isMerchant, storeImageUpload.single('image'), async (req: AuthRequest, res) => {
   try {
     if (!(req as any).file) {
       return res.status(400).json({ success: false, message: 'No image file provided' });

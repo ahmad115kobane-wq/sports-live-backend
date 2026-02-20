@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 
 // User role type (matching Prisma schema)
-type UserRole = 'user' | 'operator' | 'admin' | 'guest' | 'publisher' | 'delegate';
+type UserRole = 'user' | 'operator' | 'admin' | 'guest' | 'publisher' | 'delegate' | 'merchant';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -132,6 +132,21 @@ export const isDelegate = (
     return res.status(403).json({
       success: false,
       message: 'Delegate access required',
+    });
+  }
+  next();
+};
+
+// Check if user is merchant
+export const isMerchant = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (req.user?.role !== 'merchant' && req.user?.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Merchant access required',
     });
   }
   next();

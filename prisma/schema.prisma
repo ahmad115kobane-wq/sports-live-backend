@@ -16,7 +16,7 @@ model User {
   name          String
   email         String    @unique
   passwordHash  String    @map("password_hash")
-  role          String    @default("user") // user, operator, admin, publisher, delegate
+  role          String    @default("user") // user, operator, admin, publisher, delegate, merchant
   avatar        String?
   isBanned      Boolean   @default(false) @map("is_banned")
   pushToken     String?   @map("push_token")
@@ -125,10 +125,12 @@ model Player {
 
 // Competition Delegates - users assigned to manage a competition
 model CompetitionDelegate {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  competitionId String   @map("competition_id")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  competitionId     String   @map("competition_id")
+  assignedOperators Json?    @map("assigned_operators")  // JSON array of operator user IDs
+  assignedReferees  Json?    @map("assigned_referees")   // JSON array of referee IDs
+  createdAt         DateTime @default(now()) @map("created_at")
 
   // Relations
   user        User        @relation("DelegateUser", fields: [userId], references: [id], onDelete: Cascade)

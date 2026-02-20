@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
+import { authenticate, isAdmin, isMerchant, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
 import { sendFCMNotification } from '../services/firebase.service';
 
@@ -132,7 +132,7 @@ router.get('/my-orders', authenticate, async (req: AuthRequest, res) => {
 // ==================== ADMIN ROUTES ====================
 
 // Get all orders (admin)
-router.get('/admin/all', authenticate, isAdmin, async (req, res) => {
+router.get('/admin/all', authenticate, isMerchant, async (req, res) => {
   try {
     const { status } = req.query;
     const where: any = {};
@@ -163,7 +163,7 @@ router.get('/admin/all', authenticate, isAdmin, async (req, res) => {
 });
 
 // Update order status (admin) - approve/reject/deliver
-router.put('/admin/:id/status', authenticate, isAdmin, async (req: AuthRequest, res) => {
+router.put('/admin/:id/status', authenticate, isMerchant, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const { status, adminNote, estimatedDelivery, deliveryFee } = req.body;
@@ -248,7 +248,7 @@ router.put('/admin/:id/status', authenticate, isAdmin, async (req: AuthRequest, 
 });
 
 // Get order counts by status (admin)
-router.get('/admin/counts', authenticate, isAdmin, async (req, res) => {
+router.get('/admin/counts', authenticate, isMerchant, async (req, res) => {
   try {
     const [pending, approved, rejected, delivered, total] = await Promise.all([
       prisma.storeOrder.count({ where: { status: 'pending' } }),

@@ -60,8 +60,15 @@ router.post('/admin/assign', authenticate, isAdmin, async (req: AuthRequest, res
       });
     }
 
+    const { assignedOperators, assignedReferees } = req.body;
+
     const delegate = await prisma.competitionDelegate.create({
-      data: { userId, competitionId },
+      data: {
+        userId,
+        competitionId,
+        assignedOperators: assignedOperators || [],
+        assignedReferees: assignedReferees || [],
+      },
       include: {
         user: { select: { id: true, name: true, email: true, role: true, avatar: true } },
         competition: { select: { id: true, name: true, shortName: true, logoUrl: true } },
@@ -72,6 +79,38 @@ router.post('/admin/assign', authenticate, isAdmin, async (req: AuthRequest, res
   } catch (error) {
     console.error('Assign delegate error:', error);
     res.status(500).json({ success: false, message: 'Failed to assign delegate' });
+  }
+});
+
+// Update delegate assignment (operators, referees, competition)
+router.put('/admin/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedOperators, assignedReferees, competitionId } = req.body;
+
+    const delegation = await prisma.competitionDelegate.findUnique({ where: { id } });
+    if (!delegation) {
+      return res.status(404).json({ success: false, message: 'Delegation not found' });
+    }
+
+    const updateData: any = {};
+    if (assignedOperators !== undefined) updateData.assignedOperators = assignedOperators;
+    if (assignedReferees !== undefined) updateData.assignedReferees = assignedReferees;
+    if (competitionId) updateData.competitionId = competitionId;
+
+    const updated = await prisma.competitionDelegate.update({
+      where: { id },
+      data: updateData,
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+        competition: { select: { id: true, name: true, shortName: true, logoUrl: true } },
+      },
+    });
+
+    res.json({ success: true, message: 'Delegate updated', data: updated });
+  } catch (error) {
+    console.error('Update delegate error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update delegate' });
   }
 });
 
@@ -112,7 +151,7 @@ router.delete('/admin/:id', authenticate, isAdmin, async (req: AuthRequest, res)
 
 // ==================== DELEGATE: Own Dashboard API ====================
 
-// Get my delegated competitions
+// Get my delegated competitions (with assigned operators/referees)
 router.get('/my/competitions', authenticate, isDelegate, async (req: AuthRequest, res) => {
   try {
     const delegations = await prisma.competitionDelegate.findMany({
@@ -127,11 +166,29 @@ router.get('/my/competitions', authenticate, isDelegate, async (req: AuthRequest
       },
     });
 
-    const competitions = delegations.map((d) => ({
-      ...d.competition,
-      matchCount: d.competition.matches.length,
-      teamCount: d.competition.teams.length,
-      teams: d.competition.teams.map((t) => t.team),
+    const competitions = await Promise.all(delegations.map(async (d: any) => {
+      // Resolve assigned operators
+      const operatorIds: string[] = Array.isArray(d.assignedOperators) ? d.assignedOperators : [];
+      const refereeIds: string[] = Array.isArray(d.assignedReferees) ? d.assignedReferees : [];
+
+      const [operators, referees] = await Promise.all([
+        operatorIds.length > 0
+          ? prisma.user.findMany({ where: { id: { in: operatorIds } }, select: { id: true, name: true, email: true } })
+          : [],
+        refereeIds.length > 0
+          ? prisma.referee.findMany({ where: { id: { in: refereeIds } }, select: { id: true, name: true, refereeType: true } })
+          : [],
+      ]);
+
+      return {
+        ...d.competition,
+        delegationId: d.id,
+        matchCount: d.competition.matches.length,
+        teamCount: d.competition.teams.length,
+        teams: d.competition.teams.map((t: any) => t.team),
+        assignedOperators: operators,
+        assignedReferees: referees,
+      };
     }));
 
     res.json({ success: true, data: competitions });
