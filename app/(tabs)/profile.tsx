@@ -97,6 +97,7 @@ export default function ProfileScreen() {
       case 'operator': return 'radio';
       case 'publisher': return 'newspaper';
       case 'delegate': return 'people-circle';
+      case 'merchant': return 'bag-handle';
       default: return 'person';
     }
   };
@@ -107,6 +108,7 @@ export default function ProfileScreen() {
       case 'operator': return t('match.live');
       case 'publisher': return t('news.title');
       case 'delegate': return 'مكلف';
+      case 'merchant': return 'تاجر';
       default: return t('auth.login');
     }
   };
@@ -335,8 +337,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          {/* ── Quick Access (Admin / Operator / Publisher / Delegate) ── */}
-          {(user?.role === 'operator' || user?.role === 'admin' || user?.role === 'publisher' || user?.role === 'delegate') && (
+          {/* ── Quick Access (Admin / Operator / Publisher / Delegate / Merchant) ── */}
+          {(user?.role === 'operator' || user?.role === 'admin' || user?.role === 'publisher' || user?.role === 'delegate' || user?.role === 'merchant') && (
             <>
               <Text style={[styles.sectionTitle, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('tabs.matches')}
@@ -372,24 +374,25 @@ export default function ProfileScreen() {
                     isLast={user?.role === 'delegate'}
                   />
                 )}
+                {(user?.role === 'merchant' || user?.role === 'admin') && (
+                  <RowItem
+                    icon="bag-handle"
+                    gradientColors={['#f59e0b', '#d97706'] as unknown as readonly [string, string, ...string[]]}
+                    label={t('store.storeManagement')}
+                    sublabel={t('store.productsOffersCategories')}
+                    onPress={() => router.push('/store-dashboard' as any)}
+                    isLast={user?.role === 'merchant'}
+                  />
+                )}
                 {user?.role === 'admin' && (
-                  <>
-                    <RowItem
-                      icon="settings"
-                      gradientColors={colors.gradients.premium}
-                      label={t('settings.title')}
-                      sublabel={t('tabs.matches')}
-                      onPress={() => router.push('/admin')}
-                    />
-                    <RowItem
-                      icon="bag-handle"
-                      gradientColors={['#f59e0b', '#d97706'] as unknown as readonly [string, string, ...string[]]}
-                      label={t('store.storeManagement')}
-                      sublabel={t('store.productsOffersCategories')}
-                      onPress={() => router.push('/admin/store' as any)}
-                      isLast
-                    />
-                  </>
+                  <RowItem
+                    icon="settings"
+                    gradientColors={colors.gradients.premium}
+                    label={t('settings.title')}
+                    sublabel={t('tabs.matches')}
+                    onPress={() => router.push('/admin')}
+                    isLast
+                  />
                 )}
               </SectionCard>
             </>

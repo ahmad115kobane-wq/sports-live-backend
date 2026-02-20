@@ -359,8 +359,10 @@ export const aboutApi = {
 export const delegateApi = {
   // Admin endpoints
   adminGetAll: () => api.get('/delegates/admin/all'),
-  adminAssign: (userId: string, competitionId: string) =>
-    api.post('/delegates/admin/assign', { userId, competitionId }),
+  adminAssign: (userId: string, competitionId: string, assignedOperators?: string[], assignedReferees?: string[]) =>
+    api.post('/delegates/admin/assign', { userId, competitionId, assignedOperators, assignedReferees }),
+  adminUpdate: (id: string, data: { assignedOperators?: string[]; assignedReferees?: string[]; competitionId?: string }) =>
+    api.put(`/delegates/admin/${id}`, data),
   adminRemove: (id: string) => api.delete(`/delegates/admin/${id}`),
   // Delegate own endpoints
   getMyCompetitions: () => api.get('/delegates/my/competitions'),

@@ -106,7 +106,8 @@ export default function ClubsScreen() {
 
   const filteredTeams = teams.filter(team => {
     if (!searchQuery.trim()) return true;
-    return team.name.includes(searchQuery) || team.shortName.includes(searchQuery) || (team.coach || '').includes(searchQuery);
+    const q = searchQuery.trim().toLowerCase();
+    return team.name.toLowerCase().includes(q) || team.shortName.toLowerCase().includes(q) || (team.coach || '').toLowerCase().includes(q);
   });
 
   const renderTeamCard = useCallback(({ item: team }: { item: Team }) => {
@@ -232,7 +233,7 @@ export default function ClubsScreen() {
           <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder={t('clubs.searchPlaceholder') || 'بحث عن نادي أو منتخب...'}
+            placeholder={t('clubs.searchPlaceholder', 'بحث عن نادي أو منتخب...')}
             placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}

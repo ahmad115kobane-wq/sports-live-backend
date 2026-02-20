@@ -35,6 +35,8 @@ interface Competition {
   matchCount: number;
   teamCount: number;
   teams: { id: string; name: string; shortName: string; logoUrl?: string }[];
+  assignedOperators?: { id: string; name: string; email: string }[];
+  assignedReferees?: { id: string; name: string; refereeType?: string }[];
 }
 
 interface Match {
@@ -82,6 +84,7 @@ export default function DelegateScreen() {
   const [createAwayTeamId, setCreateAwayTeamId] = useState('');
   const [createVenue, setCreateVenue] = useState('');
   const [createDate, setCreateDate] = useState('');
+  const [createOperatorId, setCreateOperatorId] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Edit match
@@ -92,6 +95,7 @@ export default function DelegateScreen() {
   const [editAssistant1Id, setEditAssistant1Id] = useState('');
   const [editAssistant2Id, setEditAssistant2Id] = useState('');
   const [editFourthId, setEditFourthId] = useState('');
+  const [editOperatorId, setEditOperatorId] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Referee picker
@@ -125,10 +129,16 @@ export default function DelegateScreen() {
   };
 
   const loadReferees = async () => {
-    try {
-      const res = await refereeApi.getAll();
-      setReferees(res.data?.data || []);
-    } catch (e) {}
+    // Referees are now loaded from the competition's assignedReferees
+    // Fallback to all referees if none assigned
+    if (selectedCompetition?.assignedReferees && selectedCompetition.assignedReferees.length > 0) {
+      setReferees(selectedCompetition.assignedReferees);
+    } else {
+      try {
+        const res = await refereeApi.getAll();
+        setReferees(res.data?.data || []);
+      } catch (e) {}
+    }
   };
 
   const loadMatches = async (competitionId: string) => {
@@ -146,6 +156,10 @@ export default function DelegateScreen() {
   const selectCompetition = (comp: Competition) => {
     setSelectedCompetition(comp);
     loadMatches(comp.id);
+    // Load referees based on this competition's assigned referees
+    if (comp.assignedReferees && comp.assignedReferees.length > 0) {
+      setReferees(comp.assignedReferees);
+    }
   };
 
   const handleCreateMatch = async () => {
@@ -161,11 +175,21 @@ export default function DelegateScreen() {
         startTime: new Date(createDate).toISOString(),
         venue: createVenue || undefined,
       });
+      // Assign operator if selected
+      if (createOperatorId) {
+        const matchesRes = await delegateApi.getCompetitionMatches(selectedCompetition.id);
+        const newMatches = matchesRes.data?.data || [];
+        if (newMatches.length > 0) {
+          const latestMatch = newMatches[0];
+          await delegateApi.updateMatch(latestMatch.id, { operatorId: createOperatorId });
+        }
+      }
       setShowCreateModal(false);
       setCreateHomeTeamId('');
       setCreateAwayTeamId('');
       setCreateVenue('');
       setCreateDate('');
+      setCreateOperatorId('');
       loadMatches(selectedCompetition.id);
       alert('تم', 'تم إنشاء المباراة بنجاح');
     } catch (error) {
@@ -182,6 +206,7 @@ export default function DelegateScreen() {
     setEditAssistant1Id(match.assistantReferee1Id || '');
     setEditAssistant2Id(match.assistantReferee2Id || '');
     setEditFourthId(match.fourthRefereeId || '');
+    setEditOperatorId(match.operators?.[0]?.operator?.id || match.operators?.[0]?.operatorId || '');
     setShowEditModal(true);
   };
 
@@ -195,6 +220,7 @@ export default function DelegateScreen() {
         assistant1Id: editAssistant1Id || null,
         assistant2Id: editAssistant2Id || null,
         fourthId: editFourthId || null,
+        operatorId: editOperatorId || null,
       });
       setShowEditModal(false);
       if (selectedCompetition) loadMatches(selectedCompetition.id);
@@ -474,6 +500,28 @@ export default function DelegateScreen() {
               placeholderTextColor={colors.textTertiary}
             />
 
+            {/* Operator picker */}
+            {(selectedCompetition?.assignedOperators || []).length > 0 && (
+              <>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>مشغل المباراة</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.md }}>
+                  {(selectedCompetition?.assignedOperators || []).map((op) => (
+                    <TouchableOpacity
+                      key={op.id}
+                      style={[
+                        styles.teamPickerItem,
+                        { backgroundColor: createOperatorId === op.id ? '#05966920' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'), borderColor: createOperatorId === op.id ? '#059669' : colors.border, width: 100 },
+                      ]}
+                      onPress={() => setCreateOperatorId(createOperatorId === op.id ? '' : op.id)}
+                    >
+                      <Ionicons name="radio" size={18} color={createOperatorId === op.id ? '#059669' : colors.textTertiary} />
+                      <Text style={{ color: colors.text, fontSize: 11, textAlign: 'center' }} numberOfLines={1}>{op.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: '#059669' }]}
               onPress={handleCreateMatch}
@@ -529,6 +577,38 @@ export default function DelegateScreen() {
                 )}
               </TouchableOpacity>
             ))}
+
+            {/* Operator picker */}
+            {(selectedCompetition?.assignedOperators || []).length > 0 && (
+              <>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: SPACING.md }]}>مشغل المباراة</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: SPACING.sm }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.teamPickerItem,
+                      { backgroundColor: !editOperatorId ? '#EF444420' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'), borderColor: !editOperatorId ? '#EF4444' : colors.border, width: 80 },
+                    ]}
+                    onPress={() => setEditOperatorId('')}
+                  >
+                    <Ionicons name="close-circle" size={18} color={!editOperatorId ? '#EF4444' : colors.textTertiary} />
+                    <Text style={{ color: colors.textTertiary, fontSize: 11 }}>بدون</Text>
+                  </TouchableOpacity>
+                  {(selectedCompetition?.assignedOperators || []).map((op) => (
+                    <TouchableOpacity
+                      key={op.id}
+                      style={[
+                        styles.teamPickerItem,
+                        { backgroundColor: editOperatorId === op.id ? '#05966920' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'), borderColor: editOperatorId === op.id ? '#059669' : colors.border, width: 100 },
+                      ]}
+                      onPress={() => setEditOperatorId(op.id)}
+                    >
+                      <Ionicons name="radio" size={18} color={editOperatorId === op.id ? '#059669' : colors.textTertiary} />
+                      <Text style={{ color: colors.text, fontSize: 11, textAlign: 'center' }} numberOfLines={1}>{op.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
 
             <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: '#059669', marginTop: SPACING.lg }]}

@@ -190,6 +190,7 @@
   },
   "clubs": {
     "title": "الأندية والمنتخبات",
+    "searchPlaceholder": "بحث عن نادي أو منتخب...",
     "allClubs": "جميع الأندية",
     "football": "كرة قدم",
     "handball": "كرة يد",

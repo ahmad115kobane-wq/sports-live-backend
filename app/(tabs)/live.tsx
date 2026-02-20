@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { newsApi } from '@/services/api';
@@ -127,6 +128,7 @@ interface NewsArticle {
   content: string;
   imageUrl?: string;
   imageUrls?: string[];
+  videoUrl?: string;
   isPublished: boolean;
   createdAt: string;
   author: {
@@ -134,6 +136,50 @@ interface NewsArticle {
     name: string;
     avatar?: string;
   };
+}
+
+function VideoPlayerInline({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false;
+  });
+
+  useEffect(() => {
+    player.play();
+  }, []);
+
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', aspectRatio: 16 / 9 }}
+      allowsFullscreen
+      allowsPictureInPicture
+    />
+  );
+}
+
+function NewsVideoSection({ videoUrl, colors }: { videoUrl: string; colors: any }) {
+  const [showVideo, setShowVideo] = useState(false);
+
+  if (!showVideo) {
+    return (
+      <TouchableOpacity
+        onPress={() => setShowVideo(true)}
+        activeOpacity={0.8}
+        style={[styles.videoPlaceholder, { backgroundColor: colors.backgroundSecondary || '#000' }]}
+      >
+        <View style={styles.videoPlayBtn}>
+          <Ionicons name="play" size={32} color="#fff" />
+        </View>
+        <Text style={styles.videoPlayText}>تشغيل الفيديو</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={{ width: '100%', marginBottom: SPACING.md }}>
+      <VideoPlayerInline uri={videoUrl} />
+    </View>
+  );
 }
 
 export default function NewsScreen() {
@@ -284,6 +330,9 @@ export default function NewsScreen() {
 
         {/* Images Carousel */}
         {articleImages.length > 0 && <NewsMediaCarousel uris={articleImages} colors={colors} isRTL={isRTL} />}
+
+        {/* Video */}
+        {item.videoUrl && <NewsVideoSection videoUrl={item.videoUrl.startsWith('http') ? item.videoUrl : `${SOCKET_URL}${item.videoUrl}`} colors={colors} />}
 
         <View style={styles.articleBody}>
           {/* Title */}
@@ -656,5 +705,28 @@ const styles = StyleSheet.create({
   loadMoreText: {
     ...TYPOGRAPHY.labelLarge,
     fontWeight: '600',
+  },
+  videoPlaceholder: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  videoPlayBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 4,
+  },
+  videoPlayText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
+    marginTop: SPACING.sm,
   },
 });

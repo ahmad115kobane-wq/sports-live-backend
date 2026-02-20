@@ -355,6 +355,12 @@ function RootLayoutContent() {
           }}
         />
         <Stack.Screen
+          name="store-dashboard"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="delegate/index"
           options={{
             headerShown: false,

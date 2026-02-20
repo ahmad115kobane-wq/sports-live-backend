@@ -15,7 +15,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
-import { delegateApi, competitionApi, userApi } from '@/services/api';
+import { delegateApi, competitionApi, userApi, refereeApi } from '@/services/api';
 import AppModal from '@/components/ui/AppModal';
 import AppDialog from '@/components/ui/AppDialog';
 
@@ -23,6 +23,8 @@ interface Delegation {
   id: string;
   userId: string;
   competitionId: string;
+  assignedOperators?: string[];
+  assignedReferees?: string[];
   createdAt: string;
   user: { id: string; name: string; email: string; role: string; avatar?: string };
   competition: { id: string; name: string; shortName?: string; logoUrl?: string; isActive?: boolean };
@@ -58,6 +60,17 @@ export default function AdminDelegatesScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
+  // Edit modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingDelegation, setEditingDelegation] = useState<Delegation | null>(null);
+  const [editOperatorIds, setEditOperatorIds] = useState<string[]>([]);
+  const [editRefereeIds, setEditRefereeIds] = useState<string[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // All operators and referees for selection
+  const [allOperators, setAllOperators] = useState<any[]>([]);
+  const [allReferees, setAllReferees] = useState<any[]>([]);
+
   // Dialog
   const [dialogVisible, setDialogVisible] = useState(false);
   const [dialogConfig, setDialogConfig] = useState<any>({});
@@ -78,7 +91,22 @@ export default function AdminDelegatesScreen() {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); loadOperatorsAndReferees(); }, [loadData]);
+
+  const loadOperatorsAndReferees = async () => {
+    try {
+      const [usersRes, refRes] = await Promise.all([
+        userApi.getAll(1, 200),
+        refereeApi.getAll(),
+      ]);
+      const userData = usersRes.data?.data;
+      const allUsers = Array.isArray(userData) ? userData : (userData?.users || []);
+      setAllOperators(allUsers.filter((u: any) => u.role === 'operator' || u.role === 'admin'));
+      setAllReferees(refRes.data?.data || []);
+    } catch (e) {
+      console.error('Load operators/referees error:', e);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -117,6 +145,39 @@ export default function AdminDelegatesScreen() {
     } finally {
       setAssigning(false);
     }
+  };
+
+  const openEditModal = (delegation: Delegation) => {
+    setEditingDelegation(delegation);
+    setEditOperatorIds(Array.isArray(delegation.assignedOperators) ? delegation.assignedOperators : []);
+    setEditRefereeIds(Array.isArray(delegation.assignedReferees) ? delegation.assignedReferees : []);
+    setShowEditModal(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingDelegation) return;
+    try {
+      setEditSaving(true);
+      await delegateApi.adminUpdate(editingDelegation.id, {
+        assignedOperators: editOperatorIds,
+        assignedReferees: editRefereeIds,
+      });
+      setShowEditModal(false);
+      loadData();
+      alert('تم', 'تم تحديث المكلف بنجاح');
+    } catch (error) {
+      alert('خطأ', 'فشل في تحديث المكلف');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const toggleOperator = (id: string) => {
+    setEditOperatorIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const toggleReferee = (id: string) => {
+    setEditRefereeIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
 
   const handleRemove = (delegation: Delegation) => {
@@ -199,6 +260,12 @@ export default function AdminDelegatesScreen() {
                   <Text style={[styles.userEmail, { color: colors.textTertiary }]}>{delegation.user.email}</Text>
                 </View>
 
+                <TouchableOpacity
+                  style={[styles.removeBtn, { backgroundColor: 'rgba(5,150,105,0.08)', marginRight: 6 }]}
+                  onPress={() => openEditModal(delegation)}
+                >
+                  <Ionicons name="pencil" size={18} color="#059669" />
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.removeBtn, { backgroundColor: 'rgba(239,68,68,0.08)' }]}
                   onPress={() => handleRemove(delegation)}
@@ -301,6 +368,76 @@ export default function AdminDelegatesScreen() {
           </TouchableOpacity>
           <View style={{ height: 40 }} />
         </ScrollView>
+      </AppModal>
+
+      {/* Edit Delegate Modal */}
+      <AppModal visible={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل المكلف" icon="pencil" maxHeight="85%">
+        {editingDelegation && (
+          <ScrollView style={{ padding: SPACING.lg }} keyboardShouldPersistTaps="handled">
+            <View style={[styles.compRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderRadius: RADIUS.md, marginBottom: SPACING.lg }]}>
+              <Ionicons name="person" size={16} color="#059669" />
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{editingDelegation.user.name}</Text>
+              <Ionicons name="trophy" size={14} color={colors.textTertiary} />
+              <Text style={{ color: colors.textTertiary, fontSize: 12, flex: 1 }}>{editingDelegation.competition.name}</Text>
+            </View>
+
+            {/* Assign Operators */}
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>المشغلون المعينون ({editOperatorIds.length})</Text>
+            <View style={{ gap: SPACING.xs, marginBottom: SPACING.lg }}>
+              {allOperators.map((op: any) => (
+                <TouchableOpacity
+                  key={op.id}
+                  style={[styles.userPickerItem, {
+                    backgroundColor: editOperatorIds.includes(op.id) ? '#05966920' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                    borderColor: editOperatorIds.includes(op.id) ? '#059669' : colors.border,
+                    flexDirection,
+                  }]}
+                  onPress={() => toggleOperator(op.id)}
+                >
+                  <Ionicons name="radio" size={18} color={editOperatorIds.includes(op.id) ? '#059669' : colors.textTertiary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>{op.name}</Text>
+                    <Text style={{ color: colors.textTertiary, fontSize: 11 }}>{op.email}</Text>
+                  </View>
+                  {editOperatorIds.includes(op.id) && <Ionicons name="checkmark-circle" size={20} color="#059669" />}
+                </TouchableOpacity>
+              ))}
+              {allOperators.length === 0 && <Text style={{ color: colors.textTertiary, fontSize: 13 }}>لا يوجد مشغلون</Text>}
+            </View>
+
+            {/* Assign Referees */}
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>الحكام المعينون ({editRefereeIds.length})</Text>
+            <View style={{ gap: SPACING.xs, marginBottom: SPACING.lg }}>
+              {allReferees.map((ref: any) => (
+                <TouchableOpacity
+                  key={ref.id}
+                  style={[styles.userPickerItem, {
+                    backgroundColor: editRefereeIds.includes(ref.id) ? '#05966920' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                    borderColor: editRefereeIds.includes(ref.id) ? '#059669' : colors.border,
+                    flexDirection,
+                  }]}
+                  onPress={() => toggleReferee(ref.id)}
+                >
+                  <Ionicons name="flag" size={18} color={editRefereeIds.includes(ref.id) ? '#059669' : colors.textTertiary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>{ref.name}</Text>
+                  </View>
+                  {editRefereeIds.includes(ref.id) && <Ionicons name="checkmark-circle" size={20} color="#059669" />}
+                </TouchableOpacity>
+              ))}
+              {allReferees.length === 0 && <Text style={{ color: colors.textTertiary, fontSize: 13 }}>لا يوجد حكام</Text>}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: '#059669' }]}
+              onPress={handleEditSave}
+              disabled={editSaving}
+            >
+              {editSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveBtnText}>حفظ التعديلات</Text>}
+            </TouchableOpacity>
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        )}
       </AppModal>
 
       <AppDialog
