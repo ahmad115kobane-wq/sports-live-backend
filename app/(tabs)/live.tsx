@@ -16,6 +16,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { useIsFocused } from '@react-navigation/native';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
@@ -139,14 +140,27 @@ interface NewsArticle {
   };
 }
 
-// ── Smart Video Player (Instagram-like: silent auto-play, tap to unmute) ──
+// ── Smart Video Player (Instagram-like: silent auto-play, real aspect ratio) ──
 function SmartVideoPlayer({ uri, isActive }: { uri: string; isActive: boolean }) {
   const [isMuted, setIsMuted] = useState(true);
+  const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
     p.muted = true;
   });
+
+  // Detect real video dimensions via thumbnail probe
+  useEffect(() => {
+    VideoThumbnails.getThumbnailAsync(uri, { time: 0, quality: 0.1 })
+      .then(({ width, height }) => {
+        if (width > 0 && height > 0) {
+          const ratio = Math.max(9 / 16, Math.min(16 / 9, width / height));
+          setAspectRatio(ratio);
+        }
+      })
+      .catch(() => {});
+  }, [uri]);
 
   useEffect(() => {
     if (!player) return;
@@ -163,10 +177,11 @@ function SmartVideoPlayer({ uri, isActive }: { uri: string; isActive: boolean })
   }, [isActive]);
 
   return (
-    <View style={styles.videoContainer}>
+    <View style={[styles.videoContainer, { aspectRatio }]}>
       <VideoView
         player={player}
-        style={{ width: '100%', aspectRatio: 16 / 9 }}
+        style={{ width: '100%', height: '100%' }}
+        contentFit="cover"
         allowsFullscreen
         nativeControls={false}
       />
@@ -736,11 +751,11 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     width: '100%',
-    aspectRatio: 16 / 9,
     backgroundColor: '#000',
     marginBottom: SPACING.md,
     position: 'relative',
     overflow: 'hidden',
+    borderRadius: RADIUS.md,
   },
   muteBtn: {
     position: 'absolute',
