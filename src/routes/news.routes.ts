@@ -6,6 +6,7 @@ import { uploadToImgBB } from '../services/imgbb.service';
 import { resolveImageUrl, toRelativeImagePath } from '../utils/imageUrl';
 
 const MAX_ARTICLE_IMAGES = 9;
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 function normalizeArticleImageUrls(raw: unknown): string[] {
   if (!raw) return [];
@@ -66,6 +67,11 @@ function resolveArticle(article: any) {
   resolved.imageUrls = finalImageUrls;
   resolved.imageUrl = finalImageUrls[0] || null;
 
+  // Resolve video URL
+  if (resolved.videoUrl) {
+    resolved.videoUrl = resolveImageUrl(resolved.videoUrl) || resolved.videoUrl;
+  }
+
   if (resolved.author && resolved.author.avatar) {
     resolved.author = { ...resolved.author, avatar: toRelativeImagePath(resolved.author.avatar) };
   }
@@ -77,16 +83,16 @@ const multer = require('multer');
 
 const router = Router();
 
-// Setup multer with memory storage for ImgBB upload
+// Setup multer with memory storage for ImgBB/R2 upload
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: MAX_VIDEO_SIZE }, // 100MB for videos
   fileFilter: (req: any, file: any, cb: any) => {
     console.log('📸 Multer processing file:', { fieldname: file.fieldname, originalname: file.originalname, mimetype: file.mimetype, size: file.size });
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error('Only image and video files are allowed'));
     }
   },
 });
@@ -102,6 +108,7 @@ const debugRequest = (req: any, res: any, next: any) => {
 const uploadArticleImages = upload.fields([
   { name: 'image', maxCount: 1 },
   { name: 'images', maxCount: MAX_ARTICLE_IMAGES },
+  { name: 'video', maxCount: 1 },
 ]);
 
 // Get all published news (public)
@@ -200,9 +207,23 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
 
     for (const file of uploadedFiles) {
       console.log('📤 Uploading file:', file.originalname);
-      const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`);
+      const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`, file.mimetype);
       console.log('📤 Upload result:', uploaded ? 'SUCCESS' : 'FAILED');
       if (uploaded) uploadedImageUrls.push(uploaded);
+    }
+
+    // Handle video upload
+    let videoUrl: string | undefined;
+    const files = (req as any).files;
+    const videoFiles = files?.video || [];
+    if (videoFiles.length > 0) {
+      const videoFile = videoFiles[0];
+      console.log('🎬 Uploading video:', videoFile.originalname, `(${(videoFile.size / 1024 / 1024).toFixed(1)}MB)`);
+      const uploaded = await uploadToImgBB(videoFile.buffer, `news-video-${Date.now()}`, videoFile.mimetype);
+      if (uploaded) {
+        videoUrl = uploaded;
+        console.log('🎬 Video uploaded:', videoUrl);
+      }
     }
 
     console.log('📸 Final uploaded URLs:', uploadedImageUrls);
@@ -214,6 +235,7 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
         content,
         imageUrl: coverImageUrl,
         imageUrls: uploadedImageUrls,
+        videoUrl: videoUrl || undefined,
         authorId: req.user!.id,
       },
       include: {
@@ -334,13 +356,24 @@ router.put('/:id', authenticate, isPublisher, uploadArticleImages, async (req: A
     if (uploadedFiles.length > 0) {
       const uploadedImageUrls: string[] = [];
       for (const file of uploadedFiles) {
-        const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`);
+        const uploaded = await uploadToImgBB(file.buffer, `news-${Date.now()}`, file.mimetype);
         if (uploaded) uploadedImageUrls.push(uploaded);
       }
 
       if (uploadedImageUrls.length > 0) {
         updateData.imageUrls = uploadedImageUrls;
         updateData.imageUrl = uploadedImageUrls[0];
+      }
+    }
+
+    // Handle video upload on update
+    const updateFiles = (req as any).files;
+    const updateVideoFiles = updateFiles?.video || [];
+    if (updateVideoFiles.length > 0) {
+      const videoFile = updateVideoFiles[0];
+      const uploaded = await uploadToImgBB(videoFile.buffer, `news-video-${Date.now()}`, videoFile.mimetype);
+      if (uploaded) {
+        updateData.videoUrl = uploaded;
       }
     }
 

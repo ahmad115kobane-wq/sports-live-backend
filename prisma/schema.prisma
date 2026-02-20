@@ -16,7 +16,7 @@ model User {
   name          String
   email         String    @unique
   passwordHash  String    @map("password_hash")
-  role          String    @default("user") // user, operator, admin
+  role          String    @default("user") // user, operator, admin, publisher, delegate
   avatar        String?
   isBanned      Boolean   @default(false) @map("is_banned")
   pushToken     String?   @map("push_token")
@@ -36,6 +36,7 @@ model User {
   notifications   Notification[]
   newsArticles    NewsArticle[]   @relation("NewsAuthor")
   orders          StoreOrder[]    @relation("UserOrders")
+  delegations     CompetitionDelegate[] @relation("DelegateUser")
 
   @@index([pushToken])
   @@map("users")
@@ -122,6 +123,21 @@ model Player {
   @@map("players")
 }
 
+// Competition Delegates - users assigned to manage a competition
+model CompetitionDelegate {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  competitionId String   @map("competition_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User        @relation("DelegateUser", fields: [userId], references: [id], onDelete: Cascade)
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, competitionId])
+  @@map("competition_delegates")
+}
+
 // Competitions/Leagues table
 model Competition {
   id          String   @id @default(uuid())
@@ -138,9 +154,10 @@ model Competition {
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
-  matches Match[]
-  teams   TeamCompetition[]
-  groups  CompetitionGroup[]
+  matches    Match[]
+  teams      TeamCompetition[]
+  groups     CompetitionGroup[]
+  delegates  CompetitionDelegate[]
 
   @@map("competitions")
 }
@@ -639,6 +656,7 @@ model NewsArticle {
   content     String
   imageUrl    String?  @map("image_url")
   imageUrls   Json?    @map("image_urls")
+  videoUrl    String?  @map("video_url")
   authorId    String   @map("author_id")
   isPublished Boolean  @default(true) @map("is_published")
   createdAt   DateTime @default(now()) @map("created_at")

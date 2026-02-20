@@ -29,6 +29,7 @@ import seedRoutes from './routes/seed.routes';
 import videoAdRoutes from './routes/videoad.routes';
 import refereeRoutes from './routes/referee.routes';
 import supervisorRoutes from './routes/supervisor.routes';
+import delegateRoutes from './routes/delegate.routes';
 import settingsRoutes from './routes/settings.routes';
 import aboutRoutes from './routes/about.routes';
 
@@ -124,6 +125,7 @@ app.use('/api/sliders', sliderRoutes);
 app.use('/api/video-ads', videoAdRoutes);
 app.use('/api/referees', refereeRoutes);
 app.use('/api/supervisors', supervisorRoutes);
+app.use('/api/delegates', delegateRoutes);
 app.use('/api/legal', legalRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/about', aboutRoutes);

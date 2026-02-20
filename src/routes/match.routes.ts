@@ -1064,4 +1064,35 @@ router.get('/:id/head-to-head', async (req, res) => {
   }
 });
 
+// ==================== DELETE MATCH ====================
+
+// Delete a match (admin only)
+router.delete('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const match = await prisma.match.findUnique({ where: { id } });
+    if (!match) {
+      return res.status(404).json({ success: false, message: 'Match not found' });
+    }
+
+    // Delete related records first (cascade should handle most, but be explicit)
+    await prisma.$transaction([
+      prisma.event.deleteMany({ where: { matchId: id } }),
+      prisma.matchOperator.deleteMany({ where: { matchId: id } }),
+      prisma.favorite.deleteMany({ where: { matchId: id } }),
+      prisma.notification.deleteMany({ where: { matchId: id } }),
+      prisma.lineupPlayer.deleteMany({ where: { lineup: { matchId: id } } }),
+      prisma.matchLineup.deleteMany({ where: { matchId: id } }),
+      prisma.matchStats.deleteMany({ where: { matchId: id } }),
+      prisma.match.delete({ where: { id } }),
+    ]);
+
+    res.json({ success: true, message: 'Match deleted successfully' });
+  } catch (error) {
+    console.error('Delete match error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete match' });
+  }
+});
+
 export default router;

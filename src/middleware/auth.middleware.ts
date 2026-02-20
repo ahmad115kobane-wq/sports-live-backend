@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma';
 
 // User role type (matching Prisma schema)
-type UserRole = 'user' | 'operator' | 'admin' | 'guest' | 'publisher';
+type UserRole = 'user' | 'operator' | 'admin' | 'guest' | 'publisher' | 'delegate';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -117,6 +117,21 @@ export const isPublisher = (
     return res.status(403).json({
       success: false,
       message: 'Publisher access required',
+    });
+  }
+  next();
+};
+
+// Check if user is delegate
+export const isDelegate = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (req.user?.role !== 'delegate' && req.user?.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Delegate access required',
     });
   }
   next();
