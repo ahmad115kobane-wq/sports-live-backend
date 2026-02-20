@@ -23,7 +23,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'operator' | 'admin' | 'publisher';
+  role: 'user' | 'operator' | 'admin' | 'publisher' | 'merchant';
   avatar?: string;
   isBanned?: boolean;
   createdAt: string;
@@ -142,6 +142,7 @@ export default function UsersManagementScreen() {
       case 'admin': return '#DC2626';
       case 'operator': return '#F59E0B';
       case 'publisher': return '#8B5CF6';
+      case 'merchant': return '#10B981';
       default: return colors.accent;
     }
   };
@@ -151,6 +152,7 @@ export default function UsersManagementScreen() {
       case 'admin': return 'مدير';
       case 'operator': return 'مشغل';
       case 'publisher': return 'ناشر';
+      case 'merchant': return 'تاجر';
       default: return 'مستخدم';
     }
   };
@@ -404,7 +406,7 @@ export default function UsersManagementScreen() {
             {/* Role Selection */}
             <Text style={[styles.sectionTitle, { color: colors.text }]}>تغيير الصلاحية</Text>
             <View style={styles.roleOptions}>
-              {['user', 'operator', 'publisher', 'admin'].map((role) => (
+              {['user', 'operator', 'publisher', 'merchant', 'admin'].map((role) => (
                 <TouchableOpacity
                   key={role}
                   style={[
@@ -422,7 +424,8 @@ export default function UsersManagementScreen() {
                     name={
                       role === 'admin' ? 'shield' : 
                       role === 'operator' ? 'construct' :
-                      role === 'publisher' ? 'newspaper' : 'person'
+                      role === 'publisher' ? 'newspaper' :
+                      role === 'merchant' ? 'storefront' : 'person'
                     } 
                     size={20} 
                     color={selectedUser.role === role ? getRoleColor(role) : colors.textSecondary} 

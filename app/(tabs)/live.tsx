@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { useIsFocused } from '@react-navigation/native';
 import { Colors } from '@/constants/Colors';
 import { SPACING, RADIUS, SHADOWS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { newsApi } from '@/services/api';
@@ -138,46 +139,45 @@ interface NewsArticle {
   };
 }
 
-function VideoPlayerInline({ uri }: { uri: string }) {
+// ── Smart Video Player (Instagram-like: silent auto-play, tap to unmute) ──
+function SmartVideoPlayer({ uri, isActive }: { uri: string; isActive: boolean }) {
+  const [isMuted, setIsMuted] = useState(true);
+
   const player = useVideoPlayer(uri, (p) => {
-    p.loop = false;
+    p.loop = true;
+    p.muted = true;
   });
 
   useEffect(() => {
-    player.play();
-  }, []);
+    if (!player) return;
+    player.muted = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (!player) return;
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive]);
 
   return (
-    <VideoView
-      player={player}
-      style={{ width: '100%', aspectRatio: 16 / 9 }}
-      allowsFullscreen
-      allowsPictureInPicture
-    />
-  );
-}
-
-function NewsVideoSection({ videoUrl, colors }: { videoUrl: string; colors: any }) {
-  const [showVideo, setShowVideo] = useState(false);
-
-  if (!showVideo) {
-    return (
+    <View style={styles.videoContainer}>
+      <VideoView
+        player={player}
+        style={{ width: '100%', aspectRatio: 16 / 9 }}
+        allowsFullscreen
+        nativeControls={false}
+      />
+      {/* Mute / Unmute – only control, like Instagram */}
       <TouchableOpacity
-        onPress={() => setShowVideo(true)}
-        activeOpacity={0.8}
-        style={[styles.videoPlaceholder, { backgroundColor: colors.backgroundSecondary || '#000' }]}
+        style={styles.muteBtn}
+        onPress={() => setIsMuted((m) => !m)}
+        activeOpacity={0.7}
       >
-        <View style={styles.videoPlayBtn}>
-          <Ionicons name="play" size={32} color="#fff" />
-        </View>
-        <Text style={styles.videoPlayText}>تشغيل الفيديو</Text>
+        <Ionicons name={isMuted ? 'volume-mute' : 'volume-high'} size={16} color="#fff" />
       </TouchableOpacity>
-    );
-  }
-
-  return (
-    <View style={{ width: '100%', marginBottom: SPACING.md }}>
-      <VideoPlayerInline uri={videoUrl} />
     </View>
   );
 }
@@ -196,6 +196,24 @@ export default function NewsScreen() {
   const isPublisher = user?.role === 'publisher';
   const [loadingMore, setLoadingMore] = useState(false);
   const [expandedArticles, setExpandedArticles] = useState<Set<string>>(new Set());
+
+  // ── Smart Video: track which article's video is active ──
+  const isFocused = useIsFocused();
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+    const videoItem = viewableItems.find((v: any) => v.item?.videoUrl);
+    setActiveVideoId(videoItem?.item?.id ?? null);
+  }).current;
+
+  // Pause all videos when tab loses focus
+  useEffect(() => {
+    if (!isFocused) {
+      setActiveVideoId(null);
+    }
+  }, [isFocused]);
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
@@ -331,8 +349,13 @@ export default function NewsScreen() {
         {/* Images Carousel */}
         {articleImages.length > 0 && <NewsMediaCarousel uris={articleImages} colors={colors} isRTL={isRTL} />}
 
-        {/* Video */}
-        {item.videoUrl && <NewsVideoSection videoUrl={item.videoUrl.startsWith('http') ? item.videoUrl : `${SOCKET_URL}${item.videoUrl}`} colors={colors} />}
+        {/* Video – auto-play when visible */}
+        {item.videoUrl && (
+          <SmartVideoPlayer
+            uri={item.videoUrl.startsWith('http') ? item.videoUrl : `${SOCKET_URL}${item.videoUrl}`}
+            isActive={isFocused && activeVideoId === item.id}
+          />
+        )}
 
         <View style={styles.articleBody}>
           {/* Title */}
@@ -397,11 +420,16 @@ export default function NewsScreen() {
           data={articles}
           renderItem={renderArticle}
           keyExtractor={(item) => item.id}
+          extraData={activeVideoId}
           contentContainerStyle={[
             styles.listContent,
             articles.length === 0 && { flexGrow: 1 },
           ]}
           showsVerticalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -706,27 +734,23 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelLarge,
     fontWeight: '600',
   },
-  videoPlaceholder: {
+  videoContainer: {
     width: '100%',
     aspectRatio: 16 / 9,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#000',
     marginBottom: SPACING.md,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  videoPlayBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+  muteBtn: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingLeft: 4,
-  },
-  videoPlayText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: FONTS.semiBold,
-    marginTop: SPACING.sm,
   },
 });

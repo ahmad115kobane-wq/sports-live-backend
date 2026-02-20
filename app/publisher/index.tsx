@@ -24,6 +24,7 @@ import { newsApi } from '@/services/api';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import axios from 'axios';
 import { SOCKET_URL } from '@/constants/config';
 
@@ -266,8 +267,21 @@ export default function PublisherScreen() {
 
       if (mode === 'create') {
         setSelectedVideo(asset.uri);
+        // Auto-generate thumbnail from video
+        try {
+          const thumb = await VideoThumbnails.getThumbnailAsync(asset.uri, { time: 1000, quality: 0.7 });
+          if (thumb?.uri && selectedImages.length === 0) {
+            setSelectedImages([thumb.uri]);
+          }
+        } catch (e) { console.log('Thumb gen failed:', e); }
       } else {
         setEditVideo(asset.uri);
+        try {
+          const thumb = await VideoThumbnails.getThumbnailAsync(asset.uri, { time: 1000, quality: 0.7 });
+          if (thumb?.uri && editImages.length === 0) {
+            setEditImages([thumb.uri]);
+          }
+        } catch (e) { console.log('Thumb gen failed:', e); }
       }
     }
   };
