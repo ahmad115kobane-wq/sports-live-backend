@@ -725,7 +725,8 @@ export default function TeamsManagementScreen() {
       {/* Teams List */}
       <FlatList
         data={teams.filter(team => {
-          const matchesSearch = !searchQuery.trim() || team.name.includes(searchQuery) || team.shortName.includes(searchQuery) || (team.coach || '').includes(searchQuery);
+          const q = searchQuery.trim().toLowerCase();
+          const matchesSearch = !q || team.name.toLowerCase().includes(q) || team.shortName.toLowerCase().includes(q) || (team.coach || '').toLowerCase().includes(q) || (team.city || '').toLowerCase().includes(q) || (team.country || '').toLowerCase().includes(q);
           return matchesSearch;
         })}
         renderItem={renderTeamCard}

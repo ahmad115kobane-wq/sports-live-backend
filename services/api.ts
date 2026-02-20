@@ -356,6 +356,24 @@ export const aboutApi = {
   updateText: (content: string) => api.put('/about/text', { content }),
 };
 
+export const delegateApi = {
+  // Admin endpoints
+  adminGetAll: () => api.get('/delegates/admin/all'),
+  adminAssign: (userId: string, competitionId: string) =>
+    api.post('/delegates/admin/assign', { userId, competitionId }),
+  adminRemove: (id: string) => api.delete(`/delegates/admin/${id}`),
+  // Delegate own endpoints
+  getMyCompetitions: () => api.get('/delegates/my/competitions'),
+  getCompetitionMatches: (competitionId: string) =>
+    api.get(`/delegates/my/competitions/${competitionId}/matches`),
+  createMatch: (competitionId: string, data: any) =>
+    api.post(`/delegates/my/competitions/${competitionId}/matches`, data),
+  updateMatch: (matchId: string, data: any) =>
+    api.put(`/delegates/my/matches/${matchId}`, data),
+  deleteMatch: (matchId: string) =>
+    api.delete(`/delegates/my/matches/${matchId}`),
+};
+
 export const legalApi = {
   getAll: () => api.get('/legal'),
   getBySlug: (slug: string) => api.get(`/legal/${slug}`),

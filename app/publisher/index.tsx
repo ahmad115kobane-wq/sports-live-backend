@@ -33,6 +33,7 @@ interface NewsArticle {
   content: string;
   imageUrl?: string;
   imageUrls?: string[];
+  videoUrl?: string;
   isPublished: boolean;
   createdAt: string;
   author: {
@@ -44,6 +45,7 @@ interface NewsArticle {
 
 const MAX_NEWS_IMAGES = 9;
 const MAX_UPLOAD_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB (matches backend multer limit)
+const MAX_UPLOAD_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
 export default function PublisherScreen() {
   const colorScheme = useColorScheme();
@@ -62,11 +64,15 @@ export default function PublisherScreen() {
   const [content, setContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
+  // Video state
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+
   // Edit article state
   const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editImages, setEditImages] = useState<string[]>([]);
+  const [editVideo, setEditVideo] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -172,6 +178,18 @@ export default function PublisherScreen() {
       formData.append('title', title.trim());
       formData.append('content', content.trim());
 
+      // Add video if selected
+      if (selectedVideo) {
+        const vFilename = selectedVideo.split('/').pop() || 'video.mp4';
+        const vMatch = /\.([\w]+)$/.exec(vFilename);
+        const vType = vMatch ? `video/${vMatch[1]}` : 'video/mp4';
+        formData.append('video', {
+          uri: selectedVideo,
+          name: vFilename,
+          type: vType,
+        } as any);
+      }
+
       console.log('📱 Selected images count:', selectedImages.length);
       console.log('📱 Image URIs:', selectedImages);
 
@@ -197,6 +215,7 @@ export default function PublisherScreen() {
       setTitle('');
       setContent('');
       setSelectedImages([]);
+      setSelectedVideo(null);
       setShowForm(false);
       loadMyArticles();
     } catch (error) {
@@ -216,7 +235,41 @@ export default function PublisherScreen() {
     setEditTitle(article.title);
     setEditContent(article.content);
     setEditImages([]);
+    setEditVideo(null);
     setShowForm(false);
+  };
+
+  const pickVideo = async (mode: 'create' | 'edit') => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      let size = asset.fileSize;
+
+      if (size == null) {
+        try {
+          const info = await FileSystem.getInfoAsync(asset.uri);
+          size = info.exists ? (info as any).size : undefined;
+        } catch {
+          size = undefined;
+        }
+      }
+
+      if (typeof size === 'number' && size > MAX_UPLOAD_VIDEO_SIZE_BYTES) {
+        alert(t('common.error'), 'حجم الفيديو أكبر من 100MB');
+        return;
+      }
+
+      if (mode === 'create') {
+        setSelectedVideo(asset.uri);
+      } else {
+        setEditVideo(asset.uri);
+      }
+    }
   };
 
   const handleUpdate = async () => {
@@ -235,6 +288,18 @@ export default function PublisherScreen() {
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
         formData.append('images', { uri: imageUri, name: filename, type } as any);
+      }
+
+      // Add video if selected for edit
+      if (editVideo) {
+        const vFilename = editVideo.split('/').pop() || 'video.mp4';
+        const vMatch = /\.([\w]+)$/.exec(vFilename);
+        const vType = vMatch ? `video/${vMatch[1]}` : 'video/mp4';
+        formData.append('video', {
+          uri: editVideo,
+          name: vFilename,
+          type: vType,
+        } as any);
       }
 
       await newsApi.update(editingArticle.id, formData);
@@ -438,6 +503,30 @@ export default function PublisherScreen() {
               </TouchableOpacity>
             )}
 
+            {/* Video Picker */}
+            <TouchableOpacity
+              style={[styles.imagePickerBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: SPACING.sm }]}
+              onPress={() => pickVideo('create')}
+            >
+              {selectedVideo ? (
+                <View style={{ padding: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                  <Ionicons name="videocam" size={24} color="#8B5CF6" />
+                  <Text style={{ color: colors.text, flex: 1, fontFamily: FONTS.medium, fontSize: 13 }} numberOfLines={1}>
+                    تم اختيار فيديو
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedVideo(null)}>
+                    <Ionicons name="close-circle" size={22} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.imagePickerContent}>
+                  <Ionicons name="videocam-outline" size={32} color={colors.textTertiary} />
+                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>إضافة فيديو</Text>
+                  <Text style={[styles.imageHintText, { color: colors.textTertiary }]}>حد أقصى 100MB</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
             {/* Publish Button */}
             <TouchableOpacity
               style={[styles.publishBtn, publishing && { opacity: 0.6 }]}
@@ -542,6 +631,37 @@ export default function PublisherScreen() {
                   <Text style={[styles.imageHintText, { color: colors.textTertiary }]}> 
                     {t('news.maxImagesHint', { count: MAX_NEWS_IMAGES })}
                   </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Video Picker for Edit */}
+            <TouchableOpacity
+              style={[styles.imagePickerBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: SPACING.sm }]}
+              onPress={() => pickVideo('edit')}
+            >
+              {editVideo ? (
+                <View style={{ padding: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                  <Ionicons name="videocam" size={24} color="#8B5CF6" />
+                  <Text style={{ color: colors.text, flex: 1, fontFamily: FONTS.medium, fontSize: 13 }} numberOfLines={1}>
+                    تم اختيار فيديو جديد
+                  </Text>
+                  <TouchableOpacity onPress={() => setEditVideo(null)}>
+                    <Ionicons name="close-circle" size={22} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ) : editingArticle?.videoUrl ? (
+                <View style={{ padding: SPACING.md, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                  <Ionicons name="videocam" size={24} color="#10B981" />
+                  <Text style={{ color: colors.textSecondary, flex: 1, fontFamily: FONTS.medium, fontSize: 13 }} numberOfLines={1}>
+                    يوجد فيديو مرفق - اضغط لتغييره
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.imagePickerContent}>
+                  <Ionicons name="videocam-outline" size={32} color={colors.textTertiary} />
+                  <Text style={[styles.imagePickerText, { color: colors.textSecondary }]}>إضافة فيديو</Text>
+                  <Text style={[styles.imageHintText, { color: colors.textTertiary }]}>حد أقصى 100MB</Text>
                 </View>
               )}
             </TouchableOpacity>

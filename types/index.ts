@@ -3,7 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'operator' | 'admin' | 'guest' | 'publisher';
+  role: 'user' | 'operator' | 'admin' | 'guest' | 'publisher' | 'delegate';
   avatar?: string;
   isGuest?: boolean;
 }
@@ -77,6 +77,7 @@ export interface Competition {
   country?: string;
   season?: string;
   type?: CompetitionType;
+  format?: string;
   icon?: string;
   isActive?: boolean;
   sortOrder?: number;
@@ -160,7 +161,7 @@ export interface Match {
   assistantReferee1Ref?: { id: string; name: string; imageUrl?: string; nationality?: string; refereeType?: string };
   assistantReferee2Ref?: { id: string; name: string; imageUrl?: string; nationality?: string; refereeType?: string };
   fourthRefereeRef?: { id: string; name: string; imageUrl?: string; nationality?: string; refereeType?: string };
-  supervisorRef?: { id: string; name: string; imageUrl?: string; nationality?: string };
+  supervisorRef?: { id: string; name: string; imageUrl?: string; nationality?: string; refereeType?: string };
   homeTeam: Team;
   awayTeam: Team;
   competition?: Competition;

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Vibration,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -458,6 +459,63 @@ export default function MatchSetupScreen() {
           </ScrollView>
         </View>
 
+        {/* Mini Pitch Map */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Ionicons name="football-outline" size={16} color={teamColor} />
+            {'  '}{t('operator.formation')} {currentFormation}
+          </Text>
+          <View style={[styles.pitchContainer, { backgroundColor: '#1B5E20', borderColor: colors.border }]}>
+            {/* Field markings */}
+            <View style={styles.pitchCenter}>
+              <View style={[styles.pitchCenterCircle, { borderColor: 'rgba(255,255,255,0.25)' }]} />
+              <View style={[styles.pitchCenterLine, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+            </View>
+            <View style={[styles.pitchGoalArea, { borderColor: 'rgba(255,255,255,0.2)', top: 0 }]} />
+            <View style={[styles.pitchGoalArea, { borderColor: 'rgba(255,255,255,0.2)', bottom: 0, borderTopWidth: 1, borderBottomWidth: 0 }]} />
+
+            {/* Position dots */}
+            {getFormationPositions(category, currentFormation).map((pos, idx) => {
+              const starter = currentStarters[idx];
+              const isOccupied = !!starter;
+              return (
+                <View
+                  key={idx}
+                  style={[
+                    styles.pitchDot,
+                    {
+                      left: `${pos.x - 5}%`,
+                      top: `${pos.y - 5}%`,
+                      backgroundColor: isOccupied ? teamColor : 'rgba(255,255,255,0.35)',
+                      borderColor: isOccupied ? '#fff' : 'rgba(255,255,255,0.5)',
+                    },
+                  ]}
+                >
+                  <Text style={styles.pitchDotNum}>
+                    {isOccupied ? (starter.player?.shirtNumber || idx + 1) : ''}
+                  </Text>
+                </View>
+              );
+            })}
+
+            {/* Position labels */}
+            {getFormationPositions(category, currentFormation).map((pos, idx) => (
+              <Text
+                key={`label-${idx}`}
+                style={[
+                  styles.pitchPosLabel,
+                  {
+                    left: `${pos.x - 8}%`,
+                    top: `${pos.y + 5}%`,
+                  },
+                ]}
+              >
+                {t(`positions.${pos.pos}`) !== `positions.${pos.pos}` ? t(`positions.${pos.pos}`) : pos.pos}
+              </Text>
+            ))}
+          </View>
+        </View>
+
         {/* Starters Section */}
         <View style={styles.section}>
           <View style={[styles.sectionHeaderRow, { flexDirection }]}>
@@ -480,7 +538,9 @@ export default function MatchSetupScreen() {
                 return (
                   <View key={sp.playerId} style={[styles.playerRow, { backgroundColor: colors.surface, flexDirection }]}>
                     <View style={[styles.posLabel, { backgroundColor: teamColor + '20' }]}>
-                      <Text style={[styles.posLabelText, { color: teamColor }]}>{pos?.pos || '-'}</Text>
+                      <Text style={[styles.posLabelText, { color: teamColor }]}>
+                        {pos?.pos ? (t(`positions.${pos.pos}`) !== `positions.${pos.pos}` ? t(`positions.${pos.pos}`) : pos.pos) : '-'}
+                      </Text>
                     </View>
                     <View style={[styles.shirtNum, { backgroundColor: teamColor }]}>
                       <Text style={styles.shirtNumText}>{sp.player?.shirtNumber || '-'}</Text>
@@ -876,5 +936,71 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // ── Mini Pitch Map ──
+  pitchContainer: {
+    width: '100%',
+    aspectRatio: 0.7,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  pitchCenter: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 0,
+  },
+  pitchCenterLine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+  },
+  pitchCenterCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
+    marginTop: -30,
+  },
+  pitchGoalArea: {
+    position: 'absolute',
+    left: '25%',
+    width: '50%',
+    height: '12%',
+    borderWidth: 1,
+    borderTopWidth: 0,
+    zIndex: 0,
+  },
+  pitchDot: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  pitchDotNum: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+  },
+  pitchPosLabel: {
+    position: 'absolute',
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+    textAlign: 'center',
+    width: '16%',
+    zIndex: 1,
   },
 });

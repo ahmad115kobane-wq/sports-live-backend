@@ -9,7 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
+  TextInput,
   Animated,
   Dimensions,
   InteractionManager,
@@ -53,13 +53,6 @@ interface Team {
   };
 }
 
-type Category = 'all' | 'futsal';
-
-const CATEGORIES: { key: Category; icon: string }[] = [
-  { key: 'all', icon: 'grid' },
-  { key: 'futsal', icon: 'fitness' },
-];
-
 export default function ClubsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
@@ -68,7 +61,7 @@ export default function ClubsScreen() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const waveAnim = useRef(new Animated.Value(0)).current;
 
@@ -86,21 +79,6 @@ export default function ClubsScreen() {
     return () => task.cancel();
   }, []);
 
-  useEffect(() => {
-    loadTeams();
-  }, [selectedCategory]);
-
-  const getCategoryApiValue = (key: Category): string | undefined => {
-    switch (key) {
-      case 'all': return undefined;
-      case 'football': return 'FOOTBALL';
-      case 'handball': return 'HANDBALL';
-      case 'basketball': return 'BASKETBALL';
-      case 'futsal': return 'FUTSAL';
-      case 'national': return 'NATIONAL';
-      default: return undefined;
-    }
-  };
 
   const waveTranslate = waveAnim.interpolate({
     inputRange: [0, 1],
@@ -110,8 +88,7 @@ export default function ClubsScreen() {
   const loadTeams = async () => {
     try {
       setLoading(true);
-      const apiCategory = getCategoryApiValue(selectedCategory);
-      const response = await teamApi.getAllWithPlayers(apiCategory);
+      const response = await teamApi.getAllWithPlayers();
       const teamsData = response.data?.data || response.data || [];
       setTeams(Array.isArray(teamsData) ? teamsData : []);
     } catch (error) {
@@ -127,17 +104,10 @@ export default function ClubsScreen() {
     setRefreshing(false);
   };
 
-  const getCategoryLabel = (key: Category): string => {
-    switch (key) {
-      case 'all': return t('clubs.allClubs');
-      case 'football': return t('clubs.football');
-      case 'handball': return t('clubs.handball');
-      case 'basketball': return t('clubs.basketball');
-      case 'futsal': return t('clubs.futsal');
-      case 'national': return t('clubs.nationalTeams');
-      default: return '';
-    }
-  };
+  const filteredTeams = teams.filter(team => {
+    if (!searchQuery.trim()) return true;
+    return team.name.includes(searchQuery) || team.shortName.includes(searchQuery) || (team.coach || '').includes(searchQuery);
+  });
 
   const renderTeamCard = useCallback(({ item: team }: { item: Team }) => {
     const playerCount = team._count?.players || team.players?.length || 0;
@@ -241,7 +211,7 @@ export default function ClubsScreen() {
               onPress={() => router.back()}
             >
               <Ionicons
-                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                name={isRTL ? 'chevron-forward' : 'chevron-back'}
                 size={22}
                 color={colors.text}
               />
@@ -256,45 +226,24 @@ export default function ClubsScreen() {
         </View>
       </LinearGradient>
 
-      {/* Categories */}
-      <View style={[styles.categoriesContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesScroll}
-        >
-          {CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat.key;
-            return (
-              <TouchableOpacity
-                key={cat.key}
-                style={[
-                  styles.categoryChip,
-                  {
-                    backgroundColor: isSelected ? colors.accent : colors.background,
-                    borderColor: isSelected ? colors.accent : colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedCategory(cat.key)}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name={cat.icon as any}
-                  size={16}
-                  color={isSelected ? '#fff' : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.categoryText,
-                    { color: isSelected ? '#fff' : colors.text },
-                  ]}
-                >
-                  {getCategoryLabel(cat.key)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.searchBar, { backgroundColor: colors.background, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder={t('clubs.searchPlaceholder') || 'بحث عن نادي أو منتخب...'}
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            textAlign={isRTL ? 'right' : 'left'}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Teams List */}
@@ -302,7 +251,7 @@ export default function ClubsScreen() {
         <ClubsGridSkeleton count={6} />
       ) : (
         <FlatList
-          data={teams}
+          data={filteredTeams}
           renderItem={renderTeamCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
@@ -384,28 +333,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Categories
-  categoriesContainer: {
+  // Search
+  searchContainer: {
+    paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderBottomWidth: 0.5,
   },
-  categoriesScroll: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  categoryChip: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 10,
-    borderRadius: RADIUS.full,
-    borderWidth: 1.5,
-    gap: 6,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.sm,
+    height: 44,
   },
-  categoryText: {
-    ...TYPOGRAPHY.labelMedium,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: FONTS.medium,
+    paddingVertical: 0,
   },
   // Loading
   loadingContainer: {

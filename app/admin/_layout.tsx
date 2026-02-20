@@ -24,7 +24,7 @@ const TAB_ITEMS = [
   { key: 'referees', label: 'الحكام', icon: 'flag' as const, route: '/admin/referees' },
   { key: 'supervisors', label: 'المشرفون', icon: 'eye' as const, route: '/admin/supervisors' },
   { key: 'users', label: 'المستخدمون', icon: 'people' as const, route: '/admin/users' },
-  { key: 'store', label: 'المتجر', icon: 'bag-handle' as const, route: '/admin/store' },
+  { key: 'delegates', label: 'المكلفون', icon: 'people-circle' as const, route: '/admin/delegates' },
   { key: 'sliders', label: 'الإعلانات', icon: 'images' as const, route: '/admin/sliders' },
   { key: 'legal', label: 'الصفحات القانونية', icon: 'document-text' as const, route: '/admin/legal' },
   { key: 'about-us', label: 'من نحن', icon: 'people-circle' as const, route: '/admin/about-us' },
@@ -47,7 +47,7 @@ export default function AdminLayout() {
     if (pathname.includes('/admin/referees')) return 'referees';
     if (pathname.includes('/admin/supervisors')) return 'supervisors';
     if (pathname.includes('/admin/users')) return 'users';
-    if (pathname.includes('/admin/store')) return 'store';
+    if (pathname.includes('/admin/delegates')) return 'delegates';
     if (pathname.includes('/admin/sliders')) return 'sliders';
     if (pathname.includes('/admin/legal')) return 'legal';
     if (pathname.includes('/admin/about-us')) return 'about-us';
@@ -119,6 +119,7 @@ export default function AdminLayout() {
         <Stack.Screen name="referees" />
         <Stack.Screen name="supervisors" />
         <Stack.Screen name="users" />
+        <Stack.Screen name="delegates" />
         <Stack.Screen name="store" />
         <Stack.Screen name="sliders" />
         <Stack.Screen name="legal" />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCartStore } from '@/store/cartStore';
-import { orderApi } from '@/services/api';
+import { orderApi, settingsApi } from '@/services/api';
 import { router } from 'expo-router';
 import { formatPrice } from '@/utils/currency';
 
@@ -41,6 +41,21 @@ export default function CheckoutScreen() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deliveryFee, setDeliveryFee] = useState(5000);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await settingsApi.getAll();
+        const settings = res.data?.data || {};
+        if (settings.delivery_fee) {
+          setDeliveryFee(parseInt(settings.delivery_fee, 10) || 5000);
+        }
+      } catch (e) {
+        console.log('Failed to load delivery fee setting, using default');
+      }
+    })();
+  }, []);
 
   const total = getTotal();
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
@@ -65,7 +80,7 @@ export default function CheckoutScreen() {
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerAddress: customerAddress.trim(),
-        deliveryFee: 5000,
+        deliveryFee,
         items: items.map((item) => ({
           productId: item.productId,
           productName: item.name,
@@ -169,11 +184,11 @@ export default function CheckoutScreen() {
             </View>
             <View style={[styles.totalRow, { flexDirection: isRTL ? 'row-reverse' : 'row', paddingTop: SPACING.xs, paddingBottom: SPACING.xs }]}>
               <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>{t('checkout.delivery')}</Text>
-              <Text style={[styles.totalValue, { color: colors.accent, fontSize: 14, fontWeight: '600' }]}>5,000 د.ع</Text>
+              <Text style={[styles.totalValue, { color: colors.accent, fontSize: 14, fontWeight: '600' }]}>{formatPrice(deliveryFee)}</Text>
             </View>
             <View style={[styles.totalRow, { flexDirection: isRTL ? 'row-reverse' : 'row', borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)', paddingTop: SPACING.sm }]}>
               <Text style={[styles.totalLabel, { color: colors.text, fontWeight: '800', fontSize: 15 }]}>{t('checkout.grandTotal')}</Text>
-              <Text style={[styles.totalValue, { color: colors.text }]}>{formatPrice(total + 5000)}</Text>
+              <Text style={[styles.totalValue, { color: colors.text }]}>{formatPrice(total + deliveryFee)}</Text>
             </View>
           </View>
 
@@ -250,7 +265,7 @@ export default function CheckoutScreen() {
         <View style={[styles.bottomBarInner, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <View>
             <Text style={[styles.bottomLabel, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>{t('checkout.grandTotalWithDelivery')}</Text>
-            <Text style={[styles.bottomPrice, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>{formatPrice(total + 5000)}</Text>
+            <Text style={[styles.bottomPrice, { color: colors.text, textAlign: isRTL ? 'right' : 'left' }]}>{formatPrice(total + deliveryFee)}</Text>
           </View>
           <TouchableOpacity
             style={[styles.placeOrderBtn, submitting && { opacity: 0.6 }]}

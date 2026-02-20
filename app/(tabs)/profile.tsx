@@ -96,6 +96,7 @@ export default function ProfileScreen() {
       case 'admin': return 'shield-checkmark';
       case 'operator': return 'radio';
       case 'publisher': return 'newspaper';
+      case 'delegate': return 'people-circle';
       default: return 'person';
     }
   };
@@ -105,6 +106,7 @@ export default function ProfileScreen() {
       case 'admin': return t('settings.title');
       case 'operator': return t('match.live');
       case 'publisher': return t('news.title');
+      case 'delegate': return 'مكلف';
       default: return t('auth.login');
     }
   };
@@ -333,8 +335,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          {/* ── Quick Access (Admin / Operator / Publisher) ── */}
-          {(user?.role === 'operator' || user?.role === 'admin' || user?.role === 'publisher') && (
+          {/* ── Quick Access (Admin / Operator / Publisher / Delegate) ── */}
+          {(user?.role === 'operator' || user?.role === 'admin' || user?.role === 'publisher' || user?.role === 'delegate') && (
             <>
               <Text style={[styles.sectionTitle, { color: colors.textTertiary, textAlign: isRTL ? 'right' : 'left' }]}>
                 {t('tabs.matches')}
@@ -358,6 +360,16 @@ export default function ProfileScreen() {
                     sublabel={t('news.title')}
                     onPress={() => router.push('/publisher' as any)}
                     isLast={user?.role === 'publisher'}
+                  />
+                )}
+                {(user?.role === 'delegate' || user?.role === 'admin') && (
+                  <RowItem
+                    icon="people-circle"
+                    gradientColors={['#059669', '#047857'] as unknown as readonly [string, string, ...string[]]}
+                    label="لوحة المكلف"
+                    sublabel="إدارة البطولة المعينة"
+                    onPress={() => router.push('/delegate' as any)}
+                    isLast={user?.role === 'delegate'}
                   />
                 )}
                 {user?.role === 'admin' && (

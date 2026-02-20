@@ -354,6 +354,12 @@ function RootLayoutContent() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="delegate/index"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
       <LiveMatchBanner />
     </>

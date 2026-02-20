@@ -403,6 +403,7 @@ export default function MatchDetailScreen() {
           <StandingsView
             competitionId={currentMatch.competitionId}
             competitionName={currentMatch.competition?.name}
+            competitionFormat={currentMatch.competition?.format}
           />
         )}
 
@@ -521,6 +522,14 @@ export default function MatchDetailScreen() {
                         {item.ref?.name || 'غير محدد'}
                       </Text>
                     </View>
+
+                    {item.ref?.refereeType && (
+                      <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, backgroundColor: item.ref.refereeType === 'INTERNATIONAL' ? '#3B82F615' : '#10B98115', marginRight: 6 }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'Cairo-Bold', color: item.ref.refereeType === 'INTERNATIONAL' ? '#3B82F6' : '#10B981' }}>
+                          {item.ref.refereeType === 'INTERNATIONAL' ? 'دولي' : 'محلي'}
+                        </Text>
+                      </View>
+                    )}
 
                     <Ionicons name={direction === 'rtl' ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.textTertiary} />
                   </TouchableOpacity>

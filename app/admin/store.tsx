@@ -18,7 +18,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { SPACING, RADIUS, TYPOGRAPHY, FONTS } from '@/constants/Theme';
 import { useRTL } from '@/contexts/RTLContext';
 import { useAlert } from '@/contexts/AlertContext';
-import { storeApi, orderApi } from '@/services/api';
+import { storeApi, orderApi, settingsApi } from '@/services/api';
 import AppModal from '@/components/ui/AppModal';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -114,7 +114,7 @@ export default function AdminStoreScreen() {
   const { t, isRTL, flexDirection } = useRTL();
   const { alert } = useAlert();
 
-  const [activeTab, setActiveTab] = useState<'categories' | 'products' | 'banners' | 'orders'>('categories');
+  const [activeTab, setActiveTab] = useState<'categories' | 'products' | 'banners' | 'orders' | 'settings'>('categories');
   const [categories, setCategories] = useState<StoreCategory[]>([]);
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
@@ -173,6 +173,10 @@ export default function AdminStoreScreen() {
   const [orderDeliveryFee, setOrderDeliveryFee] = useState('5000');
   const [orderCounts, setOrderCounts] = useState({ pending: 0, approved: 0, rejected: 0, delivered: 0, total: 0 });
 
+  // Settings
+  const [deliveryFeeSetting, setDeliveryFeeSetting] = useState('5000');
+  const [savingSettings, setSavingSettings] = useState(false);
+
   // Banner form
   const [banTitle, setBanTitle] = useState('');
   const [banTitleAr, setBanTitleAr] = useState('');
@@ -188,18 +192,21 @@ export default function AdminStoreScreen() {
   // ─── Load Data ───
   const loadData = useCallback(async () => {
     try {
-      const [catRes, prodRes, banRes, ordRes, countRes] = await Promise.all([
+      const [catRes, prodRes, banRes, ordRes, countRes, settingsRes] = await Promise.all([
         storeApi.adminGetCategories(),
         storeApi.adminGetProducts(),
         storeApi.adminGetBanners(),
         orderApi.adminGetAllOrders(),
         orderApi.adminGetOrderCounts(),
+        settingsApi.getAll().catch(() => ({ data: { data: {} } })),
       ]);
       setCategories(catRes.data.data || []);
       setProducts(prodRes.data.data || []);
       setBanners(banRes.data.data || []);
       setOrders(ordRes.data.data || []);
       setOrderCounts(countRes.data.data || { pending: 0, approved: 0, rejected: 0, delivered: 0, total: 0 });
+      const settings = settingsRes.data?.data || {};
+      if (settings.delivery_fee) setDeliveryFeeSetting(settings.delivery_fee);
     } catch (error) {
       console.error('Load store data error:', error);
     } finally {
@@ -535,6 +542,7 @@ export default function AdminStoreScreen() {
               { key: 'products' as const, icon: 'pricetag', label: t('store.items') },
               { key: 'banners' as const, icon: 'images', label: 'الإعلانات' },
               { key: 'orders' as const, icon: 'receipt', label: 'الطلبات' },
+              { key: 'settings' as const, icon: 'settings', label: 'الإعدادات' },
             ].map((tab) => {
               const isActive = activeTab === tab.key;
               return (
@@ -822,6 +830,48 @@ export default function AdminStoreScreen() {
               {filteredOrders.length === 0 && (
                 <Text style={[styles.emptyText, { color: colors.textTertiary }]}>لا توجد طلبات</Text>
               )}
+            </>
+          ) : activeTab === 'settings' ? (
+            <>
+              <View style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.cardBorder, padding: SPACING.lg }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.lg }}>
+                  <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>  
+                    <Ionicons name="car-outline" size={18} color={colors.accent} />
+                  </View>
+                  <Text style={[styles.listItemTitle, { color: colors.text, fontSize: 16 }]}>سعر التوصيل</Text>
+                </View>
+
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>سعر التوصيل (د.ع)</Text>
+                <TextInput
+                  style={[styles.input, { color: colors.text, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: colors.border, fontSize: 18, fontWeight: '700', textAlign: 'center' }]}
+                  value={deliveryFeeSetting}
+                  onChangeText={setDeliveryFeeSetting}
+                  keyboardType="numeric"
+                  placeholder="5000"
+                  placeholderTextColor={colors.textTertiary}
+                />
+                <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center', marginTop: 4, marginBottom: SPACING.md }}>
+                  القيمة الحالية: {formatPrice(parseInt(deliveryFeeSetting) || 0)}
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.saveBtn, { backgroundColor: isDark ? '#444' : '#222' }]}
+                  onPress={async () => {
+                    setSavingSettings(true);
+                    try {
+                      await settingsApi.adminUpdate({ delivery_fee: deliveryFeeSetting });
+                      alert('تم الحفظ', 'تم تحديث سعر التوصيل بنجاح');
+                    } catch (error) {
+                      alert('خطأ', 'فشل في حفظ الإعدادات');
+                    } finally {
+                      setSavingSettings(false);
+                    }
+                  }}
+                  disabled={savingSettings}
+                >
+                  {savingSettings ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveBtnText}>حفظ الإعدادات</Text>}
+                </TouchableOpacity>
+              </View>
             </>
           ) : null}
         </View>
