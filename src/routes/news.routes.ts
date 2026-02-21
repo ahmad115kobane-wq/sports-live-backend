@@ -226,6 +226,24 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
       }
     }
 
+    // If video exists but no images, generate a default dark thumbnail for notifications
+    if (videoUrl && uploadedImageUrls.length === 0) {
+      try {
+        // Minimal 2x2 dark gray PNG (valid image for FCM notifications)
+        const defaultThumb = Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVQIW2NkYPj/n4EBFAAApjgD/Xts8AQAAAAASUVORK5CYII=',
+          'base64'
+        );
+        const thumbUrl = await uploadToImgBB(defaultThumb, 'news-thumb-default', 'image/png');
+        if (thumbUrl) {
+          uploadedImageUrls.push(thumbUrl);
+          console.log('🖼️ Default video thumbnail created:', thumbUrl);
+        }
+      } catch (e) {
+        console.log('⚠️ Default thumb generation failed:', e);
+      }
+    }
+
     console.log('📸 Final uploaded URLs:', uploadedImageUrls);
     const coverImageUrl = uploadedImageUrls[0];
 
