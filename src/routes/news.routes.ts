@@ -109,6 +109,7 @@ const uploadArticleImages = upload.fields([
   { name: 'image', maxCount: 1 },
   { name: 'images', maxCount: MAX_ARTICLE_IMAGES },
   { name: 'video', maxCount: 1 },
+  { name: 'thumbnail', maxCount: 1 },
 ]);
 
 // Get all published news (public)
@@ -212,6 +213,22 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
       if (uploaded) uploadedImageUrls.push(uploaded);
     }
 
+    // Parse video dimensions from MP4 buffer (searches for tkhd atom)
+    function parseVideoSize(buf: Buffer): { w: number; h: number } | null {
+      for (let i = 0; i < buf.length - 100; i++) {
+        if (buf[i] === 0x74 && buf[i+1] === 0x6b && buf[i+2] === 0x68 && buf[i+3] === 0x64) {
+          const ver = buf[i + 4];
+          const wPos = ver === 0 ? i + 80 : i + 92;
+          if (wPos + 8 <= buf.length) {
+            const w = buf.readUInt32BE(wPos) >>> 16;  // fixed-point 16.16 → integer
+            const h = buf.readUInt32BE(wPos + 4) >>> 16;
+            if (w > 0 && h > 0) return { w, h };
+          }
+        }
+      }
+      return null;
+    }
+
     // Handle video upload
     let videoUrl: string | undefined;
     const files = (req as any).files;
@@ -221,14 +238,28 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
       console.log('🎬 Uploading video:', videoFile.originalname, `(${(videoFile.size / 1024 / 1024).toFixed(1)}MB)`);
       const uploaded = await uploadToImgBB(videoFile.buffer, `news-video-${Date.now()}`, videoFile.mimetype);
       if (uploaded) {
-        videoUrl = uploaded;
-        console.log('🎬 Video uploaded:', videoUrl);
+        // Embed real video dimensions in URL fragment so frontend knows instantly
+        const dims = parseVideoSize(videoFile.buffer);
+        videoUrl = dims ? `${uploaded}#vw=${dims.w}&vh=${dims.h}` : uploaded;
+        console.log('🎬 Video uploaded:', videoUrl, dims ? `(${dims.w}x${dims.h})` : '(dims unknown)');
       }
     }
 
-    // Generate a notification-only thumbnail for video-only posts (not stored in article images)
+    // Handle user-provided thumbnail for video notifications
     let notificationThumbUrl: string | undefined;
-    if (videoUrl && uploadedImageUrls.length === 0) {
+    const thumbnailFiles = files?.thumbnail || [];
+    if (thumbnailFiles.length > 0) {
+      const thumbFile = thumbnailFiles[0];
+      console.log('🖼️ Uploading user-provided thumbnail:', thumbFile.originalname);
+      const thumbUrl = await uploadToImgBB(thumbFile.buffer, `news-thumb-${Date.now()}`, thumbFile.mimetype);
+      if (thumbUrl) {
+        notificationThumbUrl = thumbUrl;
+        console.log('🖼️ User thumbnail uploaded:', thumbUrl);
+      }
+    }
+
+    // Fallback: generate a tiny default thumbnail for video-only posts
+    if (!notificationThumbUrl && videoUrl && uploadedImageUrls.length === 0) {
       try {
         const defaultThumb = Buffer.from(
           'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVQIW2NkYPj/n4EBFAAApjgD/Xts8AQAAAAASUVORK5CYII=',
@@ -237,7 +268,7 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
         const thumbUrl = await uploadToImgBB(defaultThumb, 'news-thumb-default', 'image/png');
         if (thumbUrl) {
           notificationThumbUrl = thumbUrl;
-          console.log('🖼️ Notification-only video thumbnail:', thumbUrl);
+          console.log('🖼️ Default video thumbnail:', thumbUrl);
         }
       } catch (e) {
         console.log('⚠️ Default thumb generation failed:', e);
