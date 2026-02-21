@@ -226,18 +226,18 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
       }
     }
 
-    // If video exists but no images, generate a default dark thumbnail for notifications
+    // Generate a notification-only thumbnail for video-only posts (not stored in article images)
+    let notificationThumbUrl: string | undefined;
     if (videoUrl && uploadedImageUrls.length === 0) {
       try {
-        // Minimal 2x2 dark gray PNG (valid image for FCM notifications)
         const defaultThumb = Buffer.from(
           'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVQIW2NkYPj/n4EBFAAApjgD/Xts8AQAAAAASUVORK5CYII=',
           'base64'
         );
         const thumbUrl = await uploadToImgBB(defaultThumb, 'news-thumb-default', 'image/png');
         if (thumbUrl) {
-          uploadedImageUrls.push(thumbUrl);
-          console.log('🖼️ Default video thumbnail created:', thumbUrl);
+          notificationThumbUrl = thumbUrl;
+          console.log('🖼️ Notification-only video thumbnail:', thumbUrl);
         }
       } catch (e) {
         console.log('⚠️ Default thumb generation failed:', e);
@@ -274,7 +274,7 @@ router.post('/', authenticate, isPublisher, debugRequest, uploadArticleImages, a
     // Send push notification to ALL users (fire-and-forget, after response)
     // Use the raw R2 public URL directly — FCM fetches from Google servers,
     // so it needs a direct public URL, not our backend proxy
-    const fullImageUrl = coverImageUrl || undefined;
+    const fullImageUrl = coverImageUrl || notificationThumbUrl || undefined;
 
     (async () => {
       try {
