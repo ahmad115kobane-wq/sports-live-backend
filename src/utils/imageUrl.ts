@@ -56,7 +56,17 @@ export function toRelativeImagePath(url: string | null | undefined): string | nu
  */
 export function resolveTeamImages(team: any): any {
   if (!team) return team;
-  return { ...team, logoUrl: resolveImageUrl(team.logoUrl) };
+  return {
+    ...team,
+    logoUrl: resolveImageUrl(team.logoUrl),
+    coachImageUrl: resolveImageUrl(team.coachImageUrl),
+    assistantCoach1Image: resolveImageUrl(team.assistantCoach1Image),
+    assistantCoach2Image: resolveImageUrl(team.assistantCoach2Image),
+    goalkeeperCoachImage: resolveImageUrl(team.goalkeeperCoachImage),
+    physioImage: resolveImageUrl(team.physioImage),
+    fitnessCoachImage: resolveImageUrl(team.fitnessCoachImage),
+    adminCoachImage: resolveImageUrl(team.adminCoachImage),
+  };
 }
 
 /**

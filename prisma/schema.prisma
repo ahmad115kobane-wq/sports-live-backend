@@ -63,6 +63,10 @@ model Team {
   goalkeeperCoachImage  String?  @map("goalkeeper_coach_image")
   physio                String?
   physioImage           String?  @map("physio_image")
+  fitnessCoach          String?  @map("fitness_coach")
+  fitnessCoachImage     String?  @map("fitness_coach_image")
+  adminCoach            String?  @map("admin_coach")
+  adminCoachImage       String?  @map("admin_coach_image")
   founded      Int?
   wins         Int      @default(0)
   draws        Int      @default(0)

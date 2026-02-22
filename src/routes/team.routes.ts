@@ -413,6 +413,8 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
   { name: 'assistantCoach2Image', maxCount: 1 },
   { name: 'goalkeeperCoachImage', maxCount: 1 },
   { name: 'physioImage', maxCount: 1 },
+  { name: 'fitnessCoachImage', maxCount: 1 },
+  { name: 'adminCoachImage', maxCount: 1 },
 ]), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
@@ -430,6 +432,8 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
       assistantCoach2,
       goalkeeperCoach,
       physio,
+      fitnessCoach,
+      adminCoach,
       founded,
     } = req.body;
 
@@ -459,6 +463,8 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
     const finalAC2Image = await uploadStaffImage('assistantCoach2Image', 'ac2');
     const finalGKCoachImage = await uploadStaffImage('goalkeeperCoachImage', 'gkcoach');
     const finalPhysioImage = await uploadStaffImage('physioImage', 'physio');
+    const finalFitnessCoachImage = await uploadStaffImage('fitnessCoachImage', 'fitnesscoach');
+    const finalAdminCoachImage = await uploadStaffImage('adminCoachImage', 'admincoach');
 
     const team = await prisma.team.update({
       where: { id },
@@ -481,6 +487,10 @@ router.put('/:id', authenticate, isAdmin, logoUpload.fields([
         ...(assistantCoach2 !== undefined && { assistantCoach2 }),
         ...(goalkeeperCoach !== undefined && { goalkeeperCoach }),
         ...(physio !== undefined && { physio }),
+        ...(fitnessCoach !== undefined && { fitnessCoach }),
+        ...(finalFitnessCoachImage && { fitnessCoachImage: finalFitnessCoachImage }),
+        ...(adminCoach !== undefined && { adminCoach }),
+        ...(finalAdminCoachImage && { adminCoachImage: finalAdminCoachImage }),
         founded,
       },
       include: {
