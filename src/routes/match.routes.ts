@@ -81,8 +81,8 @@ router.get('/', async (req, res) => {
         lte: endDate,
       };
     } else {
-      // Default: Today and 7 days ahead
-      const futureDays = parseInt(days as string) || 7;
+      // Default: Today and 30 days ahead
+      const futureDays = parseInt(days as string) || 30;
       const from = new Date();
       from.setHours(0, 0, 0, 0); // Start of today
       const to = new Date();
