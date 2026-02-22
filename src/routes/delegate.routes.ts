@@ -251,7 +251,11 @@ router.post('/my/competitions/:competitionId/matches', authenticate, isDelegate,
       }
     }
 
-    const { homeTeamId, awayTeamId, startTime, venue, groupId, stage, isFeatured } = req.body;
+    const {
+      homeTeamId, awayTeamId, startTime, venue, groupId, stage, isFeatured,
+      refereeId, assistantReferee1Id, assistantReferee2Id, fourthRefereeId,
+      supervisorId, operatorId, matchday, season,
+    } = req.body;
 
     if (!homeTeamId || !awayTeamId || !startTime) {
       return res.status(400).json({ success: false, message: 'homeTeamId, awayTeamId, and startTime are required' });
@@ -267,6 +271,13 @@ router.post('/my/competitions/:competitionId/matches', authenticate, isDelegate,
         groupId: groupId || undefined,
         stage: stage || undefined,
         isFeatured: isFeatured || false,
+        refereeId: refereeId || undefined,
+        assistantReferee1Id: assistantReferee1Id || undefined,
+        assistantReferee2Id: assistantReferee2Id || undefined,
+        fourthRefereeId: fourthRefereeId || undefined,
+        supervisorId: supervisorId || undefined,
+        matchday,
+        season,
       },
       include: {
         homeTeam: true,
@@ -274,6 +285,13 @@ router.post('/my/competitions/:competitionId/matches', authenticate, isDelegate,
         competition: true,
       },
     });
+
+    // If operator specified, assign them to the match
+    if (operatorId) {
+      await prisma.matchOperator.create({
+        data: { matchId: match.id, operatorId },
+      });
+    }
 
     res.status(201).json({ success: true, message: 'Match created', data: match });
   } catch (error) {
@@ -308,9 +326,9 @@ router.put('/my/matches/:matchId', authenticate, isDelegate, async (req: AuthReq
     if (venue !== undefined) updateData.venue = venue || null;
     if (startTime !== undefined) updateData.startTime = new Date(startTime);
     if (refereeId !== undefined) updateData.refereeId = refereeId || null;
-    if (assistant1Id !== undefined) updateData.assistant1Id = assistant1Id || null;
-    if (assistant2Id !== undefined) updateData.assistant2Id = assistant2Id || null;
-    if (fourthId !== undefined) updateData.fourthId = fourthId || null;
+    if (assistant1Id !== undefined) updateData.assistantReferee1Id = assistant1Id || null;
+    if (assistant2Id !== undefined) updateData.assistantReferee2Id = assistant2Id || null;
+    if (fourthId !== undefined) updateData.fourthRefereeId = fourthId || null;
     if (supervisorId !== undefined) updateData.supervisorId = supervisorId || null;
     if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
 
