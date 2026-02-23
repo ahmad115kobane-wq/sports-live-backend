@@ -1,6 +1,14 @@
 import { Router } from 'express';
-import { authenticate, isAdmin, AuthRequest } from '../middleware/auth.middleware';
+import { authenticate, isAdmin, isMerchant, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../utils/prisma';
+
+// Allow admin or merchant
+const isAdminOrMerchant = (req: any, res: any, next: any) => {
+  if (req.user?.role === 'admin' || req.user?.role === 'merchant') {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: 'Admin or Merchant access required' });
+};
 
 const router = Router();
 
@@ -20,7 +28,7 @@ router.get('/', async (req, res) => {
 });
 
 // Admin: Get all settings
-router.get('/admin/all', authenticate, isAdmin, async (req, res) => {
+router.get('/admin/all', authenticate, isAdminOrMerchant, async (req, res) => {
   try {
     const settings = await prisma.appSetting.findMany({ orderBy: { key: 'asc' } });
     res.json({ success: true, data: settings });
@@ -31,7 +39,7 @@ router.get('/admin/all', authenticate, isAdmin, async (req, res) => {
 });
 
 // Admin: Update settings (batch upsert)
-router.put('/admin', authenticate, isAdmin, async (req, res) => {
+router.put('/admin', authenticate, isAdminOrMerchant, async (req, res) => {
   try {
     const { settings } = req.body; // { key: value, key: value, ... }
     if (!settings || typeof settings !== 'object') {
