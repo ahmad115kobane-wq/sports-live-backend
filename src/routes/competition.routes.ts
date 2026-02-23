@@ -575,6 +575,13 @@ router.delete('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
+    // Disconnect matches first (competitionId is optional, no cascade)
+    await prisma.match.updateMany({
+      where: { competitionId: id },
+      data: { competitionId: null },
+    });
+
+    // Delete competition (cascades: teams, groups, delegates)
     await prisma.competition.delete({
       where: { id },
     });

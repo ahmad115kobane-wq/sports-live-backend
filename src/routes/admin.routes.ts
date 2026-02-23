@@ -527,7 +527,7 @@ router.patch('/users/:id/role', authenticate, isAdmin, async (req: AuthRequest, 
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!['user', 'operator', 'admin', 'publisher'].includes(role)) {
+    if (!['user', 'operator', 'admin', 'publisher', 'merchant', 'delegate'].includes(role)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid role',
