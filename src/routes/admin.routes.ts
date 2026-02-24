@@ -300,8 +300,32 @@ router.put('/competitions/:id', authenticate, isAdmin, async (req, res) => {
 // Delete competition
 router.delete('/competitions/:id', authenticate, isAdmin, async (req, res) => {
   try {
+    const { id } = req.params;
+
+    // Disconnect matches first (competitionId is optional, no cascade)
+    await prisma.match.updateMany({
+      where: { competitionId: id },
+      data: { competitionId: null },
+    });
+
+    // Remove team-competition associations
+    await prisma.teamCompetition.deleteMany({
+      where: { competitionId: id },
+    });
+
+    // Remove competition groups
+    await prisma.competitionGroup.deleteMany({
+      where: { competitionId: id },
+    });
+
+    // Remove delegate assignments
+    await prisma.competitionDelegate.deleteMany({
+      where: { competitionId: id },
+    });
+
+    // Delete the competition
     await prisma.competition.delete({
-      where: { id: req.params.id },
+      where: { id },
     });
 
     res.json({
