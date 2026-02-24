@@ -243,28 +243,41 @@ router.post('/', authenticate, isOperatorOrAdmin, async (req: AuthRequest, res) 
   }
 });
 
-// Delete event (Admin only)
+// Delete event (Admin or assigned Operator)
 router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
-    // Only admin can delete events
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admin can delete events',
-      });
-    }
-
     const event = await prisma.event.findUnique({
       where: { id },
-      include: { match: true },
+      include: { match: { include: { homeTeam: true, awayTeam: true } } },
     });
 
     if (!event) {
       return res.status(404).json({
         success: false,
         message: 'Event not found',
+      });
+    }
+
+    // Allow admin or operator assigned to this match
+    if (req.user!.role === 'operator') {
+      const assignment = await prisma.matchOperator.findFirst({
+        where: {
+          matchId: event.matchId,
+          operatorId: req.user!.id,
+        },
+      });
+      if (!assignment) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not assigned to this match',
+        });
+      }
+    } else if (req.user!.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin or assigned Operator access required',
       });
     }
 
@@ -287,17 +300,25 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
       where: { id },
     });
 
-    // Emit deletion event
+    // Fetch updated match with new scores
+    const updatedMatch = await prisma.match.findUnique({
+      where: { id: event.matchId },
+      include: { homeTeam: true, awayTeam: true },
+    });
+
+    // Emit deletion event with updated scores
     const io = req.app.get('io');
     console.log(`📡 Emitting match:event:deleted to room match:${event.matchId}`, { eventId: id });
     io.to(`match:${event.matchId}`).emit('match:event:deleted', { 
       eventId: id,
       matchId: event.matchId,
+      updatedMatch,
     });
 
     res.json({
       success: true,
       message: 'Event deleted',
+      data: { updatedMatch },
     });
   } catch (error) {
     console.error('Delete event error:', error);
