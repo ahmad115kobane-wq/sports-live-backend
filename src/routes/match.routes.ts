@@ -35,6 +35,9 @@ const MatchStatus = {
   scheduled: 'scheduled',
   live: 'live',
   halftime: 'halftime',
+  extra_time: 'extra_time',
+  extra_time_halftime: 'extra_time_halftime',
+  penalties: 'penalties',
   finished: 'finished',
 } as const;
 type MatchStatusType = typeof MatchStatus[keyof typeof MatchStatus];
@@ -158,7 +161,7 @@ router.get('/live', async (req, res) => {
     const matches = await prisma.match.findMany({
       where: {
         status: {
-          in: [MatchStatus.live, MatchStatus.halftime],
+          in: [MatchStatus.live, MatchStatus.halftime, MatchStatus.extra_time, MatchStatus.extra_time_halftime, MatchStatus.penalties],
         },
       },
       include: {
@@ -167,7 +170,7 @@ router.get('/live', async (req, res) => {
         competition: true,
         events: {
           orderBy: { minute: 'desc' },
-          take: 5,
+          take: 30,
           include: {
             player: true,
             team: true,

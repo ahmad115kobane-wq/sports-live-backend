@@ -581,7 +581,35 @@ router.delete('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
       data: { competitionId: null },
     });
 
-    // Delete competition (cascades: teams, groups, delegates)
+    // Remove group-team associations first (child of groups)
+    const groups = await prisma.competitionGroup.findMany({ where: { competitionId: id }, select: { id: true } });
+    if (groups.length > 0) {
+      await prisma.competitionGroupTeam.deleteMany({
+        where: { groupId: { in: groups.map(g => g.id) } },
+      });
+      // Remove group matches references
+      await prisma.match.updateMany({
+        where: { groupId: { in: groups.map(g => g.id) } },
+        data: { groupId: null },
+      });
+    }
+
+    // Remove competition groups
+    await prisma.competitionGroup.deleteMany({
+      where: { competitionId: id },
+    });
+
+    // Remove team-competition associations
+    await prisma.teamCompetition.deleteMany({
+      where: { competitionId: id },
+    });
+
+    // Remove delegate assignments
+    await prisma.competitionDelegate.deleteMany({
+      where: { competitionId: id },
+    });
+
+    // Delete competition
     await prisma.competition.delete({
       where: { id },
     });
