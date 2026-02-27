@@ -607,12 +607,26 @@ router.post('/matches/:matchId/end', authenticate, isOperator, async (req: AuthR
 
     const currentMatch = await prisma.match.findUnique({ where: { id: matchId } });
     const endMinute = currentMatch?.currentMinute || 50;
+    const wasPenalties = currentMatch?.status === 'penalties';
+
+    // Compute penalty shootout scores from events if match was in penalties
+    let penaltyHomeScore: number | null = null;
+    let penaltyAwayScore: number | null = null;
+    if (wasPenalties && currentMatch) {
+      const penaltyEvents = await prisma.event.findMany({
+        where: { matchId, type: { in: ['penalty_scored', 'penalty_missed'] } },
+      });
+      penaltyHomeScore = penaltyEvents.filter(e => e.teamId === currentMatch.homeTeamId && e.type === 'penalty_scored').length;
+      penaltyAwayScore = penaltyEvents.filter(e => e.teamId === currentMatch.awayTeamId && e.type === 'penalty_scored').length;
+    }
 
     const match = await prisma.match.update({
       where: { id: matchId },
       data: {
         status: 'finished',
         currentMinute: endMinute,
+        ...(penaltyHomeScore !== null ? { penaltyHomeScore } : {}),
+        ...(penaltyAwayScore !== null ? { penaltyAwayScore } : {}),
       },
       include: {
         homeTeam: true,
@@ -636,15 +650,28 @@ router.post('/matches/:matchId/end', authenticate, isOperator, async (req: AuthR
       const awayScore = match.awayScore;
 
       if (homeScore > awayScore) {
-        // Home wins
+        // Home wins in regular/extra time
         await prisma.team.update({ where: { id: match.homeTeamId }, data: { wins: { increment: 1 }, goalsFor: { increment: homeScore }, goalsAgainst: { increment: awayScore } } });
         await prisma.team.update({ where: { id: match.awayTeamId }, data: { losses: { increment: 1 }, goalsFor: { increment: awayScore }, goalsAgainst: { increment: homeScore } } });
       } else if (awayScore > homeScore) {
-        // Away wins
+        // Away wins in regular/extra time
         await prisma.team.update({ where: { id: match.homeTeamId }, data: { losses: { increment: 1 }, goalsFor: { increment: homeScore }, goalsAgainst: { increment: awayScore } } });
         await prisma.team.update({ where: { id: match.awayTeamId }, data: { wins: { increment: 1 }, goalsFor: { increment: awayScore }, goalsAgainst: { increment: homeScore } } });
+      } else if (wasPenalties && penaltyHomeScore !== null && penaltyAwayScore !== null) {
+        // Scores equal but decided by penalties — winner gets the win
+        if (penaltyHomeScore > penaltyAwayScore) {
+          await prisma.team.update({ where: { id: match.homeTeamId }, data: { wins: { increment: 1 }, goalsFor: { increment: homeScore }, goalsAgainst: { increment: awayScore } } });
+          await prisma.team.update({ where: { id: match.awayTeamId }, data: { losses: { increment: 1 }, goalsFor: { increment: awayScore }, goalsAgainst: { increment: homeScore } } });
+        } else if (penaltyAwayScore > penaltyHomeScore) {
+          await prisma.team.update({ where: { id: match.homeTeamId }, data: { losses: { increment: 1 }, goalsFor: { increment: homeScore }, goalsAgainst: { increment: awayScore } } });
+          await prisma.team.update({ where: { id: match.awayTeamId }, data: { wins: { increment: 1 }, goalsFor: { increment: awayScore }, goalsAgainst: { increment: homeScore } } });
+        } else {
+          // Penalty scores also equal (shouldn't happen normally)
+          await prisma.team.update({ where: { id: match.homeTeamId }, data: { draws: { increment: 1 }, goalsFor: { increment: homeScore }, goalsAgainst: { increment: awayScore } } });
+          await prisma.team.update({ where: { id: match.awayTeamId }, data: { draws: { increment: 1 }, goalsFor: { increment: awayScore }, goalsAgainst: { increment: homeScore } } });
+        }
       } else {
-        // Draw
+        // Draw (no penalties)
         await prisma.team.update({ where: { id: match.homeTeamId }, data: { draws: { increment: 1 }, goalsFor: { increment: homeScore }, goalsAgainst: { increment: awayScore } } });
         await prisma.team.update({ where: { id: match.awayTeamId }, data: { draws: { increment: 1 }, goalsFor: { increment: awayScore }, goalsAgainst: { increment: homeScore } } });
       }
@@ -653,10 +680,12 @@ router.post('/matches/:matchId/end', authenticate, isOperator, async (req: AuthR
     }
 
     const io = req.app.get('io');
-    console.log(`\uD83D\uDCE1 Emitting match:status (finished) to room match:${matchId}`);
+    console.log(`📡 Emitting match:status (finished) to room match:${matchId}`);
     io.to(`match:${matchId}`).emit('match:status', {
       matchId,
       status: 'finished',
+      penaltyHomeScore,
+      penaltyAwayScore,
     });
     io.emit('global:match:ended', match);
 

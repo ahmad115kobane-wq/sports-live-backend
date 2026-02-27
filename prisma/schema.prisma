@@ -244,6 +244,8 @@ model Match {
   status        String   @default("scheduled") // scheduled, live, halftime, finished
   homeScore     Int      @default(0) @map("home_score")
   awayScore     Int      @default(0) @map("away_score")
+  penaltyHomeScore Int?  @map("penalty_home_score")
+  penaltyAwayScore Int?  @map("penalty_away_score")
   currentMinute Int?     @map("current_minute")
   liveStartedAt DateTime? @map("live_started_at")
   secondHalfStartedAt DateTime? @map("second_half_started_at")
