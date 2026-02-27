@@ -15,7 +15,7 @@ function computeCurrentMinute(match: any): number | null {
     // Second half
     if (match.secondHalfStartedAt) {
       const elapsed = Math.floor((now - new Date(match.secondHalfStartedAt).getTime()) / 60000);
-      return Math.max(46, 46 + elapsed);
+      return Math.max(26, 26 + elapsed);
     }
     // First half
     if (match.liveStartedAt) {
@@ -324,14 +324,14 @@ router.post('/matches/:matchId/halftime', authenticate, isOperator, async (req: 
       where: { id: matchId },
       data: {
         status: 'halftime',
-        currentMinute: 45,
+        currentMinute: 25,
       },
     });
 
     await prisma.event.create({
       data: {
         matchId,
-        minute: 45,
+        minute: 25,
         type: 'end_half',
         description: 'Half time',
         createdById: req.user!.id,
@@ -348,7 +348,7 @@ router.post('/matches/:matchId/halftime', authenticate, isOperator, async (req: 
     // Send halftime notification
     await sendMatchEventNotification(matchId, 'end_half', {
       id: matchId,
-      minute: 45,
+      minute: 25,
     });
 
     res.json({
@@ -375,7 +375,7 @@ router.post('/matches/:matchId/second-half', authenticate, isOperator, async (re
       where: { id: matchId },
       data: {
         status: 'live',
-        currentMinute: 46,
+        currentMinute: 26,
         secondHalfStartedAt: now,
       },
     });
@@ -383,7 +383,7 @@ router.post('/matches/:matchId/second-half', authenticate, isOperator, async (re
     await prisma.event.create({
       data: {
         matchId,
-        minute: 46,
+        minute: 26,
         type: 'start_half',
         description: 'Second half started',
         createdById: req.user!.id,
@@ -395,14 +395,14 @@ router.post('/matches/:matchId/second-half', authenticate, isOperator, async (re
     io.to(`match:${matchId}`).emit('match:status', {
       matchId,
       status: 'live',
-      currentMinute: 46,
+      currentMinute: 26,
       secondHalfStartedAt: now.toISOString(),
     });
 
     // Send second half start notification
     await sendMatchEventNotification(matchId, 'start_half', {
       id: matchId,
-      minute: 46,
+      minute: 26,
     });
 
     res.json({
@@ -606,7 +606,7 @@ router.post('/matches/:matchId/end', authenticate, isOperator, async (req: AuthR
     const { matchId } = req.params;
 
     const currentMatch = await prisma.match.findUnique({ where: { id: matchId } });
-    const endMinute = currentMatch?.currentMinute || 90;
+    const endMinute = currentMatch?.currentMinute || 50;
 
     const match = await prisma.match.update({
       where: { id: matchId },

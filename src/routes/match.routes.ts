@@ -13,7 +13,7 @@ function computeCurrentMinute(match: any): number | null {
   if (match.status === 'live') {
     if (match.secondHalfStartedAt) {
       const elapsed = Math.floor((now - new Date(match.secondHalfStartedAt).getTime()) / 60000);
-      return Math.max(46, 46 + elapsed);
+      return Math.max(26, 26 + elapsed);
     }
     if (match.liveStartedAt) {
       const elapsed = Math.floor((now - new Date(match.liveStartedAt).getTime()) / 60000);
