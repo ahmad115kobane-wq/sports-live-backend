@@ -517,6 +517,39 @@ router.delete('/:id', authenticate, isAdmin, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 
+    // Find all matches involving this team
+    const teamMatches = await prisma.match.findMany({
+      where: { OR: [{ homeTeamId: id }, { awayTeamId: id }] },
+      select: { id: true },
+    });
+    const matchIds = teamMatches.map(m => m.id);
+
+    // Clean up match-related records
+    if (matchIds.length > 0) {
+      // Delete lineup players for match lineups
+      const lineups = await prisma.matchLineup.findMany({
+        where: { matchId: { in: matchIds } },
+        select: { id: true },
+      });
+      if (lineups.length > 0) {
+        await prisma.lineupPlayer.deleteMany({ where: { lineupId: { in: lineups.map(l => l.id) } } });
+      }
+      await prisma.matchLineup.deleteMany({ where: { matchId: { in: matchIds } } });
+      await prisma.matchStats.deleteMany({ where: { matchId: { in: matchIds } } });
+      await prisma.matchOperator.deleteMany({ where: { matchId: { in: matchIds } } });
+      await prisma.notification.deleteMany({ where: { matchId: { in: matchIds } } });
+      await prisma.favorite.deleteMany({ where: { matchId: { in: matchIds } } });
+      await prisma.event.deleteMany({ where: { matchId: { in: matchIds } } });
+      await prisma.match.deleteMany({ where: { id: { in: matchIds } } });
+    }
+
+    // Clean up team-level relations
+    await prisma.event.deleteMany({ where: { teamId: id } });
+    await prisma.matchLineup.deleteMany({ where: { teamId: id } });
+    await prisma.competitionGroupTeam.deleteMany({ where: { teamId: id } });
+    await prisma.teamCompetition.deleteMany({ where: { teamId: id } });
+    await prisma.player.deleteMany({ where: { teamId: id } });
+
     await prisma.team.delete({
       where: { id },
     });

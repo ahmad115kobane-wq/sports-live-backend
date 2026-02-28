@@ -114,6 +114,11 @@ router.get('/', async (req, res) => {
         homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, category: true } },
         awayTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, category: true } },
         competition: { select: { id: true, name: true, shortName: true, logoUrl: true, icon: true } },
+        events: {
+          where: { type: { in: ['penalty_scored', 'penalty_missed'] } },
+          select: { id: true, type: true, teamId: true, createdAt: true },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { startTime: 'asc' },
     };
